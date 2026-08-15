@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>งานเยี่ยมบ้าน · แผนกส่งเสริมสุขภาพ รพ.ค่ายพระยอดเมืองขวาง — Mockup</title>
+<title>งานเยี่ยมบ้าน · แผนกส่งเสริมสุขภาพ รพ.ค่ายพระยอดเมืองขวาง</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -337,7 +337,7 @@
         <h1>ดูแลถึงบ้าน<br>ด้วยหัวใจสีชมพู</h1>
         <p>แผนกส่งเสริมสุขภาพ โรงพยาบาลค่ายพระยอดเมืองขวาง — ติดตามเคสเร่งด่วน วางแผนการเยี่ยม และบันทึกข้อมูลผู้ป่วยที่บ้าน ครบในที่เดียว เชื่อมต่อฐานข้อมูลผ่าน Supabase</p>
       </div>
-      <div class="brand-foot">แผนกส่งเสริมสุขภาพ รพ.ค่ายพระยอดเมืองขวาง · เวอร์ชันทดลอง (Mockup)</div>
+      <div class="brand-foot">แผนกส่งเสริมสุขภาพ รพ.ค่ายพระยอดเมืองขวาง · ระบบงานเยี่ยมบ้าน</div>
     </div>
     <div class="login-panel">
       <div class="login-card">
@@ -345,11 +345,11 @@
         <h2>ลงชื่อเข้าใช้งาน</h2>
         <div class="field">
           <label for="email">อีเมล</label>
-          <input id="email" type="email" placeholder="name@phc.go.th" value="anchalee@phc.go.th">
+          <input id="email" type="email" placeholder="อีเมลที่สร้างไว้ใน Supabase">
         </div>
         <div class="field">
           <label for="password">รหัสผ่าน</label>
-          <input id="password" type="password" placeholder="••••••••" value="••••••••">
+          <input id="password" type="password" placeholder="••••••••">
         </div>
         <button class="btn-primary" onclick="doLogin()">เข้าสู่ระบบ</button>
         <div class="login-hint">ยืนยันตัวตนผ่าน <b>Supabase Auth</b> — หลังเข้าสู่ระบบ ระบบจะตรวจสอบสิทธิ์ผู้ใช้งานอัตโนมัติ (Admin / เจ้าหน้าที่)</div>
@@ -454,7 +454,13 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <script>
+const SUPABASE_URL = 'https://htqxskdyjkqqqerclfkf.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_CQH_VQgkW63Wl5qLvHurnQ_krdX0xPG';
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
 /* ---------------- DATA ---------------- */
 const patients = [
   {id:1, hn:'HN-04821', name:'สมชาย เรืองศรี', age:74, sex:'ชาย', group:'เบาหวาน / ไตเรื้อรัง', lastVisit:'2 ส.ค. 2569', status:'urgent',
@@ -742,18 +748,84 @@ function showScreen(name){
   document.getElementById('nav-list').classList.toggle('active', name==='list' || name==='detail');
 }
 
-function doLogin(){
+async function loadCurrentProfile(user){
+  const { data: profile, error } = await supabaseClient
+    .from('profiles')
+    .select('full_name, role, department, is_active')
+    .eq('id', user.id)
+    .single();
+
+  if (error) throw new Error('ไม่สามารถอ่านข้อมูลสิทธิ์ผู้ใช้งานได้: ' + error.message);
+  if (!profile || !profile.is_active) {
+    await supabaseClient.auth.signOut();
+    throw new Error('บัญชีนี้ถูกปิดใช้งาน');
+  }
+
+  const name = profile.full_name || user.email || 'ผู้ใช้งาน';
+  const roleMap = {admin:'ผู้ดูแลระบบ', nurse:'พยาบาล', doctor:'แพทย์', viewer:'ผู้ดูข้อมูล'};
+  const roleText = roleMap[profile.role] || profile.role || 'เจ้าหน้าที่';
+  document.querySelector('.u-name').textContent = name;
+  document.querySelector('.u-role').textContent =
+    `${roleText}${profile.department ? ' · ' + profile.department : ''}`;
+  document.querySelector('.user-chip .av').textContent =
+    name.replace(/\\s+/g,'').slice(0,2) || 'ผู้';
+}
+
+async function enterApp(session){
+  if (!session?.user) return;
+  await loadCurrentProfile(session.user);
   document.getElementById('view-login').classList.add('hidden');
   document.getElementById('view-app').classList.remove('hidden');
   showScreen('dashboard');
 }
-function doLogout(){
+
+async function doLogin(){
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  const btn = document.querySelector('#view-login .btn-primary');
+  if (!email || !password) {
+    alert('กรุณากรอกอีเมลและรหัสผ่าน');
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = 'กำลังเข้าสู่ระบบ...';
+  try {
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    await enterApp(data.session);
+  } catch (err) {
+    console.error(err);
+    alert('เข้าสู่ระบบไม่สำเร็จ: ' + (err.message || 'กรุณาตรวจสอบอีเมลและรหัสผ่าน'));
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'เข้าสู่ระบบ';
+  }
+}
+
+async function doLogout(){
+  await supabaseClient.auth.signOut();
   document.getElementById('view-app').classList.add('hidden');
   document.getElementById('view-login').classList.remove('hidden');
+  document.getElementById('password').value = '';
 }
+
+async function restoreSession(){
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (session) await enterApp(session);
+  } catch (err) {
+    console.error(err);
+    await supabaseClient.auth.signOut();
+  }
+}
+
+document.getElementById('password').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') doLogin();
+});
 
 renderDashboard();
 renderList();
+restoreSession();
 </script>
 </body>
 </html>
