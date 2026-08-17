@@ -51,6 +51,13 @@
   #app{min-height:100vh;}
   .hidden{display:none !important;}
 
+  /* IMPORTANT: login and app are two separate views.
+     ID selectors below use !important for layout, so explicitly hide the inactive view. */
+  #view-login.hidden,
+  #view-app.hidden{
+    display:none !important;
+  }
+
   /* ---------- LOGIN ---------- */
   #view-login{
     min-height:100vh;
@@ -935,6 +942,11 @@ table.plist tbody td,table.data td{color:#29475A!important;font-weight:500}
   .disease-member{display:flex;justify-content:space-between;gap:12px;padding:12px 4px;border-bottom:1px solid #E7EDF1;cursor:pointer;}
   .disease-member:hover{background:#F6FAFB;}
   .empty-state{padding:28px;text-align:center;color:#788995;background:#fff;border:1px dashed #D9E2E8;border-radius:14px;}
+  .top-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;}
+  .quick-add-btn{width:auto!important;margin:0!important;padding:10px 16px!important;white-space:nowrap;}
+  .db-save-note{font-size:12px;color:#738795;margin-top:8px;}
+  @media(max-width:650px){.topline{flex-direction:column!important}.top-actions{width:100%;justify-content:space-between}.quick-add-btn{flex:1}.date-badge{flex:0 0 auto}}
+
   .photo-real{position:relative;overflow:hidden;padding:0!important;border-style:solid!important;}
   .photo-real img{width:100%;height:100%;object-fit:cover;display:block;}
   .photo-caption{position:absolute;left:0;right:0;bottom:0;background:rgba(18,44,59,.72);color:#fff;font-size:11px;padding:5px 7px;}
@@ -1013,8 +1025,11 @@ table.plist tbody td,table.data td{color:#29475A!important;font-weight:500}
       <!-- ---- DASHBOARD ---- -->
       <div id="screen-dashboard">
         <div class="topline">
-          <div><h1>แดชบอร์ด</h1><div class="sub">ภาพรวมเคสวันนี้ · อัปเดตล่าสุด 08:12 น.</div></div>
-          <div class="date-badge">เสาร์ 15 ส.ค. 2569</div>
+          <div><h1>แดชบอร์ด</h1><div class="sub">ภาพรวมผู้ป่วยจากฐานข้อมูลจริง</div></div>
+          <div class="top-actions">
+            <button class="btn-primary quick-add-btn" onclick="openPatientForm()">＋ เพิ่มผู้ป่วยใหม่</button>
+            <div class="date-badge" id="today-badge">—</div>
+          </div>
         </div>
 
         <div class="sec">
@@ -1258,18 +1273,28 @@ async function savePatient(ev){
     if(error)throw error;
     const files=[...e('f-photos').files]; if(files.length){const photoObjects=Array.isArray(row.photos)?row.photos:[];for(const file of files){const clean=file.name.replace(/[^a-zA-Z0-9._-]/g,'_');const path=`${row.id}/${Date.now()}-${clean}`;const up=await supabaseClient.storage.from(PHOTOS_BUCKET).upload(path,file,{upsert:false});if(up.error)throw up.error;photoObjects.push({path,name:file.name});}const u=await supabaseClient.from(PATIENTS_TABLE).update({photos:photoObjects}).eq('id',row.id);if(u.error)throw u.error;}
     closePatientForm();await loadPatients();if(id||row?.id)openPatient(row.id);else showScreen('list');
-  }catch(err){console.error(err);alert('บันทึกไม่สำเร็จ: '+(err.message||err));}finally{btn.disabled=false;btn.textContent='บันทึกข้อมูล';}
+  }catch(err){
+    console.error(err);
+    const msg=String(err?.message||err||'ไม่ทราบสาเหตุ');
+    let help='';
+    if(/relation .*patients.* does not exist|Could not find the table|schema cache/i.test(msg)) help='\n\nยังไม่ได้สร้างตาราง patients — กรุณารันไฟล์ supabase_setup.sql ใน Supabase > SQL Editor ก่อน';
+    else if(/row-level security|permission denied|policy/i.test(msg)) help='\n\nสิทธิ์ RLS ของ Supabase ยังไม่พร้อม — กรุณารัน supabase_setup.sql อีกครั้ง';
+    else if(/duplicate key|patients_hn_key/i.test(msg)) help='\n\nเลข HN นี้มีอยู่ในระบบแล้ว กรุณาตรวจสอบ HN';
+    else if(/Failed to fetch|NetworkError|fetch/i.test(msg)) help='\n\nไม่สามารถเชื่อมต่อ Supabase ได้ กรุณาตรวจสอบอินเทอร์เน็ตและค่า SUPABASE_URL / KEY';
+    alert('บันทึกไม่สำเร็จ: '+msg+help);
+  }finally{btn.disabled=false;btn.textContent='บันทึกข้อมูล';}
 }
 
 function showScreen(name){e('screen-dashboard').classList.toggle('hidden',name!=='dashboard');e('screen-list').classList.toggle('hidden',name!=='list');e('screen-detail').classList.toggle('hidden',name!=='detail');e('nav-dashboard').classList.toggle('active',name==='dashboard');e('nav-list').classList.toggle('active',name==='list'||name==='detail');window.scrollTo({top:0,left:0,behavior:'instant'});}
 function openAdminLogin(){e('admin-login-box').classList.remove('hidden');document.querySelector('.admin-entry').classList.add('hidden');setTimeout(()=>e('email')?.focus(),50);}
 function closeAdminLogin(){e('admin-login-box').classList.add('hidden');document.querySelector('.admin-entry').classList.remove('hidden');e('password').value='';}
 async function loadCurrentProfile(user){const {data:profile,error}=await supabaseClient.from('profiles').select('full_name, role, department, is_active').eq('id',user.id).single();if(error)throw new Error('ไม่สามารถอ่านข้อมูลสิทธิ์ผู้ใช้งานได้: '+error.message);if(!profile||!profile.is_active){await supabaseClient.auth.signOut();throw new Error('บัญชีนี้ถูกปิดใช้งาน');}const name=profile.full_name||user.email||'ผู้ใช้งาน';const roleMap={admin:'ผู้ดูแลระบบ',nurse:'พยาบาล',doctor:'แพทย์',viewer:'ผู้ดูข้อมูล'};document.querySelector('.u-name').textContent=name;document.querySelector('.u-role').textContent=`${roleMap[profile.role]||profile.role||'เจ้าหน้าที่'}${profile.department?' · '+profile.department:''}`;document.querySelector('.user-chip .av').textContent=name.replace(/\s+/g,'').slice(0,2)||'ผู้';}
-async function enterApp(session){if(!session?.user)return;await loadCurrentProfile(session.user);e('view-login').classList.add('hidden');e('view-app').classList.remove('hidden');showScreen('dashboard');await loadPatients();}
+async function enterApp(session){if(!session?.user)return;await loadCurrentProfile(session.user);e('view-login').classList.add('hidden');e('view-app').classList.remove('hidden');document.documentElement.scrollTop=0;document.body.scrollTop=0;showScreen('dashboard');await loadPatients();requestAnimationFrame(()=>window.scrollTo(0,0));}
 async function doLogin(){const email=e('email').value.trim(),password=e('password').value,btn=document.querySelector('#view-login .btn-primary');if(!email||!password){alert('กรุณากรอกอีเมลและรหัสผ่าน');return;}btn.disabled=true;btn.textContent='กำลังเข้าสู่ระบบ...';try{const {data,error}=await supabaseClient.auth.signInWithPassword({email,password});if(error)throw error;await enterApp(data.session);}catch(err){console.error(err);alert('เข้าสู่ระบบไม่สำเร็จ: '+(err.message||'กรุณาตรวจสอบอีเมลและรหัสผ่าน'));}finally{btn.disabled=false;btn.textContent='เข้าสู่ระบบ';}}
-async function doLogout(){await supabaseClient.auth.signOut();e('view-app').classList.add('hidden');e('view-login').classList.remove('hidden');e('password').value='';window.scrollTo(0,0);}
+async function doLogout(){await supabaseClient.auth.signOut();e('view-app').classList.add('hidden');e('view-login').classList.remove('hidden');e('password').value='';document.documentElement.scrollTop=0;document.body.scrollTop=0;window.scrollTo(0,0);}
 async function restoreSession(){try{const {data:{session}}=await supabaseClient.auth.getSession();if(session)await enterApp(session);}catch(err){console.error(err);await supabaseClient.auth.signOut();}}
 e('password').addEventListener('keydown',ev=>{if(ev.key==='Enter')doLogin();});
+(function setToday(){const x=e('today-badge');if(x)x.textContent=new Date().toLocaleDateString('th-TH',{weekday:'short',day:'numeric',month:'short',year:'numeric'});})();
 restoreSession();
 </script>
 </body>
