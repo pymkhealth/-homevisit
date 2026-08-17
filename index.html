@@ -918,6 +918,37 @@ table.plist tbody td,table.data td{color:#29475A!important;font-weight:500}
   .dashboard-mascot svg{width:50px;height:50px}
 }
 
+  /* ===== REAL DATA FORMS / MODALS / PRINT ===== */
+  .modal{position:fixed;inset:0;z-index:20000;background:rgba(18,44,59,.38);display:flex;align-items:center;justify-content:center;padding:20px;}
+  .modal-card{width:min(620px,96vw);max-height:92vh;overflow:auto;background:#fff;border-radius:18px;padding:22px;box-shadow:0 24px 70px rgba(18,44,59,.22);}
+  .modal-wide{width:min(900px,96vw);}
+  .modal-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px;position:sticky;top:-22px;background:#fff;padding:4px 0 10px;z-index:2;}
+  .modal-head h2{margin:0;font-size:21px;}
+  .modal-close{border:0;background:#F2F6F8;width:38px;height:38px;border-radius:50%;font-size:24px;color:#607485;}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 18px;}
+  .form-span-2{grid-column:1/-1;}
+  .field textarea,.field select{width:100%;padding:11px 13px;border:1px solid #D9E2E8;border-radius:12px;background:#FCFDFE;color:#17344E;font:inherit;}
+  .field textarea:focus,.field select:focus{outline:none;border-color:#2FA7B5;box-shadow:0 0 0 4px rgba(47,167,181,.10);background:#fff;}
+  .form-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px;padding-top:16px;border-top:1px solid #E7EDF1;}
+  .form-help{font-size:12px;color:#788995;margin-top:6px;}
+  .disease-stat{cursor:pointer;}
+  .disease-member{display:flex;justify-content:space-between;gap:12px;padding:12px 4px;border-bottom:1px solid #E7EDF1;cursor:pointer;}
+  .disease-member:hover{background:#F6FAFB;}
+  .empty-state{padding:28px;text-align:center;color:#788995;background:#fff;border:1px dashed #D9E2E8;border-radius:14px;}
+  .photo-real{position:relative;overflow:hidden;padding:0!important;border-style:solid!important;}
+  .photo-real img{width:100%;height:100%;object-fit:cover;display:block;}
+  .photo-caption{position:absolute;left:0;right:0;bottom:0;background:rgba(18,44,59,.72);color:#fff;font-size:11px;padding:5px 7px;}
+  .detail-edit-btn{white-space:nowrap;}
+  @media(max-width:650px){.form-grid{grid-template-columns:1fr}.form-span-2{grid-column:auto}.modal{padding:8px}.modal-card{padding:16px}.modal-head{top:-16px}}
+  @media print{
+    body *{visibility:hidden!important;}
+    #print-area,#print-area *{visibility:visible!important;}
+    #print-area{position:absolute;left:0;top:0;width:100%;padding:0;margin:0;box-shadow:none;border:0;}
+    #print-area .print-photo-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:16px;}
+    #print-area .print-photo-grid img{width:100%;max-height:320px;object-fit:contain;border:1px solid #ddd;}
+    @page{size:A4;margin:12mm;}
+  }
+
 </style>
 </head>
 <body>
@@ -1014,12 +1045,10 @@ table.plist tbody td,table.data td{color:#29475A!important;font-weight:500}
           <div><h1>รายชื่อผู้ป่วย</h1><div class="sub">ทั้งหมด 86 ราย ในความดูแล</div></div>
         </div>
         <div class="toolbar">
-          <div class="search-box">🔍<input placeholder="ค้นหาชื่อ หรือ เลข HN..."></div>
-          <div class="chip active">ทั้งหมด</div>
-          <div class="chip">เบาหวาน</div>
-          <div class="chip">ความดันสูง</div>
-          <div class="chip">ติดเตียง</div>
-          <div class="chip">เกินกำหนดเยี่ยม</div>
+          <button class="btn-primary add-patient-btn" style="width:auto;margin:0" onclick="openPatientForm()">＋ เพิ่มผู้ป่วยใหม่</button>
+          <div class="search-box">🔍<input id="patient-search" placeholder="ค้นหาชื่อ หรือ เลข HN..." oninput="renderList()"></div>
+          <button class="chip active" data-filter="all" onclick="setPatientFilter('all',this)">ทั้งหมด</button>
+          <button class="chip" data-filter="overdue" onclick="setPatientFilter('overdue',this)">เกินกำหนดเยี่ยม</button>
         </div>
         <table class="plist">
           <thead><tr><th>HN</th><th>ชื่อ-สกุล</th><th>กลุ่มโรค</th><th>เยี่ยมล่าสุด</th><th>สถานะ</th><th></th></tr></thead>
@@ -1056,448 +1085,191 @@ table.plist tbody td,table.data td{color:#29475A!important;font-weight:500}
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
-function originalMascotSVG(kind){
-  const commonStart = '<svg viewBox="0 0 80 80" aria-hidden="true">';
-  const end = '</svg>';
-  if(kind==='pig'){
-    return commonStart + `
-      <path d="M24 25 14 13c-2 11 0 19 8 24M56 25l10-12c2 11 0 19-8 24" fill="#F6A9B5" stroke="#C87886" stroke-width="2"/>
-      <circle cx="40" cy="42" r="25" fill="#F8B8C1" stroke="#C87886" stroke-width="2"/>
-      <circle cx="31" cy="39" r="2.5" fill="#4C4A4A"/><circle cx="49" cy="39" r="2.5" fill="#4C4A4A"/>
-      <ellipse cx="40" cy="49" rx="8" ry="6" fill="#F29AA9"/><circle cx="37" cy="49" r="1.2" fill="#A85E6B"/><circle cx="43" cy="49" r="1.2" fill="#A85E6B"/>
-      <path d="M34 57q6 5 12 0" fill="none" stroke="#9B5965" stroke-width="2" stroke-linecap="round"/>` + end;
-  }
-  if(kind==='donkey'){
-    return commonStart + `
-      <path d="M25 25 16 8c-5 10-3 20 5 28M55 25 64 8c5 10 3 20-5 28" fill="#879AB5" stroke="#566A86" stroke-width="2"/>
-      <path d="M28 20q12-12 24 0" fill="none" stroke="#40546F" stroke-width="6" stroke-linecap="round"/>
-      <ellipse cx="40" cy="43" rx="23" ry="25" fill="#91A5BF" stroke="#566A86" stroke-width="2"/>
-      <ellipse cx="40" cy="52" rx="13" ry="10" fill="#C9D3DF"/>
-      <circle cx="32" cy="40" r="2.4" fill="#33465F"/><circle cx="48" cy="40" r="2.4" fill="#33465F"/>
-      <path d="M35 55q5 3 10 0" fill="none" stroke="#66788E" stroke-width="2" stroke-linecap="round"/>` + end;
-  }
-  if(kind==='starbear'){
-    return commonStart + `
-      <circle cx="23" cy="23" r="9" fill="#D6A35F"/><circle cx="57" cy="23" r="9" fill="#D6A35F"/>
-      <circle cx="40" cy="42" r="25" fill="#E9B96F" stroke="#B9823E" stroke-width="2"/>
-      <circle cx="32" cy="39" r="2.5" fill="#4C3B2C"/><circle cx="48" cy="39" r="2.5" fill="#4C3B2C"/>
-      <ellipse cx="40" cy="48" rx="8" ry="6" fill="#F3D19B"/><circle cx="40" cy="46" r="2.5" fill="#5D4632"/>
-      <path d="m40 54 3 6 7 .5-5 4.5 1.5 7-6.5-3.5-6.5 3.5L35 65l-5-4.5 7-.5z" fill="#F3C95B" stroke="#C59B35" stroke-width="1.5"/>` + end;
-  }
-  return commonStart + `
-    <circle cx="23" cy="23" r="9" fill="#D9A45D"/><circle cx="57" cy="23" r="9" fill="#D9A45D"/>
-    <circle cx="40" cy="42" r="25" fill="#EDBE78" stroke="#B9823E" stroke-width="2"/>
-    <circle cx="32" cy="39" r="2.5" fill="#4C3B2C"/><circle cx="48" cy="39" r="2.5" fill="#4C3B2C"/>
-    <ellipse cx="40" cy="48" rx="8" ry="6" fill="#F5D5A3"/><circle cx="40" cy="46" r="2.5" fill="#5D4632"/>
-    <rect x="28" y="57" width="24" height="14" rx="3" fill="#6EA6C8"/><path d="M40 57v14" stroke="#EAF4FA" stroke-width="1.5"/>` + end;
-}
-function decorateDashboardWithOriginalMascots(){
-  const cards = [...document.querySelectorAll('.grid-4 .card, .grid-4 > div')].slice(0,4);
-  const kinds = ['pig','bear','starbear','donkey'];
-  cards.forEach((card,i)=>{
-    if(!card || card.querySelector('.dashboard-mascot')) return;
-    card.classList.add('with-mascot');
-    const m=document.createElement('div');
-    m.className='dashboard-mascot mascot-'+kinds[i];
-    m.innerHTML=originalMascotSVG(kinds[i]);
-    const target=card.firstElementChild;
-    if(target){
-      const wrap=document.createElement('div');
-      wrap.className='metric-mascot-wrap';
-      card.insertBefore(wrap,target);
-      wrap.appendChild(m);
-      const copy=document.createElement('div');
-      copy.className='metric-mascot-copy';
-      wrap.appendChild(copy);
-      // keep existing card content in place; mascot acts as a clean visual accent
-    } else card.appendChild(m);
-  });
-}
-window.addEventListener('DOMContentLoaded',()=>setTimeout(decorateDashboardWithOriginalMascots,50));
+<!-- Patient form modal -->
+<div id="patient-form-modal" class="modal hidden">
+  <div class="modal-card modal-wide">
+    <div class="modal-head"><h2 id="patient-form-title">เพิ่มผู้ป่วยใหม่</h2><button class="modal-close" onclick="closePatientForm()">×</button></div>
+    <form id="patient-form" onsubmit="savePatient(event)">
+      <input type="hidden" id="patient-id">
+      <div class="form-grid">
+        <div class="field"><label>HN *</label><input id="f-hn" required></div>
+        <div class="field"><label>ชื่อ-สกุล *</label><input id="f-name" required></div>
+        <div class="field"><label>อายุ</label><input id="f-age" type="number" min="0" max="130"></div>
+        <div class="field"><label>เพศ</label><select id="f-sex"><option value="">— เลือก —</option><option>ชาย</option><option>หญิง</option><option>อื่นๆ</option></select></div>
+        <div class="field"><label>กลุ่มโรค *</label><input id="f-group" required placeholder="เช่น เบาหวาน / ความดันสูง"></div>
+        <div class="field"><label>สถานะ</label><select id="f-status"><option value="ok">ปกติ</option><option value="urgent">เร่งด่วน</option><option value="overdue">เกินกำหนดเยี่ยม</option></select></div>
+        <div class="field"><label>วันที่เยี่ยมล่าสุด</label><input id="f-last-visit" type="date"></div>
+        <div class="field"><label>จำนวนวันเกินกำหนด</label><input id="f-overdue-days" type="number" min="0"></div>
+        <div class="field form-span-2"><label>เหตุผล/ข้อควรติดตาม</label><textarea id="f-reason" rows="2"></textarea></div>
+        <div class="field form-span-2"><label>ที่อยู่</label><textarea id="f-address" rows="2"></textarea></div>
+        <div class="field"><label>โทรศัพท์</label><input id="f-phone" type="tel"></div>
+        <div class="field"><label>Diagnosis</label><input id="f-diagnosis"></div>
+        <div class="field"><label>ICD-10</label><input id="f-icd10"></div>
+        <div class="field"><label>ประวัติแพ้ยา</label><input id="f-allergy"></div>
+        <div class="field form-span-2"><label>ประวัติเดิม</label><textarea id="f-history" rows="3"></textarea></div>
+        <div class="field form-span-2"><label>Lab / ผลตรวจ</label><textarea id="f-lab" rows="3" placeholder="บันทึกผลตรวจหรือผล Lab"></textarea></div>
+        <div class="field form-span-2"><label>Medication</label><textarea id="f-medication" rows="3" placeholder="1 รายการต่อ 1 บรรทัด"></textarea></div>
+        <div class="field form-span-2"><label>Home Visit / บันทึกการเยี่ยม</label><textarea id="f-homevisit" rows="4"></textarea></div>
+        <div class="field form-span-2"><label>INHOMESSS</label><textarea id="f-inhomesss" rows="5" placeholder="บันทึกผลประเมินตามหัวข้อ INHOMESSS"></textarea></div>
+        <div class="field form-span-2"><label>Problems</label><textarea id="f-problems" rows="3"></textarea></div>
+        <div class="field form-span-2"><label>Care Plan</label><textarea id="f-careplan" rows="4"></textarea></div>
+        <div class="field form-span-2"><label>แนบภาพถ่าย</label><input id="f-photos" type="file" accept="image/*" multiple><div class="form-help">เลือกได้หลายภาพ ภาพจะถูกเก็บใน Supabase Storage</div></div>
+      </div>
+      <div class="form-actions"><button type="button" class="btn-ghost" onclick="closePatientForm()">ยกเลิก</button><button id="save-patient-btn" class="btn-primary" style="width:auto;margin:0" type="submit">บันทึกข้อมูล</button></div>
+    </form>
+  </div>
+</div>
 
-</script>
+<!-- Disease members modal -->
+<div id="disease-modal" class="modal hidden">
+  <div class="modal-card">
+    <div class="modal-head"><h2 id="disease-modal-title">รายชื่อผู้ป่วย</h2><button class="modal-close" onclick="closeDiseaseModal()">×</button></div>
+    <div id="disease-modal-list"></div>
+  </div>
+</div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const SUPABASE_URL = 'https://htqxskdyjkqqqerclfkf.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_CQH_VQgkW63Wl5qLvHurnQ_krdX0xPG';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+const PATIENTS_TABLE = 'patients';
+const PHOTOS_BUCKET = 'patient-photos';
 
-/* ---------------- DATA ---------------- */
-const patients = [
-  {id:1, hn:'HN-04821', name:'สมชาย เรืองศรี', age:74, sex:'ชาย', group:'เบาหวาน / ไตเรื้อรัง', lastVisit:'2 ส.ค. 2569', status:'urgent',
-    reason:'น้ำตาลในเลือดสูงต่อเนื่อง', address:'ต.ธาตุเชิงชุม อ.เมือง', phone:'081-234-5678',
-    inhomesss:{
-      I:'เคลื่อนไหวลำบาก ต้องใช้ไม้เท้า เดินได้ในบ้านเท่านั้น',
-      N:'รับประทานอาหารรสจัด ควบคุมน้ำตาลยาก',
-      H:'บ้านไม้ชั้นเดียว มีบันได 3 ขั้นทางเข้า',
-      O:'อาศัยกับภรรยา ดูแลกันเอง ไม่มีผู้ช่วยเพิ่มเติม',
-      M:'กินยาไม่ตรงเวลา ลืมบ่อย',
-      E:'แสงสว่างในบ้านเพียงพอ พื้นลื่นบริเวณห้องน้ำ',
-      S:'ยังไม่มีราวจับในห้องน้ำ เสี่ยงหกล้ม',
-      S2:'ครอบครัวให้กำลังใจดี มีความหวังในการรักษา',
-      Serv:'ได้รับยาจาก รพ.สต. ทุกเดือน'
-    }},
-  {id:2, hn:'HN-03390', name:'ประนอม ศรีสุข', age:81, sex:'หญิง', group:'ติดเตียง / แผลกดทับ', lastVisit:'30 ก.ค. 2569', status:'urgent',
-    reason:'แผลกดทับระยะ 2 ลุกลาม', address:'ต.งิ้วด่อน อ.เมือง', phone:'089-112-3344',
-    inhomesss:{I:'ติดเตียงถาวร ต้องพลิกตัวทุก 2 ชม.',N:'ทานได้น้อย น้ำหนักลดลง',H:'ห้องนอนอับชื้น ระบายอากาศไม่ดี',
-      O:'ลูกสาวลาออกจากงานมาดูแลเต็มเวลา',M:'ใช้ยาแก้ปวดตามแพทย์สั่ง',E:'ที่นอนลมชำรุด ต้องเปลี่ยน',
-      S:'เสี่ยงแผลกดทับเพิ่มหากไม่พลิกตัว',S2:'ผู้ดูแลเริ่มเหนื่อยล้า ต้องการกำลังใจ',Serv:'นัดพยาบาลทำแผลสัปดาห์ละ 2 ครั้ง'}},
-  {id:3, hn:'HN-05512', name:'บุญมี แสงทอง', age:68, sex:'ชาย', group:'ความดันสูง / หัวใจ', lastVisit:'5 ส.ค. 2569', status:'urgent',
-    reason:'ความดันควบคุมไม่ได้ เสี่ยง stroke', address:'ต.ท่าแร่ อ.เมือง', phone:'086-556-7890',
-    inhomesss:{I:'เดินได้ปกติ แต่เหนื่อยง่าย',N:'ทานเค็มจัด ชอบอาหารหมักดอง',H:'บ้านปูน 2 ชั้น มีบันไดชัน',
-      O:'อาศัยคนเดียว บุตรอยู่ต่างจังหวัด',M:'ลืมกินยาความดันบ่อยครั้ง',E:'ไม่มีเครื่องวัดความดันที่บ้าน',
-      S:'อยู่คนเดียว เสี่ยงหากเกิดเหตุฉุกเฉิน',S2:'รู้สึกโดดเดี่ยว ต้องการเพื่อนคุย',Serv:'ประสาน อสม. เยี่ยมเสริมสัปดาห์ละครั้ง'}},
-  {id:4, hn:'HN-02207', name:'สายทอง วงศ์ษา', age:59, sex:'หญิง', group:'เบาหวาน', lastVisit:'18 ก.ค. 2569', status:'overdue', overdueDays:14,
-    address:'ต.ดงชน อ.เมือง', phone:'084-778-1122',
-    inhomesss:{I:'เคลื่อนไหวคล่องแคล่ว',N:'ควบคุมอาหารได้ดีขึ้น',H:'บ้านเหมาะสม สะอาด',O:'อาศัยกับบุตรสาว',
-      M:'กินยาสม่ำเสมอ',E:'สภาพแวดล้อมปลอดภัย',S:'ไม่พบความเสี่ยง',S2:'กำลังใจดี ครอบครัวอบอุ่น',Serv:'รับยาต่อเนื่องทุกเดือน'}},
-  {id:5, hn:'HN-01875', name:'สมพงษ์ ไชยวงศ์', age:77, sex:'ชาย', group:'หลอดเลือดสมอง (stroke)', lastVisit:'10 ก.ค. 2569', status:'overdue', overdueDays:20,
-    address:'ต.ห้วยยาง อ.เมือง', phone:'080-990-4433',
-    inhomesss:{I:'อ่อนแรงครึ่งซีกซ้าย ต้องใช้รถเข็น',N:'ต้องป้อนอาหาร กลืนลำบาก',H:'ทางเข้าบ้านไม่มีทางลาด',
-      O:'ภรรยาดูแลหลัก อายุมากเช่นกัน',M:'ยาละลายลิ่มเลือดต้องกินตรงเวลา',E:'พื้นต่างระดับหลายจุด',
-      S:'เสี่ยงล้มขณะเคลื่อนย้าย',S2:'ครอบครัวต้องการอุปกรณ์ช่วยเหลือเพิ่ม',Serv:'นัดกายภาพบำบัดเดือนละครั้ง'}},
-  {id:6, hn:'HN-06120', name:'ละมัย ทองดี', age:65, sex:'หญิง', group:'ความดันสูง', lastVisit:'8 ส.ค. 2569', status:'ok',
-    address:'ต.เชียงเครือ อ.เมือง', phone:'082-334-5566',
-    inhomesss:{I:'ปกติดี',N:'ทานอาหารครบหมู่',H:'บ้านเหมาะสม',O:'อาศัยกับสามี',M:'กินยาสม่ำเสมอ',
-      E:'ปลอดภัยดี',S:'ไม่พบความเสี่ยง',S2:'มีความสุขดี',Serv:'มารับยาตามนัดสม่ำเสมอ'}},
-  {id:7, hn:'HN-07740', name:'วิไล พรมมา', age:70, sex:'หญิง', group:'เบาหวาน / ตา', lastVisit:'1 ส.ค. 2569', status:'ok',
-    address:'ต.พังขว้าง อ.เมือง', phone:'087-221-9900',
-    inhomesss:{I:'เดินได้ปกติ',N:'ควบคุมอาหารได้',H:'บ้านสะอาดเรียบร้อย',O:'อาศัยกับหลาน',M:'กินยาตรงเวลา',
-      E:'แสงสว่างเพียงพอ',S:'ไม่พบความเสี่ยง',S2:'อารมณ์ดี ร่าเริง',Serv:'นัดตรวจตาประจำปี'}},
-  {id:8, hn:'HN-08801', name:'อุทัย บุญเรือง', age:83, sex:'ชาย', group:'ติดเตียง', lastVisit:'22 ก.ค. 2569', status:'overdue', overdueDays:24,
-    address:'ต.ขมิ้น อ.เมือง', phone:'085-667-8899',
-    inhomesss:{I:'ติดเตียง ขยับได้เฉพาะแขน',N:'ให้อาหารทางสายยาง',H:'ห้องนอนแคบ ระบายอากาศน้อย',
-      O:'บุตรชายดูแล สลับเวรกับพี่สาว',M:'ยาหลายรายการ ต้องจัดตารางชัดเจน',E:'ต้องการเตียงลมกันแผลกดทับ',
-      S:'เสี่ยงแผลกดทับสูง',S2:'ผู้ดูแลเครียดสะสม',Serv:'พยาบาลเยี่ยมทำแผลทุกสัปดาห์'}}
-];
-
-const labs = [
-  {name:'FBS (น้ำตาลในเลือด)', prev:'168 mg/dL', now:'192 mg/dL', trend:'up'},
-  {name:'HbA1c', prev:'7.8 %', now:'8.4 %', trend:'up'},
-  {name:'Creatinine', prev:'1.3 mg/dL', now:'1.3 mg/dL', trend:'flat'},
-  {name:'BP เฉลี่ย', prev:'148/92', now:'156/96', trend:'up'},
-  {name:'LDL Cholesterol', prev:'142 mg/dL', now:'128 mg/dL', trend:'down'},
-];
-const meds = [
-  {name:'Metformin 500mg', dose:'1 เม็ด เช้า-เย็น หลังอาหาร', tag:'ต่อเนื่อง'},
-  {name:'Amlodipine 5mg', dose:'1 เม็ด เช้า', tag:'ต่อเนื่อง'},
-  {name:'Insulin NPH', dose:'10 unit ก่อนนอน', tag:'ปรับขนาดล่าสุด'},
-  {name:'Aspirin 81mg', dose:'1 เม็ด หลังอาหารเช้า', tag:'ต่อเนื่อง'},
-];
-const visits = [
-  {date:'2 ส.ค. 2569', note:'วัดความดัน 156/96 ปรับคำแนะนำเรื่องอาหาร แนะนำลดเค็ม'},
-  {date:'19 ก.ค. 2569', note:'ตรวจน้ำตาลปลายนิ้ว 192 mg/dL นัดปรับยาที่ รพ.สต.'},
-  {date:'5 ก.ค. 2569', note:'เยี่ยมตามนัดปกติ ผู้ป่วยและครอบครัวให้ความร่วมมือดี'},
-];
-const problems = [
-  {name:'ควบคุมระดับน้ำตาลไม่ได้', status:'active', meta:'เริ่มพบ 2 ส.ค. 2569 · กำลังติดตาม'},
-  {name:'เสี่ยงหกล้มในห้องน้ำ', status:'watch', meta:'ยังไม่ติดตั้งราวจับ · รอประสานช่าง'},
-  {name:'ความดันโลหิตสูง', status:'stable', meta:'ควบคุมได้ด้วยยา · ติดตามทุกเดือน'},
-];
-const carePlan = [
-  {title:'ควบคุมระดับน้ำตาลในเลือด', detail:'ปรับอาหาร ลดของหวาน ติดตามค่า FBS ทุก 2 สัปดาห์ ร่วมกับปรับขนาดยาตามแพทย์สั่ง', target:'เป้าหมาย FBS < 140 mg/dL ภายใน 1 เดือน'},
-  {title:'ป้องกันการหกล้ม', detail:'ประสาน อสม. ติดตั้งราวจับในห้องน้ำ และจัดวางของใช้ให้เอื้อมถึงง่าย', target:'ติดตั้งราวจับภายใน 2 สัปดาห์'},
-  {title:'เสริมพลังใจผู้ดูแล', detail:'เยี่ยมให้กำลังใจครอบครัว แนะนำกลุ่มผู้ดูแลผู้ป่วยเรื้อรังในพื้นที่', target:'ติดตามผลทุกครั้งที่เยี่ยมบ้าน'},
-];
-
+let patients = [];
 let currentPatient = null;
+let activePatientFilter = 'all';
 
-/* ---------------- RENDER: DASHBOARD ---------------- */
-function renderDashboard(){
-  const urgent = patients.filter(p=>p.status==='urgent');
-  document.getElementById('urgent-list').innerHTML = urgent.map(p=>`
-    <div class="card urgent-card" onclick="openPatient(${p.id})">
-      <div class="name">${p.name}</div>
-      <div class="reason">${p.reason}</div>
-      <div class="meta">${p.hn} · เยี่ยมล่าสุด ${p.lastVisit}</div>
-    </div>`).join('');
+const e = id => document.getElementById(id);
+const safe = v => String(v ?? '').replace(/[&<>'"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+const lines = v => String(v || '').split('\n').map(x=>x.trim()).filter(Boolean);
+const thaiDate = iso => {
+  if(!iso) return '—';
+  const d = new Date(iso+'T00:00:00');
+  if(Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'numeric'});
+};
 
-  const diseaseGroups = [
-    {label:'เบาหวาน', num:34, color:'var(--teal-600)'},
-    {label:'ความดันสูง', num:28, color:'var(--manila-dark)'},
-    {label:'ติดเตียง', num:9, color:'var(--clay)'},
-    {label:'หลอดเลือดสมอง', num:6, color:'var(--amber)'},
-  ];
-  document.getElementById('disease-list').innerHTML = diseaseGroups.map(d=>`
-    <div class="card disease-stat">
-      <div class="top"><span class="label">${d.label}</span><span class="num">${d.num}</span></div>
-      <div class="bar-track"><div class="bar-fill" style="width:${Math.min(100,d.num*2.6)}%;background:${d.color}"></div></div>
-    </div>`).join('');
-
-  const top5 = [urgent[1], urgent[0], patients[7], urgent[2], patients[4]];
-  document.getElementById('top5-list').innerHTML = top5.map((p,i)=>`
-    <div class="rank-row" onclick="openPatient(${p.id})">
-      <div class="rank-num">${i+1}</div>
-      <div class="rank-body"><div class="name">${p.name}</div><div class="note">${p.group}</div></div>
-      <div class="risk-score">HN ${p.hn.split('-')[1]}</div>
-    </div>`).join('');
-
-  const overdue = patients.filter(p=>p.status==='overdue');
-  document.getElementById('overdue-list').innerHTML = overdue.map(p=>`
-    <div class="card overdue-card" onclick="openPatient(${p.id})">
-      <div><div class="name">${p.name}</div><div class="meta">${p.group} · เยี่ยมล่าสุด ${p.lastVisit}</div></div>
-      <div class="days">${p.overdueDays}<span>วันเกินกำหนด</span></div>
-    </div>`).join('');
-}
-
-/* ---------------- RENDER: PATIENT LIST ---------------- */
-function statusBadge(p){
-  if(p.status==='urgent') return `<span class="badge urgent">เร่งด่วน</span>`;
-  if(p.status==='overdue') return `<span class="badge overdue">เกินกำหนด ${p.overdueDays} วัน</span>`;
-  return `<span class="badge ok">ปกติ</span>`;
-}
-function renderList(){
-  document.getElementById('patient-table-body').innerHTML = patients.map(p=>`
-    <tr onclick="openPatient(${p.id})">
-      <td class="hn">${p.hn}</td>
-      <td><div class="p-name">${p.name}</div><div class="p-sub">${p.age} ปี · ${p.sex}</div></td>
-      <td>${p.group}</td>
-      <td class="mono" style="font-size:12.5px;color:var(--ink-soft)">${p.lastVisit}</td>
-      <td>${statusBadge(p)}</td>
-      <td class="chevron">›</td>
-    </tr>`).join('');
-}
-
-/* ---------------- RENDER: PATIENT DETAIL ---------------- */
-const tabs = [
-  {id:'history', label:'ประวัติเดิม'},
-  {id:'diagnosis', label:'Diagnosis'},
-  {id:'lab', label:'Lab เปรียบเทียบ'},
-  {id:'medication', label:'Medication'},
-  {id:'homevisit', label:'Home Visit'},
-  {id:'inhomesss', label:'INHOMESSS'},
-  {id:'problems', label:'Problems'},
-  {id:'careplan', label:'Care Plan'},
-  {id:'photos', label:'รูปภาพ'},
-  {id:'print', label:'Print A4'},
-];
-
-function openPatient(id){
-  currentPatient = patients.find(p=>p.id===id);
-  const p = currentPatient;
-  document.getElementById('pd-initials').textContent = p.name.split(' ')[0].slice(0,2);
-  document.getElementById('pd-name').textContent = p.name;
-  document.getElementById('pd-hn').textContent = p.hn;
-  document.getElementById('pd-age').textContent = `${p.age} ปี · ${p.sex}`;
-  document.getElementById('pd-address').textContent = `📍 ${p.address}`;
-  document.getElementById('pd-phone').textContent = `📞 ${p.phone}`;
-  const badgeEl = document.getElementById('pd-badge');
-  badgeEl.className = 'badge ' + (p.status==='urgent'?'urgent':p.status==='overdue'?'overdue':'ok');
-  badgeEl.textContent = p.status==='urgent'?'เร่งด่วน':p.status==='overdue'?`เกินกำหนด ${p.overdueDays} วัน`:'ปกติ';
-
-  document.getElementById('tab-strip').innerHTML = tabs.map((t,i)=>
-    `<button class="tab-btn ${i===0?'active':''}" data-tab="${t.id}" onclick="showTab('${t.id}')">${t.label}</button>`).join('');
-
-  renderAllTabPanels(p);
-  showScreen('detail');
-  showTab('history');
-}
-
-function showTab(tabId){
-  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active', b.dataset.tab===tabId));
-  document.querySelectorAll('.tab-panel').forEach(pnl=>pnl.classList.toggle('active', pnl.id==='panel-'+tabId));
-}
-
-function ihLabel(key){
-  return ({I:'Immobility — การเคลื่อนไหว',N:'Nutrition — โภชนาการ',H:'Housing — สภาพที่อยู่อาศัย',
-    O:'Other people — ผู้ดูแล/คนในบ้าน',M:'Medication — การใช้ยา',E:'Examination — สิ่งแวดล้อม/ตรวจร่างกาย',
-    S:'Safety — ความปลอดภัย',S2:'Spiritual support — กำลังใจ/จิตใจ',Serv:'Services — บริการที่ได้รับ'})[key];
-}
-function ihIcon(key){
-  return ({I:'I',N:'N',H:'H',O:'O',M:'M',E:'E',S:'S',S2:'S',Serv:'S'})[key];
-}
-
-function renderAllTabPanels(p){
-  const wrap = document.getElementById('tab-panel-wrap');
-  wrap.innerHTML = `
-    <div class="tab-panel active" id="panel-history">
-      <h3>ประวัติเดิม</h3>
-      <div class="kv-grid">
-        <div class="kv"><div class="k">โรคประจำตัว</div><div class="v">${p.group}</div></div>
-        <div class="kv"><div class="k">ประวัติแพ้ยา</div><div class="v">ไม่พบประวัติแพ้ยา</div></div>
-        <div class="kv"><div class="k">ประวัติผ่าตัด</div><div class="v">ไม่มี</div></div>
-        <div class="kv"><div class="k">ประวัติครอบครัว</div><div class="v">มารดาเป็นเบาหวาน</div></div>
-        <div class="kv"><div class="k">สิทธิการรักษา</div><div class="v">บัตรทอง (UC)</div></div>
-        <div class="kv"><div class="k">ผู้ดูแลหลัก</div><div class="v">${p.inhomesss.O.split(' ')[0]}...</div></div>
-      </div>
-    </div>
-
-    <div class="tab-panel" id="panel-diagnosis">
-      <h3>Diagnosis</h3>
-      <div class="kv-grid">
-        <div class="kv"><div class="k">Primary diagnosis</div><div class="v">${p.group}</div></div>
-        <div class="kv"><div class="k">ICD-10</div><div class="v mono">E11.9</div></div>
-        <div class="kv"><div class="k">วันที่วินิจฉัย</div><div class="v">14 มี.ค. 2564</div></div>
-        <div class="kv"><div class="k">แพทย์เจ้าของไข้</div><div class="v">พญ. สุพัตรา วงศ์ไทย</div></div>
-      </div>
-    </div>
-
-    <div class="tab-panel" id="panel-lab">
-      <h3>Lab เปรียบเทียบ</h3>
-      <table class="data">
-        <thead><tr><th>รายการ</th><th>ครั้งก่อน</th><th>ล่าสุด</th><th>แนวโน้ม</th></tr></thead>
-        <tbody>${labs.map(l=>`<tr>
-          <td class="label-cell">${l.name}</td><td>${l.prev}</td><td>${l.now}</td>
-          <td><span class="trend ${l.trend}">${l.trend==='up'?'▲ สูงขึ้น':l.trend==='down'?'▼ ลดลง':'– คงที่'}</span></td>
-        </tr>`).join('')}</tbody>
-      </table>
-    </div>
-
-    <div class="tab-panel" id="panel-medication">
-      <h3>Medication</h3>
-      ${meds.map(m=>`<div class="med-row">
-        <div><div class="med-name">${m.name}</div><div class="med-dose">${m.dose}</div></div>
-        <div class="med-tag">${m.tag}</div></div>`).join('')}
-    </div>
-
-    <div class="tab-panel" id="panel-homevisit">
-      <h3>Home Visit — ประวัติการเยี่ยม</h3>
-      ${visits.map(v=>`<div class="visit-item"><div class="visit-dot"></div>
-        <div><div class="visit-date">${v.date}</div><div class="visit-note">${v.note}</div></div></div>`).join('')}
-    </div>
-
-    <div class="tab-panel" id="panel-inhomesss">
-      <h3>INHOMESSS Assessment</h3>
-      <div class="inhomesss-grid">
-        ${['I','N','H','O','M','E','S','S2','Serv'].map(k=>`
-          <div class="ih-card"><div class="ih-letter">${ihIcon(k)}</div>
-            <div><div class="ih-title">${ihLabel(k)}</div><div class="ih-note">${p.inhomesss[k]}</div></div></div>`).join('')}
-      </div>
-    </div>
-
-    <div class="tab-panel" id="panel-problems">
-      <h3>Problem List</h3>
-      ${problems.map(pr=>`<div class="prob-row"><div class="prob-status ${pr.status}"></div>
-        <div><div class="prob-name">${pr.name}</div><div class="prob-meta">${pr.meta}</div></div></div>`).join('')}
-    </div>
-
-    <div class="tab-panel" id="panel-careplan">
-      <h3>Care Plan</h3>
-      ${carePlan.map(c=>`<div class="plan-goal"><div class="g-title">${c.title}</div>
-        <div class="g-detail">${c.detail}</div><div class="g-target">${c.target}</div></div>`).join('')}
-    </div>
-
-    <div class="tab-panel" id="panel-photos">
-      <h3>รูปภาพ</h3>
-      <div class="photo-grid">
-        ${['สภาพบ้าน','ห้องน้ำ','แผลผู้ป่วย','ยาที่ใช้ประจำ','ทางเข้าบ้าน','มุมนอนผู้ป่วย'].map(t=>`<div class="photo-tile">📷<br>${t}</div>`).join('')}
-      </div>
-    </div>
-
-    <div class="tab-panel" id="panel-print">
-      <h3>Print A4 — สรุปเวชระเบียนเยี่ยมบ้าน</h3>
-      <div class="a4-preview">
-        <h4>สรุปเวชระเบียนเยี่ยมบ้าน</h4>
-        <div class="a4-sub">${p.name} · ${p.hn}</div>
-        <div class="a4-line"><span>อายุ / เพศ</span><span>${p.age} ปี / ${p.sex}</span></div>
-        <div class="a4-line"><span>กลุ่มโรค</span><span>${p.group}</span></div>
-        <div class="a4-line"><span>ที่อยู่</span><span>${p.address}</span></div>
-        <div class="a4-line"><span>เยี่ยมล่าสุด</span><span>${p.lastVisit}</span></div>
-        <div class="a4-line"><span>สถานะ</span><span>${p.status==='urgent'?'เร่งด่วน':p.status==='overdue'?'เกินกำหนดเยี่ยม':'ปกติ'}</span></div>
-      </div>
-      <button class="btn-primary print-btn" style="max-width:220px;margin:0 auto;" onclick="window.print()">🖨 พิมพ์เอกสาร</button>
-    </div>
-  `;
-}
-
-/* ---------------- NAV / SCREENS ---------------- */
-function showScreen(name){
-  document.getElementById('screen-dashboard').classList.toggle('hidden', name!=='dashboard');
-  document.getElementById('screen-list').classList.toggle('hidden', name!=='list');
-  document.getElementById('screen-detail').classList.toggle('hidden', name!=='detail');
-  document.getElementById('nav-dashboard').classList.toggle('active', name==='dashboard');
-  document.getElementById('nav-list').classList.toggle('active', name==='list' || name==='detail');
-}
-
-function openAdminLogin(){
-  document.getElementById('admin-login-box').classList.remove('hidden');
-  document.querySelector('.admin-entry').classList.add('hidden');
-  setTimeout(() => document.getElementById('email')?.focus(), 50);
-}
-function closeAdminLogin(){
-  document.getElementById('admin-login-box').classList.add('hidden');
-  document.querySelector('.admin-entry').classList.remove('hidden');
-  document.getElementById('password').value = '';
-}
-
-async function loadCurrentProfile(user){
-  const { data: profile, error } = await supabaseClient
-    .from('profiles')
-    .select('full_name, role, department, is_active')
-    .eq('id', user.id)
-    .single();
-
-  if (error) throw new Error('ไม่สามารถอ่านข้อมูลสิทธิ์ผู้ใช้งานได้: ' + error.message);
-  if (!profile || !profile.is_active) {
-    await supabaseClient.auth.signOut();
-    throw new Error('บัญชีนี้ถูกปิดใช้งาน');
-  }
-
-  const name = profile.full_name || user.email || 'ผู้ใช้งาน';
-  const roleMap = {admin:'ผู้ดูแลระบบ', nurse:'พยาบาล', doctor:'แพทย์', viewer:'ผู้ดูข้อมูล'};
-  const roleText = roleMap[profile.role] || profile.role || 'เจ้าหน้าที่';
-  document.querySelector('.u-name').textContent = name;
-  document.querySelector('.u-role').textContent =
-    `${roleText}${profile.department ? ' · ' + profile.department : ''}`;
-  document.querySelector('.user-chip .av').textContent =
-    name.replace(/\\s+/g,'').slice(0,2) || 'ผู้';
-}
-
-async function enterApp(session){
-  if (!session?.user) return;
-  await loadCurrentProfile(session.user);
-  document.getElementById('view-login').classList.add('hidden');
-  document.getElementById('view-app').classList.remove('hidden');
-  showScreen('dashboard');
-}
-
-async function doLogin(){
-  const email = document.getElementById('email').value.trim();
-  const password = document.getElementById('password').value;
-  const btn = document.querySelector('#view-login .btn-primary');
-  if (!email || !password) {
-    alert('กรุณากรอกอีเมลและรหัสผ่าน');
+async function loadPatients(){
+  const {data,error}=await supabaseClient.from(PATIENTS_TABLE).select('*').order('created_at',{ascending:false});
+  if(error){
+    console.error(error);
+    patients=[];
+    renderDashboard(); renderList();
+    alert('ยังอ่านข้อมูลผู้ป่วยจาก Supabase ไม่ได้: '+error.message+'\n\nกรุณารันไฟล์ SQL ที่แนบให้หนึ่งครั้งก่อนใช้งาน');
     return;
   }
-  btn.disabled = true;
-  btn.textContent = 'กำลังเข้าสู่ระบบ...';
-  try {
-    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-    if (error) throw error;
-    await enterApp(data.session);
-  } catch (err) {
-    console.error(err);
-    alert('เข้าสู่ระบบไม่สำเร็จ: ' + (err.message || 'กรุณาตรวจสอบอีเมลและรหัสผ่าน'));
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'เข้าสู่ระบบ';
+  patients=(data||[]).map(normalizePatient);
+  await hydratePhotoUrls();
+  renderDashboard(); renderList();
+}
+function normalizePatient(p){
+  return {...p,id:p.id,hn:p.hn||'',name:p.name||'',age:p.age??'',sex:p.sex||'',group:p.disease_group||'',lastVisit:thaiDate(p.last_visit),status:p.status||'ok',overdueDays:p.overdue_days||0,reason:p.reason||'',address:p.address||'',phone:p.phone||'',photos:Array.isArray(p.photos)?p.photos:[]};
+}
+async function hydratePhotoUrls(){
+  for(const p of patients){
+    const items=[];
+    for(const photo of (p.photos||[])){
+      const path=typeof photo==='string'?photo:photo.path;
+      if(!path) continue;
+      const {data,error}=await supabaseClient.storage.from(PHOTOS_BUCKET).createSignedUrl(path,3600);
+      items.push({...((typeof photo==='object')?photo:{}),path,url:error?'':data?.signedUrl||''});
+    }
+    p.photos=items;
   }
 }
 
-async function doLogout(){
-  await supabaseClient.auth.signOut();
-  document.getElementById('view-app').classList.add('hidden');
-  document.getElementById('view-login').classList.remove('hidden');
-  document.getElementById('password').value = '';
+function renderDashboard(){
+  const urgent=patients.filter(p=>p.status==='urgent');
+  e('urgent-list').innerHTML=urgent.length?urgent.map(p=>`<div class="card urgent-card" onclick="openPatient('${p.id}')"><div class="name">${safe(p.name)}</div><div class="reason">${safe(p.reason||'ควรติดตามเร่งด่วน')}</div><div class="meta">${safe(p.hn)} · เยี่ยมล่าสุด ${safe(p.lastVisit)}</div></div>`).join(''):'<div class="empty-state" style="grid-column:1/-1">ไม่มีเคสเร่งด่วน</div>';
+  const map=new Map();
+  patients.forEach(p=>{ lines((p.group||'').replace(/\//g,'\n')).forEach(g=>map.set(g,(map.get(g)||0)+1)); });
+  const diseaseGroups=[...map.entries()].sort((a,b)=>b[1]-a[1]);
+  e('disease-list').innerHTML=diseaseGroups.length?diseaseGroups.map(([label,num])=>`<div class="card disease-stat" onclick="openDiseaseModal('${encodeURIComponent(label)}')"><div class="top"><span class="label">${safe(label)}</span><span class="num">${num}</span></div><div class="bar-track"><div class="bar-fill" style="width:${patients.length?Math.max(5,num/patients.length*100):0}%;background:var(--teal-600)"></div></div></div>`).join(''):'<div class="empty-state" style="grid-column:1/-1">ยังไม่มีข้อมูลกลุ่มโรค</div>';
+  document.querySelector('#screen-dashboard .sec-head .count')?.replaceChildren(document.createTextNode(`${urgent.length} ราย`));
+  const countNodes=document.querySelectorAll('#screen-dashboard .sec-head .count'); if(countNodes[1]) countNodes[1].textContent=`ผู้ป่วยทั้งหมด ${patients.length} ราย`;
+  const ranked=[...patients].sort((a,b)=>scorePatient(b)-scorePatient(a)).slice(0,5);
+  e('top5-list').innerHTML=ranked.length?ranked.map((p,i)=>`<div class="rank-row" onclick="openPatient('${p.id}')"><div class="rank-num">${i+1}</div><div class="rank-body"><div class="name">${safe(p.name)}</div><div class="note">${safe(p.group||'—')}</div></div><div class="risk-score">${safe(p.hn)}</div></div>`).join(''):'<div class="empty-state">ยังไม่มีข้อมูลผู้ป่วย</div>';
+  const overdue=patients.filter(p=>p.status==='overdue');
+  e('overdue-list').innerHTML=overdue.length?overdue.map(p=>`<div class="card overdue-card" onclick="openPatient('${p.id}')"><div><div class="name">${safe(p.name)}</div><div class="meta">${safe(p.group)} · เยี่ยมล่าสุด ${safe(p.lastVisit)}</div></div><div class="days">${p.overdueDays}<span>วันเกินกำหนด</span></div></div>`).join(''):'<div class="empty-state">ไม่มีเคสเกินกำหนด</div>';
+  if(countNodes[2]) countNodes[2].textContent=`${overdue.length} ราย`;
+}
+function scorePatient(p){return p.status==='urgent'?1000:p.status==='overdue'?500+(p.overdueDays||0):0;}
+
+function statusBadge(p){if(p.status==='urgent')return '<span class="badge urgent">เร่งด่วน</span>';if(p.status==='overdue')return `<span class="badge overdue">เกินกำหนด ${p.overdueDays||0} วัน</span>`;return '<span class="badge ok">ปกติ</span>';}
+function setPatientFilter(filter,btn){activePatientFilter=filter;document.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));btn?.classList.add('active');renderList();}
+function renderList(){
+  const q=(e('patient-search')?.value||'').trim().toLowerCase();
+  let arr=patients.filter(p=>!q||[p.name,p.hn,p.group,p.phone].some(v=>String(v||'').toLowerCase().includes(q)));
+  if(activePatientFilter==='overdue') arr=arr.filter(p=>p.status==='overdue');
+  e('patient-table-body').innerHTML=arr.length?arr.map(p=>`<tr onclick="openPatient('${p.id}')"><td class="hn">${safe(p.hn)}</td><td><div class="p-name">${safe(p.name)}</div><div class="p-sub">${safe(p.age||'—')} ปี · ${safe(p.sex||'—')}</div></td><td>${safe(p.group||'—')}</td><td>${safe(p.lastVisit)}</td><td>${statusBadge(p)}</td><td class="chevron">›</td></tr>`).join(''):'<tr><td colspan="6"><div class="empty-state">ไม่พบข้อมูลผู้ป่วย</div></td></tr>';
+  document.querySelector('#screen-list .topline .sub').textContent=`ทั้งหมด ${patients.length} ราย ในความดูแล`;
 }
 
-async function restoreSession(){
-  try {
-    const { data: { session } } = await supabaseClient.auth.getSession();
-    if (session) await enterApp(session);
-  } catch (err) {
-    console.error(err);
-    await supabaseClient.auth.signOut();
-  }
+function openDiseaseModal(encoded){
+  const label=decodeURIComponent(encoded); e('disease-modal-title').textContent=`กลุ่มโรค: ${label}`;
+  const arr=patients.filter(p=>lines((p.group||'').replace(/\//g,'\n')).includes(label));
+  e('disease-modal-list').innerHTML=arr.map(p=>`<div class="disease-member" onclick="closeDiseaseModal();openPatient('${p.id}')"><div><b>${safe(p.name)}</b><div class="p-sub">${safe(p.hn)} · ${safe(p.group)}</div></div><span>›</span></div>`).join('')||'<div class="empty-state">ไม่พบรายชื่อ</div>';
+  e('disease-modal').classList.remove('hidden');
+}
+function closeDiseaseModal(){e('disease-modal').classList.add('hidden');}
+
+const tabs=[['history','ประวัติเดิม'],['diagnosis','Diagnosis'],['lab','Lab'],['medication','Medication'],['homevisit','Home Visit'],['inhomesss','INHOMESSS'],['problems','Problems'],['careplan','Care Plan'],['photos','รูปภาพ'],['print','Print A4']];
+function openPatient(id){
+  currentPatient=patients.find(p=>String(p.id)===String(id)); if(!currentPatient)return; const p=currentPatient;
+  e('pd-initials').textContent=(p.name||'ผู้ป่วย').replace(/\s/g,'').slice(0,2);e('pd-name').textContent=p.name;e('pd-hn').textContent=p.hn;e('pd-age').textContent=`${p.age||'—'} ปี · ${p.sex||'—'}`;e('pd-address').textContent=`📍 ${p.address||'—'}`;e('pd-phone').textContent=`📞 ${p.phone||'—'}`;
+  const b=e('pd-badge');b.className='badge '+(p.status==='urgent'?'urgent':p.status==='overdue'?'overdue':'ok');b.textContent=p.status==='urgent'?'เร่งด่วน':p.status==='overdue'?`เกินกำหนด ${p.overdueDays||0} วัน`:'ปกติ';
+  if(!document.getElementById('edit-patient-btn')){const btn=document.createElement('button');btn.id='edit-patient-btn';btn.className='btn-ghost detail-edit-btn';btn.textContent='แก้ไขข้อมูล';btn.onclick=()=>openPatientForm(currentPatient);e('pd-actions').insertBefore(btn,e('pd-actions').lastElementChild);}
+  e('tab-strip').innerHTML=tabs.map((t,i)=>`<button class="tab-btn ${i===0?'active':''}" data-tab="${t[0]}" onclick="showTab('${t[0]}')">${t[1]}</button>`).join('');
+  renderAllTabPanels(p);showScreen('detail');showTab('history');
+}
+function showTab(id){document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id==='panel-'+id));}
+function textBlock(v){return safe(v||'—').replace(/\n/g,'<br>');}
+function renderAllTabPanels(p){
+  const photoHtml=(p.photos||[]).map((x,i)=>`<div class="photo-tile photo-real"><img src="${safe(x.url||x)}" alt="ภาพผู้ป่วย ${i+1}"><div class="photo-caption">ภาพที่ ${i+1}</div></div>`).join('');
+  e('tab-panel-wrap').innerHTML=`
+  <div class="tab-panel active" id="panel-history"><h3>ประวัติเดิม</h3><div class="kv-grid"><div class="kv"><div class="k">กลุ่มโรค</div><div class="v">${safe(p.group||'—')}</div></div><div class="kv"><div class="k">ประวัติแพ้ยา</div><div class="v">${safe(p.allergy||'—')}</div></div><div class="kv form-span-2"><div class="k">ประวัติเดิม</div><div class="v">${textBlock(p.history)}</div></div></div></div>
+  <div class="tab-panel" id="panel-diagnosis"><h3>Diagnosis</h3><div class="kv-grid"><div class="kv"><div class="k">Diagnosis</div><div class="v">${safe(p.diagnosis||'—')}</div></div><div class="kv"><div class="k">ICD-10</div><div class="v">${safe(p.icd10||'—')}</div></div></div></div>
+  <div class="tab-panel" id="panel-lab"><h3>Lab / ผลตรวจ</h3><div class="visit-note">${textBlock(p.lab)}</div></div>
+  <div class="tab-panel" id="panel-medication"><h3>Medication</h3>${lines(p.medication).map(x=>`<div class="med-row"><div class="med-name">${safe(x)}</div></div>`).join('')||'<div class="empty-state">ยังไม่มีข้อมูล</div>'}</div>
+  <div class="tab-panel" id="panel-homevisit"><h3>Home Visit</h3><div class="visit-note">${textBlock(p.homevisit)}</div></div>
+  <div class="tab-panel" id="panel-inhomesss"><h3>INHOMESSS Assessment</h3><div class="visit-note">${textBlock(p.inhomesss)}</div></div>
+  <div class="tab-panel" id="panel-problems"><h3>Problem List</h3><div class="visit-note">${textBlock(p.problems)}</div></div>
+  <div class="tab-panel" id="panel-careplan"><h3>Care Plan</h3><div class="visit-note">${textBlock(p.care_plan)}</div></div>
+  <div class="tab-panel" id="panel-photos"><h3>รูปภาพที่แนบ</h3><div class="photo-grid">${photoHtml||'<div class="empty-state" style="grid-column:1/-1">ยังไม่มีภาพแนบ</div>'}</div></div>
+  <div class="tab-panel" id="panel-print"><h3>พิมพ์ข้อมูลผู้ป่วย</h3><div id="print-area" class="a4-preview" style="max-width:760px"><h4>ข้อมูลผู้ป่วยเยี่ยมบ้าน</h4><div class="a4-sub">${safe(p.name)} · ${safe(p.hn)}</div>${printRows(p)}${p.photos?.length?`<h4 style="text-align:left;margin-top:20px">ภาพถ่ายที่แนบ</h4><div class="print-photo-grid">${p.photos.map(x=>`<img src="${safe(x.url||x)}">`).join('')}</div>`:''}</div><button class="btn-primary print-btn" style="max-width:220px;margin:0 auto" onclick="window.print()">🖨 พิมพ์ข้อมูลผู้ป่วย</button></div>`;
+}
+function printRows(p){const rows=[['อายุ / เพศ',`${p.age||'—'} ปี / ${p.sex||'—'}`],['กลุ่มโรค',p.group],['Diagnosis',p.diagnosis],['ICD-10',p.icd10],['ประวัติแพ้ยา',p.allergy],['ที่อยู่',p.address],['โทรศัพท์',p.phone],['เยี่ยมล่าสุด',p.lastVisit],['สถานะ',p.status==='urgent'?'เร่งด่วน':p.status==='overdue'?`เกินกำหนด ${p.overdueDays||0} วัน`:'ปกติ'],['เหตุผล/ข้อควรติดตาม',p.reason],['ประวัติเดิม',p.history],['Lab / ผลตรวจ',p.lab],['Medication',p.medication],['Home Visit',p.homevisit],['INHOMESSS',p.inhomesss],['Problems',p.problems],['Care Plan',p.care_plan]];return rows.filter(r=>r[1]).map(r=>`<div class="a4-line"><span>${safe(r[0])}</span><span style="max-width:65%;text-align:right;white-space:pre-wrap">${safe(r[1])}</span></div>`).join('');}
+
+function openPatientForm(p=null){
+  e('patient-form').reset(); e('patient-id').value=p?.id||'';e('patient-form-title').textContent=p?'แก้ไขข้อมูลผู้ป่วย':'เพิ่มผู้ป่วยใหม่';
+  const vals={ 'f-hn':p?.hn,'f-name':p?.name,'f-age':p?.age,'f-sex':p?.sex,'f-group':p?.group,'f-status':p?.status||'ok','f-overdue-days':p?.overdueDays,'f-reason':p?.reason,'f-address':p?.address,'f-phone':p?.phone,'f-diagnosis':p?.diagnosis,'f-icd10':p?.icd10,'f-allergy':p?.allergy,'f-history':p?.history,'f-lab':p?.lab,'f-medication':p?.medication,'f-homevisit':p?.homevisit,'f-inhomesss':p?.inhomesss,'f-problems':p?.problems,'f-careplan':p?.care_plan};
+  Object.entries(vals).forEach(([id,v])=>{if(e(id))e(id).value=v??'';}); if(p?.last_visit)e('f-last-visit').value=p.last_visit; e('patient-form-modal').classList.remove('hidden');
+}
+function closePatientForm(){e('patient-form-modal').classList.add('hidden');}
+async function savePatient(ev){
+  ev.preventDefault();const btn=e('save-patient-btn');btn.disabled=true;btn.textContent='กำลังบันทึก...';
+  try{
+    const id=e('patient-id').value||null;
+    const payload={hn:e('f-hn').value.trim(),name:e('f-name').value.trim(),age:e('f-age').value?Number(e('f-age').value):null,sex:e('f-sex').value,disease_group:e('f-group').value.trim(),status:e('f-status').value,last_visit:e('f-last-visit').value||null,overdue_days:Number(e('f-overdue-days').value||0),reason:e('f-reason').value.trim(),address:e('f-address').value.trim(),phone:e('f-phone').value.trim(),diagnosis:e('f-diagnosis').value.trim(),icd10:e('f-icd10').value.trim(),allergy:e('f-allergy').value.trim(),history:e('f-history').value.trim(),lab:e('f-lab').value.trim(),medication:e('f-medication').value.trim(),homevisit:e('f-homevisit').value.trim(),inhomesss:e('f-inhomesss').value.trim(),problems:e('f-problems').value.trim(),care_plan:e('f-careplan').value.trim()};
+    let row,error;
+    if(id){({data:row,error}=await supabaseClient.from(PATIENTS_TABLE).update(payload).eq('id',id).select().single());}
+    else {({data:row,error}=await supabaseClient.from(PATIENTS_TABLE).insert(payload).select().single());}
+    if(error)throw error;
+    const files=[...e('f-photos').files]; if(files.length){const photoObjects=Array.isArray(row.photos)?row.photos:[];for(const file of files){const clean=file.name.replace(/[^a-zA-Z0-9._-]/g,'_');const path=`${row.id}/${Date.now()}-${clean}`;const up=await supabaseClient.storage.from(PHOTOS_BUCKET).upload(path,file,{upsert:false});if(up.error)throw up.error;photoObjects.push({path,name:file.name});}const u=await supabaseClient.from(PATIENTS_TABLE).update({photos:photoObjects}).eq('id',row.id);if(u.error)throw u.error;}
+    closePatientForm();await loadPatients();if(id||row?.id)openPatient(row.id);else showScreen('list');
+  }catch(err){console.error(err);alert('บันทึกไม่สำเร็จ: '+(err.message||err));}finally{btn.disabled=false;btn.textContent='บันทึกข้อมูล';}
 }
 
-document.getElementById('password').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') doLogin();
-});
-
-renderDashboard();
-renderList();
+function showScreen(name){e('screen-dashboard').classList.toggle('hidden',name!=='dashboard');e('screen-list').classList.toggle('hidden',name!=='list');e('screen-detail').classList.toggle('hidden',name!=='detail');e('nav-dashboard').classList.toggle('active',name==='dashboard');e('nav-list').classList.toggle('active',name==='list'||name==='detail');window.scrollTo({top:0,left:0,behavior:'instant'});}
+function openAdminLogin(){e('admin-login-box').classList.remove('hidden');document.querySelector('.admin-entry').classList.add('hidden');setTimeout(()=>e('email')?.focus(),50);}
+function closeAdminLogin(){e('admin-login-box').classList.add('hidden');document.querySelector('.admin-entry').classList.remove('hidden');e('password').value='';}
+async function loadCurrentProfile(user){const {data:profile,error}=await supabaseClient.from('profiles').select('full_name, role, department, is_active').eq('id',user.id).single();if(error)throw new Error('ไม่สามารถอ่านข้อมูลสิทธิ์ผู้ใช้งานได้: '+error.message);if(!profile||!profile.is_active){await supabaseClient.auth.signOut();throw new Error('บัญชีนี้ถูกปิดใช้งาน');}const name=profile.full_name||user.email||'ผู้ใช้งาน';const roleMap={admin:'ผู้ดูแลระบบ',nurse:'พยาบาล',doctor:'แพทย์',viewer:'ผู้ดูข้อมูล'};document.querySelector('.u-name').textContent=name;document.querySelector('.u-role').textContent=`${roleMap[profile.role]||profile.role||'เจ้าหน้าที่'}${profile.department?' · '+profile.department:''}`;document.querySelector('.user-chip .av').textContent=name.replace(/\s+/g,'').slice(0,2)||'ผู้';}
+async function enterApp(session){if(!session?.user)return;await loadCurrentProfile(session.user);e('view-login').classList.add('hidden');e('view-app').classList.remove('hidden');showScreen('dashboard');await loadPatients();}
+async function doLogin(){const email=e('email').value.trim(),password=e('password').value,btn=document.querySelector('#view-login .btn-primary');if(!email||!password){alert('กรุณากรอกอีเมลและรหัสผ่าน');return;}btn.disabled=true;btn.textContent='กำลังเข้าสู่ระบบ...';try{const {data,error}=await supabaseClient.auth.signInWithPassword({email,password});if(error)throw error;await enterApp(data.session);}catch(err){console.error(err);alert('เข้าสู่ระบบไม่สำเร็จ: '+(err.message||'กรุณาตรวจสอบอีเมลและรหัสผ่าน'));}finally{btn.disabled=false;btn.textContent='เข้าสู่ระบบ';}}
+async function doLogout(){await supabaseClient.auth.signOut();e('view-app').classList.add('hidden');e('view-login').classList.remove('hidden');e('password').value='';window.scrollTo(0,0);}
+async function restoreSession(){try{const {data:{session}}=await supabaseClient.auth.getSession();if(session)await enterApp(session);}catch(err){console.error(err);await supabaseClient.auth.signOut();}}
+e('password').addEventListener('keydown',ev=>{if(ev.key==='Enter')doLogin();});
 restoreSession();
 </script>
 </body>
