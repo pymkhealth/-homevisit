@@ -978,6 +978,17 @@ table.plist tbody td,table.data td{color:#29475A!important;font-weight:500}
   .lab-file-link a{color:#137C8B;text-decoration:none;font-weight:600}
   @media(max-width:650px){.structured-row{grid-template-columns:1fr}.be-date-row{grid-template-columns:.8fr 1.2fr 1fr}}
 
+
+/* ===== v5: dates, age, home-visit period, INHOMESSS problem details ===== */
+.be-date-label{font-size:12px;color:#6f8190;margin-top:6px}
+.patient-period{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.period-pill{font-size:12px;padding:4px 9px;border-radius:999px;background:#f1f7f9;color:#356675;border:1px solid #dce9ed}
+.inhomes-problem{margin-top:8px;padding:10px 12px;background:#fff8f0;border:1px solid #f2dfc6;border-radius:10px}
+.inhomes-problem.hidden{display:none!important}
+.inhomes-problem select,.inhomes-problem input{width:100%;margin-top:6px}
+.inhomes-problem .form-help{margin-top:5px}
+@media(max-width:520px){.be-date-row{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
+
 </style>
 </head>
 <body>
@@ -1101,6 +1112,8 @@ table.plist tbody td,table.data td{color:#29475A!important;font-weight:500}
                 <span id="pd-age"></span>
                 <span id="pd-address">📍 —</span>
                 <span id="pd-phone">📞 —</span>
+                <span id="pd-start">เริ่มเยี่ยมบ้าน —</span>
+                <span id="pd-discharge">จำหน่าย —</span>
               </div>
             </div>
           </div>
@@ -1126,11 +1139,13 @@ table.plist tbody td,table.data td{color:#29475A!important;font-weight:500}
       <div class="form-grid">
         <div class="field"><label>HN *</label><input id="f-hn" required></div>
         <div class="field"><label>ชื่อ-สกุล *</label><input id="f-name" required></div>
-        <div class="field"><label>อายุ</label><input id="f-age" type="number" min="0" max="130"></div>
+        <div class="field"><label>วันเดือนปีเกิด (พ.ศ.) *</label><input id="f-birth-date" type="hidden"><div class="be-date-row"><select id="f-birth-day"></select><select id="f-birth-month"></select><select id="f-birth-year"></select></div><div class="be-date-label">อายุปัจจุบัน: <b id="birth-age-preview">—</b></div></div>
         <div class="field"><label>เพศ</label><select id="f-sex"><option value="">— เลือก —</option><option>ชาย</option><option>หญิง</option><option>อื่นๆ</option></select></div>
         <div class="field form-span-2"><label>กลุ่มโรค * <span class="form-help">เลือกได้มากกว่า 1 รายการ</span></label><input id="f-group" type="hidden"><div id="group-options" class="option-box"></div><div class="lab-tools"><input id="f-group-other" placeholder="กลุ่มโรคอื่น ๆ" style="max-width:320px"><button type="button" class="btn-ghost" onclick="addOtherOption('group')">เพิ่ม</button></div></div>
         <div class="field"><label>สถานะ</label><select id="f-status"><option value="ok">ปกติ</option><option value="urgent">เร่งด่วน</option><option value="overdue">เกินกำหนดเยี่ยม</option></select></div>
         <div class="field"><label>วันที่เยี่ยมล่าสุด (พ.ศ.)</label><input id="f-last-visit" type="hidden"><div class="be-date-row"><select id="f-last-day"></select><select id="f-last-month"></select><select id="f-last-year"></select></div></div>
+        <div class="field"><label>วันที่เริ่มส่งเยี่ยมบ้าน (พ.ศ.)</label><input id="f-start-date" type="hidden"><div class="be-date-row"><select id="f-start-day"></select><select id="f-start-month"></select><select id="f-start-year"></select></div></div>
+        <div class="field"><label>วันที่จำหน่ายจากผู้ป่วยเยี่ยมบ้าน (พ.ศ.)</label><input id="f-discharge-date" type="hidden"><div class="be-date-row"><select id="f-discharge-day"></select><select id="f-discharge-month"></select><select id="f-discharge-year"></select></div><div class="form-help">เว้นว่างได้ หากยังอยู่ในระบบเยี่ยมบ้าน</div></div>
         <div class="field"><label>จำนวนวันเกินกำหนด</label><input id="f-overdue-days" type="number" min="0"></div>
         <div class="field form-span-2"><label>เหตุผล/ข้อควรติดตาม <span class="form-help">เลือกได้หลายข้อ</span></label><input id="f-reason" type="hidden"><div id="reason-options" class="option-box"></div><div class="lab-tools"><input id="f-reason-other" placeholder="เหตุผลอื่น ๆ" style="max-width:420px"><button type="button" class="btn-ghost" onclick="addOtherOption('reason')">เพิ่ม</button></div></div>
         <div class="field form-span-2"><label>ที่อยู่</label><textarea id="f-address" rows="2"></textarea></div>
@@ -1185,10 +1200,37 @@ const REASON_OPTIONS=['ขาดนัด/ไม่มาตามนัด','�
 const INHOMESSS_ITEMS=[
  ['I','Immobility / การเคลื่อนไหว'],['N','Nutrition / โภชนาการ'],['H','Housing / ที่อยู่อาศัย'],['O','Other people / ผู้ดูแลและครอบครัว'],['M','Medications / การใช้ยา'],['E','Examination / การตรวจร่างกาย'],['S1','Safety / ความปลอดภัย'],['S2','Spiritual health / จิตใจและจิตวิญญาณ'],['S3','Services / การเข้าถึงบริการ']
 ];
+const INHOMESSS_PROBLEMS={
+ I:['เดินลำบาก/เคลื่อนไหวจำกัด','ช่วยเหลือตนเองได้น้อย','ติดบ้าน','ติดเตียง','เสี่ยงแผลกดทับ','ต้องใช้อุปกรณ์ช่วย'],
+ N:['รับประทานอาหารได้น้อย','น้ำหนักลด','กลืนลำบาก','เสี่ยงขาดสารอาหาร','อาหารไม่เหมาะกับโรค','ขาดผู้เตรียมอาหาร'],
+ H:['บ้านไม่เหมาะสมต่อการดูแล','ห้องน้ำ/พื้นเสี่ยงหกล้ม','ทางเข้าออกไม่สะดวก','แสงสว่างไม่เพียงพอ','สุขาภิบาล/ความสะอาดไม่เหมาะสม'],
+ O:['ไม่มีผู้ดูแลหลัก','ผู้ดูแลมีภาระสูง','ขาดความรู้ในการดูแล','ความสัมพันธ์ในครอบครัวมีปัญหา','อยู่ลำพัง','ขาดการสนับสนุนทางสังคม'],
+ M:['รับประทานยาไม่ถูกต้อง','ลืมยา/ขาดยา','หยุดยาเอง','ยาซ้ำซ้อน','สงสัยอาการไม่พึงประสงค์จากยา','เก็บยาไม่เหมาะสม'],
+ E:['อาการ/สัญญาณชีพผิดปกติ','แผล/ผิวหนังผิดปกติ','บวม','ปวด','หอบเหนื่อย','ควบคุมโรคไม่ได้'],
+ S1:['เสี่ยงหกล้ม','เสี่ยงอุบัติเหตุในบ้าน','เสี่ยงไฟไหม้/ไฟฟ้า','อุปกรณ์ช่วยเหลือไม่ปลอดภัย','เสี่ยงการใช้ยา/สารเคมี'],
+ S2:['วิตกกังวล','อารมณ์เศร้า/ซึมเศร้า','เครียด','นอนไม่หลับ','รู้สึกโดดเดี่ยว','ต้องการการสนับสนุนด้านจิตใจ/จิตวิญญาณ'],
+ S3:['เข้าถึงบริการยาก','ขาดนัด','ปัญหาการเดินทาง','ปัญหาสิทธิการรักษา','ขาดอุปกรณ์/เวชภัณฑ์','ต้องประสานหน่วยบริการอื่น']
+};
 function renderChoiceGroups(){
   e('group-options').innerHTML=GROUP_OPTIONS.map(x=>`<label class="option-chip"><input type="checkbox" value="${safe(x)}" onchange="syncChoices('group')"> ${safe(x)}</label>`).join('');
   e('reason-options').innerHTML=REASON_OPTIONS.map(x=>`<label class="option-chip"><input type="checkbox" value="${safe(x)}" onchange="syncChoices('reason')"> ${safe(x)}</label>`).join('');
-  e('inhomesss-structured').innerHTML=INHOMESSS_ITEMS.map(([k,label])=>`<div class="structured-row"><label>${k} · ${safe(label)}</label><select data-inhomes-key="${k}" onchange="syncInhomesss()"><option value="">— เลือก —</option><option>ปกติ/ไม่มีปัญหา</option><option>ควรติดตาม</option><option>มีปัญหา</option><option>ไม่สามารถประเมินได้</option></select></div>`).join('')+`<div class="structured-row"><label>หมายเหตุเพิ่มเติม</label><textarea id="inh-note" rows="3" oninput="syncInhomesss()"></textarea></div>`;
+  e('inhomesss-structured').innerHTML=INHOMESSS_ITEMS.map(([k,label])=>{
+    const opts=(INHOMESSS_PROBLEMS[k]||[]).map(x=>`<option value="${safe(x)}">${safe(x)}</option>`).join('');
+    return `<div class="structured-row"><label>${k} · ${safe(label)}</label>
+      <select data-inhomes-key="${k}" onchange="toggleInhomesProblem('${k}');syncInhomesss()">
+        <option value="">— เลือก —</option><option>ปกติ/ไม่มีปัญหา</option><option>ควรติดตาม</option><option>มีปัญหา</option><option>ไม่สามารถประเมินได้</option>
+      </select>
+      <div id="inh-problem-${k}" class="inhomes-problem hidden">
+        <label>ปัญหาที่พบ</label>
+        <select data-inhomes-problem="${k}" onchange="syncInhomesss()"><option value="">— เลือกปัญหา —</option>${opts}<option value="อื่น ๆ">อื่น ๆ</option></select>
+        <input data-inhomes-extra="${k}" placeholder="ระบุเพิ่มเติมได้" oninput="syncInhomesss()">
+      </div>
+    </div>`;
+  }).join('')+`<div class="structured-row"><label>หมายเหตุเพิ่มเติม</label><textarea id="inh-note" rows="3" oninput="syncInhomesss()" placeholder="บันทึกภาพรวมเพิ่มเติม"></textarea></div>`;
+}
+function toggleInhomesProblem(k){
+  const status=document.querySelector(`[data-inhomes-key="${k}"]`)?.value||'';
+  e('inh-problem-'+k)?.classList.toggle('hidden',!(status==='มีปัญหา'||status==='ควรติดตาม'));
 }
 function syncChoices(kind){
  const box=e(kind+'-options'); const vals=[...box.querySelectorAll('input:checked')].map(x=>x.value); e('f-'+kind).value=vals.join('\n');
@@ -1201,18 +1243,75 @@ function setChoiceValues(kind,value){
  syncChoices(kind);
 }
 function addOtherOption(kind){const inp=e('f-'+kind+'-other');const v=inp.value.trim();if(!v)return;const box=e(kind+'-options');if([...box.querySelectorAll('input')].some(x=>x.value===v)){inp.value='';return;}const lab=document.createElement('label');lab.className='option-chip';lab.innerHTML=`<input type="checkbox" checked value="${safe(v)}" onchange="syncChoices('${kind}')"> ${safe(v)}`;box.appendChild(lab);inp.value='';syncChoices(kind);}
-function initBuddhistDateSelects(){
- const d=e('f-last-day'),m=e('f-last-month'),y=e('f-last-year');
+
+const THAI_MONTHS=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+function initBEDate(prefix,yearsBack=20,yearsForward=5){
+ const d=e(`f-${prefix}-day`),m=e(`f-${prefix}-month`),y=e(`f-${prefix}-year`); if(!d||!m||!y)return;
  d.innerHTML='<option value="">วัน</option>'+Array.from({length:31},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join('');
- const months=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];m.innerHTML='<option value="">เดือน</option>'+months.map((x,i)=>`<option value="${i+1}">${x}</option>`).join('');
- const nowBE=new Date().getFullYear()+543;y.innerHTML='<option value="">พ.ศ.</option>'+Array.from({length:21},(_,i)=>nowBE+5-i).map(x=>`<option value="${x}">${x}</option>`).join('');
+ m.innerHTML='<option value="">เดือน</option>'+THAI_MONTHS.map((x,i)=>`<option value="${i+1}">${x}</option>`).join('');
+ const nowBE=new Date().getFullYear()+543;
+ y.innerHTML='<option value="">พ.ศ.</option>'+Array.from({length:yearsBack+yearsForward+1},(_,i)=>nowBE+yearsForward-i).map(x=>`<option value="${x}">${x}</option>`).join('');
 }
-function setBuddhistDate(iso){if(!iso){e('f-last-day').value='';e('f-last-month').value='';e('f-last-year').value='';return;}const [yy,mm,dd]=iso.split('-').map(Number);e('f-last-day').value=dd||'';e('f-last-month').value=mm||'';e('f-last-year').value=yy?yy+543:'';}
-function getISOFromBuddhistDate(){const d=Number(e('f-last-day').value),m=Number(e('f-last-month').value),be=Number(e('f-last-year').value);if(!d&&!m&&!be)return null;if(!d||!m||!be)throw new Error('กรุณาเลือกวันที่เยี่ยมล่าสุดให้ครบ วัน เดือน และ พ.ศ.');const ce=be-543;const dt=new Date(ce,m-1,d);if(dt.getFullYear()!==ce||dt.getMonth()!==m-1||dt.getDate()!==d)throw new Error('วันที่เยี่ยมล่าสุดไม่ถูกต้อง');return `${ce}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;}
+function initBuddhistDateSelects(){
+ initBEDate('last',30,2); initBEDate('start',30,2); initBEDate('discharge',30,2); initBEDate('birth',130,0);
+ ['f-birth-day','f-birth-month','f-birth-year'].forEach(id=>e(id)?.addEventListener('change',updateBirthAgePreview));
+}
+function setBEDate(prefix,iso){
+ const d=e(`f-${prefix}-day`),m=e(`f-${prefix}-month`),y=e(`f-${prefix}-year`); if(!d||!m||!y)return;
+ if(!iso){d.value='';m.value='';y.value='';return;}
+ const [yy,mm,dd]=String(iso).split('-').map(Number);d.value=dd||'';m.value=mm||'';y.value=yy?yy+543:'';
+}
+function getISOFromBEDate(prefix,label,required=false){
+ const d=Number(e(`f-${prefix}-day`)?.value),m=Number(e(`f-${prefix}-month`)?.value),be=Number(e(`f-${prefix}-year`)?.value);
+ if(!d&&!m&&!be){if(required)throw new Error(`กรุณาระบุ${label}`);return null;}
+ if(!d||!m||!be)throw new Error(`กรุณาเลือก${label}ให้ครบ วัน เดือน และ พ.ศ.`);
+ const ce=be-543,dt=new Date(ce,m-1,d);
+ if(dt.getFullYear()!==ce||dt.getMonth()!==m-1||dt.getDate()!==d)throw new Error(`${label}ไม่ถูกต้อง`);
+ return `${ce}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+}
+function setBuddhistDate(iso){setBEDate('last',iso);}
+function getISOFromBuddhistDate(){return getISOFromBEDate('last','วันที่เยี่ยมล่าสุด');}
+function calculateAge(birthIso,asOf=new Date()){
+ if(!birthIso)return null;const [y,m,d]=String(birthIso).split('-').map(Number);if(!y||!m||!d)return null;
+ let age=asOf.getFullYear()-y;const md=asOf.getMonth()+1-m;if(md<0||(md===0&&asOf.getDate()<d))age--;return age>=0?age:null;
+}
+function updateBirthAgePreview(){
+ try{const iso=getISOFromBEDate('birth','วันเดือนปีเกิด');e('f-birth-date').value=iso||'';const age=calculateAge(iso);e('birth-age-preview').textContent=age==null?'—':`${age} ปี`;}
+ catch(_){e('birth-age-preview').textContent='วันที่ไม่ถูกต้อง';}
+}
 function syncHomeVisit(){const a=e('hv-type').value,b=e('hv-result').value,c=e('hv-note').value.trim();e('f-homevisit').value=[a&&`ประเภทการเยี่ยม: ${a}`,b&&`ผลการเยี่ยม: ${b}`,c&&`บันทึกเพิ่มเติม: ${c}`].filter(Boolean).join('\n');}
 function setHomeVisit(v){let type='',result='',note='';for(const line of lines(v)){if(line.startsWith('ประเภทการเยี่ยม:'))type=line.split(':').slice(1).join(':').trim();else if(line.startsWith('ผลการเยี่ยม:'))result=line.split(':').slice(1).join(':').trim();else if(line.startsWith('บันทึกเพิ่มเติม:'))note=line.split(':').slice(1).join(':').trim();else note+=(note?'\n':'')+line;}e('hv-type').value=type;e('hv-result').value=result;e('hv-note').value=note;syncHomeVisit();}
-function syncInhomesss(){const rows=[...document.querySelectorAll('[data-inhomes-key]')].map(x=>x.value?`${x.dataset.inhomesKey}: ${x.value}`:'').filter(Boolean);const note=e('inh-note')?.value.trim();if(note)rows.push(`หมายเหตุ: ${note}`);e('f-inhomesss').value=rows.join('\n');}
-function setInhomesss(v){const map={};let note='';for(const line of lines(v)){const m=line.match(/^(I|N|H|O|M|E|S1|S2|S3):\s*(.*)$/);if(m)map[m[1]]=m[2];else if(line.startsWith('หมายเหตุ:'))note=line.slice(8).trim();}document.querySelectorAll('[data-inhomes-key]').forEach(x=>x.value=map[x.dataset.inhomesKey]||'');if(e('inh-note'))e('inh-note').value=note;syncInhomesss();}
+function syncInhomesss(){
+ const rows=[];
+ document.querySelectorAll('[data-inhomes-key]').forEach(x=>{
+   const k=x.dataset.inhomesKey,status=x.value;if(!status)return;
+   const problem=document.querySelector(`[data-inhomes-problem="${k}"]`)?.value||'';
+   const extra=document.querySelector(`[data-inhomes-extra="${k}"]`)?.value.trim()||'';
+   let line=`${k}: ${status}`;
+   if((status==='มีปัญหา'||status==='ควรติดตาม')&&problem)line+=` | ปัญหา: ${problem}`;
+   if((status==='มีปัญหา'||status==='ควรติดตาม')&&extra)line+=` | เพิ่มเติม: ${extra}`;
+   rows.push(line);
+ });
+ const note=e('inh-note')?.value.trim();if(note)rows.push(`หมายเหตุ: ${note}`);e('f-inhomesss').value=rows.join('\n');
+}
+function setInhomesss(v){
+ const map={};let note='';
+ for(const line of lines(v)){
+   const m=line.match(/^(I|N|H|O|M|E|S1|S2|S3):\s*([^|]*)(?:\|\s*ปัญหา:\s*([^|]*))?(?:\|\s*เพิ่มเติม:\s*(.*))?$/);
+   if(m)map[m[1]]={status:(m[2]||'').trim(),problem:(m[3]||'').trim(),extra:(m[4]||'').trim()};
+   else if(line.startsWith('หมายเหตุ:'))note=line.slice('หมายเหตุ:'.length).trim();
+ }
+ document.querySelectorAll('[data-inhomes-key]').forEach(x=>{
+   const k=x.dataset.inhomesKey,info=map[k]||{};x.value=info.status||'';toggleInhomesProblem(k);
+   const ps=document.querySelector(`[data-inhomes-problem="${k}"]`),ex=document.querySelector(`[data-inhomes-extra="${k}"]`);
+   if(ps){
+     const known=[...ps.options].some(o=>o.value===info.problem);
+     ps.value=known?(info.problem||''):(info.problem?'อื่น ๆ':'');
+   }
+   if(ex)ex.value=info.extra||(!ps?.value&&info.problem?info.problem:'');
+ });
+ if(e('inh-note'))e('inh-note').value=note;syncInhomesss();
+}
 ['hv-type','hv-result'].forEach(id=>document.addEventListener('change',ev=>{if(ev.target?.id===id)syncHomeVisit();}));
 document.addEventListener('input',ev=>{if(ev.target?.id==='hv-note')syncHomeVisit();});
 
@@ -1256,7 +1355,7 @@ async function loadPatients(){
   renderDashboard(); renderList();
 }
 function normalizePatient(p){
-  return {...p,id:p.id,hn:p.hn||'',name:p.name||'',age:p.age??'',sex:p.sex||'',group:p.disease_group||'',lastVisit:thaiDate(p.last_visit),status:p.status||'ok',overdueDays:p.overdue_days||0,reason:p.reason||'',address:p.address||'',phone:p.phone||'',photos:Array.isArray(p.photos)?p.photos:[],labFiles:Array.isArray(p.lab_files)?p.lab_files:[]};
+  return {...p,id:p.id,hn:p.hn||'',name:p.name||'',birthDate:p.birth_date||'',age:calculateAge(p.birth_date),sex:p.sex||'',group:p.disease_group||'',lastVisit:thaiDate(p.last_visit),startVisitDate:p.home_visit_start_date||'',startVisit:thaiDate(p.home_visit_start_date),dischargeDate:p.home_visit_discharge_date||'',dischargeVisit:thaiDate(p.home_visit_discharge_date),status:p.status||'ok',overdueDays:p.overdue_days||0,reason:p.reason||'',address:p.address||'',phone:p.phone||'',photos:Array.isArray(p.photos)?p.photos:[],labFiles:Array.isArray(p.lab_files)?p.lab_files:[]};
 }
 async function hydratePhotoUrls(){
   for(const p of patients){
@@ -1301,7 +1400,7 @@ function renderList(){
   const q=(e('patient-search')?.value||'').trim().toLowerCase();
   let arr=patients.filter(p=>!q||[p.name,p.hn,p.group,p.phone].some(v=>String(v||'').toLowerCase().includes(q)));
   if(activePatientFilter==='overdue') arr=arr.filter(p=>p.status==='overdue');
-  e('patient-table-body').innerHTML=arr.length?arr.map(p=>`<tr onclick="openPatient('${p.id}')"><td class="hn">${safe(p.hn)}</td><td><div class="p-name">${safe(p.name)}</div><div class="p-sub">${safe(p.age||'—')} ปี · ${safe(p.sex||'—')}</div></td><td>${safe(p.group||'—')}</td><td>${safe(p.lastVisit)}</td><td>${statusBadge(p)}</td><td class="chevron">›</td></tr>`).join(''):'<tr><td colspan="6"><div class="empty-state">ไม่พบข้อมูลผู้ป่วย</div></td></tr>';
+  e('patient-table-body').innerHTML=arr.length?arr.map(p=>`<tr onclick="openPatient('${p.id}')"><td class="hn">${safe(p.hn)}</td><td><div class="p-name">${safe(p.name)}</div><div class="p-sub">${p.age==null?'—':safe(p.age)+' ปี'} · ${safe(p.sex||'—')}</div></td><td>${safe(p.group||'—')}</td><td>${safe(p.lastVisit)}</td><td>${statusBadge(p)}</td><td class="chevron">›</td></tr>`).join(''):'<tr><td colspan="6"><div class="empty-state">ไม่พบข้อมูลผู้ป่วย</div></td></tr>';
   document.querySelector('#screen-list .topline .sub').textContent=`ทั้งหมด ${patients.length} ราย ในความดูแล`;
 }
 
@@ -1316,7 +1415,7 @@ function closeDiseaseModal(){e('disease-modal').classList.add('hidden');}
 const tabs=[['history','ประวัติเดิม'],['diagnosis','Diagnosis'],['lab','Lab'],['medication','Medication'],['homevisit','Home Visit'],['inhomesss','INHOMESSS'],['problems','Problems'],['careplan','Care Plan'],['photos','รูปภาพ'],['print','Print A4']];
 function openPatient(id){
   currentPatient=patients.find(p=>String(p.id)===String(id)); if(!currentPatient)return; const p=currentPatient;
-  e('pd-initials').textContent=(p.name||'ผู้ป่วย').replace(/\s/g,'').slice(0,2);e('pd-name').textContent=p.name;e('pd-hn').textContent=p.hn;e('pd-age').textContent=`${p.age||'—'} ปี · ${p.sex||'—'}`;e('pd-address').textContent=`📍 ${p.address||'—'}`;e('pd-phone').textContent=`📞 ${p.phone||'—'}`;
+  e('pd-initials').textContent=(p.name||'ผู้ป่วย').replace(/\s/g,'').slice(0,2);e('pd-name').textContent=p.name;e('pd-hn').textContent=p.hn;e('pd-age').textContent=`${p.age==null?'—':p.age+' ปี'} · ${p.sex||'—'} · เกิด ${p.birthDate?thaiDate(p.birthDate):'—'}`;e('pd-address').textContent=`📍 ${p.address||'—'}`;e('pd-phone').textContent=`📞 ${p.phone||'—'}`;e('pd-start').textContent=`เริ่มเยี่ยมบ้าน ${p.startVisit||'—'}`;e('pd-discharge').textContent=p.dischargeDate?`จำหน่าย ${p.dischargeVisit}`:'ยังอยู่ในระบบเยี่ยมบ้าน';
   const b=e('pd-badge');b.className='badge '+(p.status==='urgent'?'urgent':p.status==='overdue'?'overdue':'ok');b.textContent=p.status==='urgent'?'เร่งด่วน':p.status==='overdue'?`เกินกำหนด ${p.overdueDays||0} วัน`:'ปกติ';
   if(!document.getElementById('edit-patient-btn')){const btn=document.createElement('button');btn.id='edit-patient-btn';btn.className='btn-ghost detail-edit-btn';btn.textContent='แก้ไขข้อมูล';btn.onclick=()=>openPatientForm(currentPatient);e('pd-actions').insertBefore(btn,e('pd-actions').lastElementChild);}
   e('tab-strip').innerHTML=tabs.map((t,i)=>`<button class="tab-btn ${i===0?'active':''}" data-tab="${t[0]}" onclick="showTab('${t[0]}')">${t[1]}</button>`).join('');
@@ -1327,7 +1426,7 @@ function textBlock(v){return safe(v||'—').replace(/\n/g,'<br>');}
 function renderAllTabPanels(p){
   const photoHtml=(p.photos||[]).map((x,i)=>`<div class="photo-tile photo-real"><img src="${safe(x.url||x)}" alt="ภาพผู้ป่วย ${i+1}"><div class="photo-caption">ภาพที่ ${i+1}</div></div>`).join('');
   e('tab-panel-wrap').innerHTML=`
-  <div class="tab-panel active" id="panel-history"><h3>ประวัติเดิม</h3><div class="kv-grid"><div class="kv"><div class="k">กลุ่มโรค</div><div class="v">${safe(p.group||'—')}</div></div><div class="kv"><div class="k">ประวัติแพ้ยา</div><div class="v">${safe(p.allergy||'—')}</div></div><div class="kv form-span-2"><div class="k">ประวัติเดิม</div><div class="v">${textBlock(p.history)}</div></div></div></div>
+  <div class="tab-panel active" id="panel-history"><h3>ประวัติเดิม</h3><div class="kv-grid"><div class="kv"><div class="k">วันเดือนปีเกิด / อายุปัจจุบัน</div><div class="v">${p.birthDate?safe(thaiDate(p.birthDate)):'—'} · ${p.age==null?'—':safe(p.age)+' ปี'}</div></div><div class="kv"><div class="k">กลุ่มโรค</div><div class="v">${safe(p.group||'—')}</div></div><div class="kv"><div class="k">วันที่เริ่มส่งเยี่ยมบ้าน</div><div class="v">${safe(p.startVisit||'—')}</div></div><div class="kv"><div class="k">วันที่จำหน่ายจากผู้ป่วยเยี่ยมบ้าน</div><div class="v">${safe(p.dischargeVisit||'—')}</div></div><div class="kv"><div class="k">ประวัติแพ้ยา</div><div class="v">${safe(p.allergy||'—')}</div></div><div class="kv form-span-2"><div class="k">ประวัติเดิม</div><div class="v">${textBlock(p.history)}</div></div></div></div>
   <div class="tab-panel" id="panel-diagnosis"><h3>Diagnosis</h3><div class="kv-grid"><div class="kv"><div class="k">Diagnosis</div><div class="v">${safe(p.diagnosis||'—')}</div></div><div class="kv"><div class="k">ICD-10</div><div class="v">${safe(p.icd10||'—')}</div></div></div></div>
   <div class="tab-panel" id="panel-lab"><h3>Lab / ผลตรวจ</h3><div class="visit-note" style="white-space:pre-wrap">${textBlock(p.lab)}</div>${p.labFiles?.length?`<h3 style="margin-top:24px">ไฟล์ Lab ที่แนบ</h3>${p.labFiles.map((f,i)=>`<div class="lab-file-link"><span>${safe(f.name||('ไฟล์ '+(i+1)))}</span><a href="${safe(f.url)}" target="_blank" rel="noopener">เปิดไฟล์</a></div>`).join('')}`:''}</div>
   <div class="tab-panel" id="panel-medication"><h3>Medication</h3>${lines(p.medication).map(x=>`<div class="med-row"><div class="med-name">${safe(x)}</div></div>`).join('')||'<div class="empty-state">ยังไม่มีข้อมูล</div>'}</div>
@@ -1338,39 +1437,92 @@ function renderAllTabPanels(p){
   <div class="tab-panel" id="panel-photos"><h3>รูปภาพที่แนบ</h3><div class="photo-grid">${photoHtml||'<div class="empty-state" style="grid-column:1/-1">ยังไม่มีภาพแนบ</div>'}</div></div>
   <div class="tab-panel" id="panel-print"><h3>พิมพ์ข้อมูลผู้ป่วย</h3><div id="print-area" class="a4-preview" style="max-width:760px"><h4>ข้อมูลผู้ป่วยเยี่ยมบ้าน</h4><div class="a4-sub">${safe(p.name)} · ${safe(p.hn)}</div>${printRows(p)}${p.photos?.length?`<h4 style="text-align:left;margin-top:20px">ภาพถ่ายที่แนบ</h4><div class="print-photo-grid">${p.photos.map(x=>`<img src="${safe(x.url||x)}">`).join('')}</div>`:''}</div><button class="btn-primary print-btn" style="max-width:220px;margin:0 auto" onclick="window.print()">🖨 พิมพ์ข้อมูลผู้ป่วย</button></div>`;
 }
-function printRows(p){const rows=[['อายุ / เพศ',`${p.age||'—'} ปี / ${p.sex||'—'}`],['กลุ่มโรค',p.group],['Diagnosis',p.diagnosis],['ICD-10',p.icd10],['ประวัติแพ้ยา',p.allergy],['ที่อยู่',p.address],['โทรศัพท์',p.phone],['เยี่ยมล่าสุด',p.lastVisit],['สถานะ',p.status==='urgent'?'เร่งด่วน':p.status==='overdue'?`เกินกำหนด ${p.overdueDays||0} วัน`:'ปกติ'],['เหตุผล/ข้อควรติดตาม',p.reason],['ประวัติเดิม',p.history],['Lab / ผลตรวจ',p.lab],['Medication',p.medication],['Home Visit',p.homevisit],['INHOMESSS',p.inhomesss],['Problems',p.problems],['Care Plan',p.care_plan]];return rows.filter(r=>r[1]).map(r=>`<div class="a4-line"><span>${safe(r[0])}</span><span style="max-width:65%;text-align:right;white-space:pre-wrap">${safe(r[1])}</span></div>`).join('');}
+function printRows(p){const rows=[['วันเดือนปีเกิด',p.birthDate?thaiDate(p.birthDate):''],['อายุ / เพศ',`${p.age==null?'—':p.age+' ปี'} / ${p.sex||'—'}`],['วันที่เริ่มส่งเยี่ยมบ้าน',p.startVisit],['วันที่จำหน่ายจากผู้ป่วยเยี่ยมบ้าน',p.dischargeVisit],['กลุ่มโรค',p.group],['Diagnosis',p.diagnosis],['ICD-10',p.icd10],['ประวัติแพ้ยา',p.allergy],['ที่อยู่',p.address],['โทรศัพท์',p.phone],['เยี่ยมล่าสุด',p.lastVisit],['สถานะ',p.status==='urgent'?'เร่งด่วน':p.status==='overdue'?`เกินกำหนด ${p.overdueDays||0} วัน`:'ปกติ'],['เหตุผล/ข้อควรติดตาม',p.reason],['ประวัติเดิม',p.history],['Lab / ผลตรวจ',p.lab],['Medication',p.medication],['Home Visit',p.homevisit],['INHOMESSS',p.inhomesss],['Problems',p.problems],['Care Plan',p.care_plan]];return rows.filter(r=>r[1]&&r[1]!=='—').map(r=>`<div class="a4-line"><span>${safe(r[0])}</span><span style="max-width:65%;text-align:right;white-space:pre-wrap">${safe(r[1])}</span></div>`).join('');}
 
 function openPatientForm(p=null){
   e('patient-form').reset(); e('patient-id').value=p?.id||'';e('patient-form-title').textContent=p?'แก้ไขข้อมูลผู้ป่วย':'เพิ่มผู้ป่วยใหม่';
-  const vals={ 'f-hn':p?.hn,'f-name':p?.name,'f-age':p?.age,'f-sex':p?.sex,'f-status':p?.status||'ok','f-overdue-days':p?.overdueDays,'f-address':p?.address,'f-phone':p?.phone,'f-diagnosis':p?.diagnosis,'f-icd10':p?.icd10,'f-allergy':p?.allergy,'f-history':p?.history,'f-lab':p?.lab,'f-medication':p?.medication,'f-problems':p?.problems,'f-careplan':p?.care_plan};
+  const vals={ 'f-hn':p?.hn,'f-name':p?.name,'f-sex':p?.sex,'f-status':p?.status||'ok','f-overdue-days':p?.overdueDays,'f-address':p?.address,'f-phone':p?.phone,'f-diagnosis':p?.diagnosis,'f-icd10':p?.icd10,'f-allergy':p?.allergy,'f-history':p?.history,'f-lab':p?.lab,'f-medication':p?.medication,'f-problems':p?.problems,'f-careplan':p?.care_plan};
   Object.entries(vals).forEach(([id,v])=>{if(e(id))e(id).value=v??'';});
-  renderChoiceGroups();setChoiceValues('group',p?.group||'');setChoiceValues('reason',p?.reason||'');setBuddhistDate(p?.last_visit||'');setHomeVisit(p?.homevisit||'');setInhomesss(p?.inhomesss||'');e('lab-ocr-status').textContent='';
+  renderChoiceGroups();setChoiceValues('group',p?.group||'');setChoiceValues('reason',p?.reason||'');setBEDate('birth',p?.birth_date||p?.birthDate||'');updateBirthAgePreview();setBuddhistDate(p?.last_visit||'');setBEDate('start',p?.home_visit_start_date||p?.startVisitDate||'');setBEDate('discharge',p?.home_visit_discharge_date||p?.dischargeDate||'');setHomeVisit(p?.homevisit||'');setInhomesss(p?.inhomesss||'');e('lab-ocr-status').textContent='';
   e('patient-form-modal').classList.remove('hidden');
 }
 function closePatientForm(){e('patient-form-modal').classList.add('hidden');}
 async function savePatient(ev){
   ev.preventDefault();const btn=e('save-patient-btn');btn.disabled=true;btn.textContent='กำลังบันทึก...';
   try{
+    const {data:{session}}=await supabaseClient.auth.getSession();
+    if(!session?.user)throw new Error('เซสชันเข้าสู่ระบบหมดอายุ กรุณาออกจากระบบแล้วเข้าสู่ระบบใหม่');
+
     const id=e('patient-id').value||null;
     syncChoices('group');syncChoices('reason');syncHomeVisit();syncInhomesss();
     if(!e('f-group').value.trim())throw new Error('กรุณาเลือกกลุ่มโรคอย่างน้อย 1 รายการ');
-    const payload={hn:e('f-hn').value.trim(),name:e('f-name').value.trim(),age:e('f-age').value?Number(e('f-age').value):null,sex:e('f-sex').value,disease_group:e('f-group').value.trim(),status:e('f-status').value,last_visit:getISOFromBuddhistDate(),overdue_days:Number(e('f-overdue-days').value||0),reason:e('f-reason').value.trim(),address:e('f-address').value.trim(),phone:e('f-phone').value.trim(),diagnosis:e('f-diagnosis').value.trim(),icd10:e('f-icd10').value.trim(),allergy:e('f-allergy').value.trim(),history:e('f-history').value.trim(),lab:e('f-lab').value.trim(),medication:e('f-medication').value.trim(),homevisit:e('f-homevisit').value.trim(),inhomesss:e('f-inhomesss').value.trim(),problems:e('f-problems').value.trim(),care_plan:e('f-careplan').value.trim()};
+
+    const birthDate=getISOFromBEDate('birth','วันเดือนปีเกิด',true);
+    if(new Date(birthDate+'T00:00:00')>new Date())throw new Error('วันเดือนปีเกิดต้องไม่เป็นวันที่ในอนาคต');
+    const startDate=getISOFromBEDate('start','วันที่เริ่มส่งเยี่ยมบ้าน');
+    const dischargeDate=getISOFromBEDate('discharge','วันที่จำหน่ายจากผู้ป่วยเยี่ยมบ้าน');
+    if(startDate&&dischargeDate&&dischargeDate<startDate)throw new Error('วันที่จำหน่ายต้องไม่ก่อนวันที่เริ่มส่งเยี่ยมบ้าน');
+
+    const payload={
+      hn:e('f-hn').value.trim(),name:e('f-name').value.trim(),birth_date:birthDate,sex:e('f-sex').value,
+      disease_group:e('f-group').value.trim(),status:e('f-status').value,last_visit:getISOFromBuddhistDate(),
+      home_visit_start_date:startDate,home_visit_discharge_date:dischargeDate,
+      overdue_days:Number(e('f-overdue-days').value||0),reason:e('f-reason').value.trim(),
+      address:e('f-address').value.trim(),phone:e('f-phone').value.trim(),diagnosis:e('f-diagnosis').value.trim(),
+      icd10:e('f-icd10').value.trim(),allergy:e('f-allergy').value.trim(),history:e('f-history').value.trim(),
+      lab:e('f-lab').value.trim(),medication:e('f-medication').value.trim(),homevisit:e('f-homevisit').value.trim(),
+      inhomesss:e('f-inhomesss').value.trim(),problems:e('f-problems').value.trim(),care_plan:e('f-careplan').value.trim()
+    };
+
     let row,error;
     if(id){({data:row,error}=await supabaseClient.from(PATIENTS_TABLE).update(payload).eq('id',id).select().single());}
     else {({data:row,error}=await supabaseClient.from(PATIENTS_TABLE).insert(payload).select().single());}
     if(error)throw error;
-    const files=[...e('f-photos').files]; if(files.length){const photoObjects=Array.isArray(row.photos)?row.photos:[];for(const file of files){const clean=file.name.replace(/[^a-zA-Z0-9._-]/g,'_');const path=`${row.id}/${Date.now()}-${clean}`;const up=await supabaseClient.storage.from(PHOTOS_BUCKET).upload(path,file,{upsert:false});if(up.error)throw up.error;photoObjects.push({path,name:file.name});}const u=await supabaseClient.from(PATIENTS_TABLE).update({photos:photoObjects}).eq('id',row.id);if(u.error)throw u.error;}
-    const labFiles=[...e('f-lab-files').files]; if(labFiles.length){const labObjects=Array.isArray(row.lab_files)?row.lab_files:[];for(const file of labFiles){const clean=file.name.replace(/[^a-zA-Z0-9._-]/g,'_');const path=`${row.id}/${Date.now()}-${clean}`;const up=await supabaseClient.storage.from(LAB_BUCKET).upload(path,file,{upsert:false,contentType:file.type||undefined});if(up.error)throw up.error;labObjects.push({path,name:file.name,type:file.type||''});}const u=await supabaseClient.from(PATIENTS_TABLE).update({lab_files:labObjects}).eq('id',row.id);if(u.error)throw u.error;}
-    closePatientForm();await loadPatients();if(id||row?.id)openPatient(row.id);else showScreen('list');
+
+    const attachmentErrors=[];
+    const files=[...e('f-photos').files];
+    if(files.length){
+      const photoObjects=Array.isArray(row.photos)?[...row.photos]:[];
+      for(const file of files){
+        try{
+          const clean=file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+          const path=`${row.id}/${Date.now()}-${Math.random().toString(36).slice(2,7)}-${clean}`;
+          const up=await supabaseClient.storage.from(PHOTOS_BUCKET).upload(path,file,{upsert:false,contentType:file.type||undefined});
+          if(up.error)throw up.error;photoObjects.push({path,name:file.name,type:file.type||''});
+        }catch(ex){attachmentErrors.push(`ภาพ ${file.name}: ${ex.message||ex}`);}
+      }
+      const u=await supabaseClient.from(PATIENTS_TABLE).update({photos:photoObjects}).eq('id',row.id);
+      if(u.error)attachmentErrors.push(`บันทึกรายการภาพ: ${u.error.message}`);
+    }
+
+    const labFiles=[...e('f-lab-files').files];
+    if(labFiles.length){
+      const labObjects=Array.isArray(row.lab_files)?[...row.lab_files]:[];
+      for(const file of labFiles){
+        try{
+          const clean=file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+          const path=`${row.id}/${Date.now()}-${Math.random().toString(36).slice(2,7)}-${clean}`;
+          const up=await supabaseClient.storage.from(LAB_BUCKET).upload(path,file,{upsert:false,contentType:file.type||undefined});
+          if(up.error)throw up.error;labObjects.push({path,name:file.name,type:file.type||''});
+        }catch(ex){attachmentErrors.push(`Lab ${file.name}: ${ex.message||ex}`);}
+      }
+      const u=await supabaseClient.from(PATIENTS_TABLE).update({lab_files:labObjects}).eq('id',row.id);
+      if(u.error)attachmentErrors.push(`บันทึกรายการไฟล์ Lab: ${u.error.message}`);
+    }
+
+    closePatientForm();await loadPatients();openPatient(row.id);
+    if(attachmentErrors.length)alert('บันทึกข้อมูลผู้ป่วยสำเร็จแล้ว แต่มีไฟล์บางรายการแนบไม่สำเร็จ:\n\n'+attachmentErrors.join('\n'));
   }catch(err){
-    console.error(err);
+    console.error('SAVE PATIENT ERROR',err);
     const msg=String(err?.message||err||'ไม่ทราบสาเหตุ');
+    const details=[err?.code&&`code: ${err.code}`,err?.details&&`details: ${err.details}`,err?.hint&&`hint: ${err.hint}`].filter(Boolean).join('\n');
     let help='';
-    if(/relation .*patients.* does not exist|Could not find the table|schema cache/i.test(msg)) help='\n\nยังไม่ได้สร้างตาราง patients — กรุณารันไฟล์ supabase_setup.sql ใน Supabase > SQL Editor ก่อน';
-    else if(/row-level security|permission denied|policy/i.test(msg)) help='\n\nสิทธิ์ RLS ของ Supabase ยังไม่พร้อม — กรุณารัน supabase_setup.sql อีกครั้ง';
-    else if(/duplicate key|patients_hn_key/i.test(msg)) help='\n\nเลข HN นี้มีอยู่ในระบบแล้ว กรุณาตรวจสอบ HN';
+    if(/birth_date|home_visit_start_date|home_visit_discharge_date|column .* does not exist|schema cache/i.test(msg)) help='\n\nโครงสร้างตารางยังเป็นเวอร์ชันเก่า กรุณารันไฟล์ supabase_v5_migration.sql แล้วรีเฟรชหน้าเว็บ';
+    else if(/relation .*patients.* does not exist|Could not find the table/i.test(msg)) help='\n\nยังไม่มีตาราง patients กรุณารัน supabase_v5_migration.sql';
+    else if(/row-level security|permission denied|policy|42501/i.test(msg+' '+details)) help='\n\nสิทธิ์ฐานข้อมูลยังไม่อนุญาตให้บันทึก กรุณารัน supabase_v5_migration.sql เพื่ออัปเดต GRANT และ RLS Policy';
+    else if(/duplicate key|patients_hn_key|23505/i.test(msg+' '+details)) help='\n\nเลข HN นี้มีอยู่ในระบบแล้ว กรุณาตรวจสอบ HN';
     else if(/Failed to fetch|NetworkError|fetch/i.test(msg)) help='\n\nไม่สามารถเชื่อมต่อ Supabase ได้ กรุณาตรวจสอบอินเทอร์เน็ตและค่า SUPABASE_URL / KEY';
-    alert('บันทึกไม่สำเร็จ: '+msg+help);
+    alert('บันทึกไม่สำเร็จ: '+msg+(details?'\n\n'+details:'')+help);
   }finally{btn.disabled=false;btn.textContent='บันทึกข้อมูล';}
 }
 
