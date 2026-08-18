@@ -961,6 +961,23 @@ table.plist tbody td,table.data td{color:#29475A!important;font-weight:500}
     @page{size:A4;margin:12mm;}
   }
 
+  /* ===== v4 structured form / BE date / Lab OCR ===== */
+  .option-box{border:1px solid #DDE5EB;border-radius:12px;padding:12px;background:#FCFDFE;display:flex;flex-wrap:wrap;gap:8px}
+  .option-chip{display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border:1px solid #D9E3E8;border-radius:999px;background:#fff;font-size:13px;color:#496676;cursor:pointer}
+  .option-chip input{accent-color:#137C8B}
+  .be-date-row{display:grid;grid-template-columns:.8fr 1.2fr 1fr;gap:8px}
+  .form-grid select,.form-grid textarea{width:100%;padding:11px 13px;border:1px solid #D9E2E8;border-radius:10px;background:#FCFDFE;color:#17344E;font-family:inherit;font-size:14px}
+  .structured-box{border:1px solid #E0E8ED;border-radius:12px;padding:14px;background:#FBFDFE;margin-top:6px}
+  .structured-row{display:grid;grid-template-columns:170px 1fr;gap:10px;align-items:center;margin-bottom:9px}
+  .structured-row:last-child{margin-bottom:0}
+  .structured-row label{margin:0!important;font-weight:600!important}
+  .lab-upload-box{border:1px dashed #BFD5DD;border-radius:14px;padding:16px;background:#F7FCFD}
+  .lab-tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px}
+  .lab-status{font-size:12.5px;color:#667F8D;white-space:pre-wrap}
+  .lab-file-link{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #E7EDF1}
+  .lab-file-link a{color:#137C8B;text-decoration:none;font-weight:600}
+  @media(max-width:650px){.structured-row{grid-template-columns:1fr}.be-date-row{grid-template-columns:.8fr 1.2fr 1fr}}
+
 </style>
 </head>
 <body>
@@ -1111,21 +1128,21 @@ table.plist tbody td,table.data td{color:#29475A!important;font-weight:500}
         <div class="field"><label>ชื่อ-สกุล *</label><input id="f-name" required></div>
         <div class="field"><label>อายุ</label><input id="f-age" type="number" min="0" max="130"></div>
         <div class="field"><label>เพศ</label><select id="f-sex"><option value="">— เลือก —</option><option>ชาย</option><option>หญิง</option><option>อื่นๆ</option></select></div>
-        <div class="field"><label>กลุ่มโรค *</label><input id="f-group" required placeholder="เช่น เบาหวาน / ความดันสูง"></div>
+        <div class="field form-span-2"><label>กลุ่มโรค * <span class="form-help">เลือกได้มากกว่า 1 รายการ</span></label><input id="f-group" type="hidden"><div id="group-options" class="option-box"></div><div class="lab-tools"><input id="f-group-other" placeholder="กลุ่มโรคอื่น ๆ" style="max-width:320px"><button type="button" class="btn-ghost" onclick="addOtherOption('group')">เพิ่ม</button></div></div>
         <div class="field"><label>สถานะ</label><select id="f-status"><option value="ok">ปกติ</option><option value="urgent">เร่งด่วน</option><option value="overdue">เกินกำหนดเยี่ยม</option></select></div>
-        <div class="field"><label>วันที่เยี่ยมล่าสุด</label><input id="f-last-visit" type="date"></div>
+        <div class="field"><label>วันที่เยี่ยมล่าสุด (พ.ศ.)</label><input id="f-last-visit" type="hidden"><div class="be-date-row"><select id="f-last-day"></select><select id="f-last-month"></select><select id="f-last-year"></select></div></div>
         <div class="field"><label>จำนวนวันเกินกำหนด</label><input id="f-overdue-days" type="number" min="0"></div>
-        <div class="field form-span-2"><label>เหตุผล/ข้อควรติดตาม</label><textarea id="f-reason" rows="2"></textarea></div>
+        <div class="field form-span-2"><label>เหตุผล/ข้อควรติดตาม <span class="form-help">เลือกได้หลายข้อ</span></label><input id="f-reason" type="hidden"><div id="reason-options" class="option-box"></div><div class="lab-tools"><input id="f-reason-other" placeholder="เหตุผลอื่น ๆ" style="max-width:420px"><button type="button" class="btn-ghost" onclick="addOtherOption('reason')">เพิ่ม</button></div></div>
         <div class="field form-span-2"><label>ที่อยู่</label><textarea id="f-address" rows="2"></textarea></div>
         <div class="field"><label>โทรศัพท์</label><input id="f-phone" type="tel"></div>
         <div class="field"><label>Diagnosis</label><input id="f-diagnosis"></div>
         <div class="field"><label>ICD-10</label><input id="f-icd10"></div>
         <div class="field"><label>ประวัติแพ้ยา</label><input id="f-allergy"></div>
         <div class="field form-span-2"><label>ประวัติเดิม</label><textarea id="f-history" rows="3"></textarea></div>
-        <div class="field form-span-2"><label>Lab / ผลตรวจ</label><textarea id="f-lab" rows="3" placeholder="บันทึกผลตรวจหรือผล Lab"></textarea></div>
+        <div class="field form-span-2"><label>Lab / ผลตรวจจากภาพหรือ PDF</label><div class="lab-upload-box"><input id="f-lab-files" type="file" accept="image/*,application/pdf" multiple><div class="form-help">รองรับภาพถ่ายและ PDF ระบบจะอ่านข้อความในเบราว์เซอร์ แล้วให้ตรวจสอบก่อนบันทึก</div><div class="lab-tools"><button type="button" class="btn-ghost" onclick="analyzeLabFiles()">อ่านผลจากไฟล์</button><span id="lab-ocr-status" class="lab-status"></span></div></div><textarea id="f-lab" rows="7" placeholder="ผลที่ระบบอ่านได้จะแสดงที่นี่ สามารถแก้ไขก่อนบันทึก"></textarea></div>
         <div class="field form-span-2"><label>Medication</label><textarea id="f-medication" rows="3" placeholder="1 รายการต่อ 1 บรรทัด"></textarea></div>
-        <div class="field form-span-2"><label>Home Visit / บันทึกการเยี่ยม</label><textarea id="f-homevisit" rows="4"></textarea></div>
-        <div class="field form-span-2"><label>INHOMESSS</label><textarea id="f-inhomesss" rows="5" placeholder="บันทึกผลประเมินตามหัวข้อ INHOMESSS"></textarea></div>
+        <div class="field form-span-2"><label>Home Visit</label><input id="f-homevisit" type="hidden"><div class="structured-box"><div class="structured-row"><label>ประเภทการเยี่ยม</label><select id="hv-type"><option value="">— เลือก —</option><option>เยี่ยมครั้งแรก</option><option>ติดตามต่อเนื่อง</option><option>หลังจำหน่ายจากโรงพยาบาล</option><option>เยี่ยมเร่งด่วน</option><option>เยี่ยมผู้ป่วยติดบ้าน/ติดเตียง</option><option>เยี่ยมประคับประคอง</option></select></div><div class="structured-row"><label>ผลการเยี่ยม</label><select id="hv-result"><option value="">— เลือก —</option><option>อาการคงที่</option><option>ดีขึ้น</option><option>ต้องติดตามต่อ</option><option>พบปัญหาใหม่</option><option>ส่งต่อ/นัดพบแพทย์</option></select></div><div class="structured-row"><label>บันทึกเพิ่มเติม</label><textarea id="hv-note" rows="3"></textarea></div></div></div>
+        <div class="field form-span-2"><label>INHOMESSS Assessment</label><input id="f-inhomesss" type="hidden"><div id="inhomesss-structured" class="structured-box"></div></div>
         <div class="field form-span-2"><label>Problems</label><textarea id="f-problems" rows="3"></textarea></div>
         <div class="field form-span-2"><label>Care Plan</label><textarea id="f-careplan" rows="4"></textarea></div>
         <div class="field form-span-2"><label>แนบภาพถ่าย</label><input id="f-photos" type="file" accept="image/*" multiple><div class="form-help">เลือกได้หลายภาพ ภาพจะถูกเก็บใน Supabase Storage</div></div>
@@ -1144,12 +1161,16 @@ table.plist tbody td,table.data td{color:#29475A!important;font-weight:500}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
 const SUPABASE_URL = 'https://htqxskdyjkqqqerclfkf.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_CQH_VQgkW63Wl5qLvHurnQ_krdX0xPG';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 const PATIENTS_TABLE = 'patients';
 const PHOTOS_BUCKET = 'patient-photos';
+const LAB_BUCKET = 'patient-labs';
+if(window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
 let patients = [];
 let currentPatient = null;
@@ -1158,6 +1179,62 @@ let activePatientFilter = 'all';
 const e = id => document.getElementById(id);
 const safe = v => String(v ?? '').replace(/[&<>'"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 const lines = v => String(v || '').split('\n').map(x=>x.trim()).filter(Boolean);
+
+const GROUP_OPTIONS=['เบาหวาน','ความดันโลหิตสูง','ไขมันในเลือดสูง','โรคไตเรื้อรัง','โรคหัวใจและหลอดเลือด','โรคหลอดเลือดสมอง','COPD / หอบหืด','มะเร็ง','ผู้สูงอายุ','ติดบ้าน','ติดเตียง','แผลเรื้อรัง','จิตเวช','ประคับประคอง'];
+const REASON_OPTIONS=['ขาดนัด/ไม่มาตามนัด','ควบคุมโรคไม่ได้','ผล Lab ผิดปกติ','ต้องติดตามหลังปรับยา','รับประทานยาไม่สม่ำเสมอ','มีแผล/ต้องติดตามแผล','เสี่ยงหกล้ม','ADL ลดลง','ปัญหาโภชนาการ','ปัญหาผู้ดูแล/ครอบครัว','ปัญหาสุขภาพจิต','หลังจำหน่ายจากโรงพยาบาล','ต้องประเมินซ้ำ'];
+const INHOMESSS_ITEMS=[
+ ['I','Immobility / การเคลื่อนไหว'],['N','Nutrition / โภชนาการ'],['H','Housing / ที่อยู่อาศัย'],['O','Other people / ผู้ดูแลและครอบครัว'],['M','Medications / การใช้ยา'],['E','Examination / การตรวจร่างกาย'],['S1','Safety / ความปลอดภัย'],['S2','Spiritual health / จิตใจและจิตวิญญาณ'],['S3','Services / การเข้าถึงบริการ']
+];
+function renderChoiceGroups(){
+  e('group-options').innerHTML=GROUP_OPTIONS.map(x=>`<label class="option-chip"><input type="checkbox" value="${safe(x)}" onchange="syncChoices('group')"> ${safe(x)}</label>`).join('');
+  e('reason-options').innerHTML=REASON_OPTIONS.map(x=>`<label class="option-chip"><input type="checkbox" value="${safe(x)}" onchange="syncChoices('reason')"> ${safe(x)}</label>`).join('');
+  e('inhomesss-structured').innerHTML=INHOMESSS_ITEMS.map(([k,label])=>`<div class="structured-row"><label>${k} · ${safe(label)}</label><select data-inhomes-key="${k}" onchange="syncInhomesss()"><option value="">— เลือก —</option><option>ปกติ/ไม่มีปัญหา</option><option>ควรติดตาม</option><option>มีปัญหา</option><option>ไม่สามารถประเมินได้</option></select></div>`).join('')+`<div class="structured-row"><label>หมายเหตุเพิ่มเติม</label><textarea id="inh-note" rows="3" oninput="syncInhomesss()"></textarea></div>`;
+}
+function syncChoices(kind){
+ const box=e(kind+'-options'); const vals=[...box.querySelectorAll('input:checked')].map(x=>x.value); e('f-'+kind).value=vals.join('\n');
+}
+function setChoiceValues(kind,value){
+ const vals=lines(value); const box=e(kind+'-options');
+ [...box.querySelectorAll('input[type=checkbox]')].forEach(x=>x.checked=vals.includes(x.value));
+ const extras=vals.filter(v=>![...(kind==='group'?GROUP_OPTIONS:REASON_OPTIONS)].includes(v));
+ extras.forEach(v=>{const lab=document.createElement('label');lab.className='option-chip';lab.innerHTML=`<input type="checkbox" checked value="${safe(v)}" onchange="syncChoices('${kind}')"> ${safe(v)}`;box.appendChild(lab);});
+ syncChoices(kind);
+}
+function addOtherOption(kind){const inp=e('f-'+kind+'-other');const v=inp.value.trim();if(!v)return;const box=e(kind+'-options');if([...box.querySelectorAll('input')].some(x=>x.value===v)){inp.value='';return;}const lab=document.createElement('label');lab.className='option-chip';lab.innerHTML=`<input type="checkbox" checked value="${safe(v)}" onchange="syncChoices('${kind}')"> ${safe(v)}`;box.appendChild(lab);inp.value='';syncChoices(kind);}
+function initBuddhistDateSelects(){
+ const d=e('f-last-day'),m=e('f-last-month'),y=e('f-last-year');
+ d.innerHTML='<option value="">วัน</option>'+Array.from({length:31},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join('');
+ const months=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];m.innerHTML='<option value="">เดือน</option>'+months.map((x,i)=>`<option value="${i+1}">${x}</option>`).join('');
+ const nowBE=new Date().getFullYear()+543;y.innerHTML='<option value="">พ.ศ.</option>'+Array.from({length:21},(_,i)=>nowBE+5-i).map(x=>`<option value="${x}">${x}</option>`).join('');
+}
+function setBuddhistDate(iso){if(!iso){e('f-last-day').value='';e('f-last-month').value='';e('f-last-year').value='';return;}const [yy,mm,dd]=iso.split('-').map(Number);e('f-last-day').value=dd||'';e('f-last-month').value=mm||'';e('f-last-year').value=yy?yy+543:'';}
+function getISOFromBuddhistDate(){const d=Number(e('f-last-day').value),m=Number(e('f-last-month').value),be=Number(e('f-last-year').value);if(!d&&!m&&!be)return null;if(!d||!m||!be)throw new Error('กรุณาเลือกวันที่เยี่ยมล่าสุดให้ครบ วัน เดือน และ พ.ศ.');const ce=be-543;const dt=new Date(ce,m-1,d);if(dt.getFullYear()!==ce||dt.getMonth()!==m-1||dt.getDate()!==d)throw new Error('วันที่เยี่ยมล่าสุดไม่ถูกต้อง');return `${ce}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;}
+function syncHomeVisit(){const a=e('hv-type').value,b=e('hv-result').value,c=e('hv-note').value.trim();e('f-homevisit').value=[a&&`ประเภทการเยี่ยม: ${a}`,b&&`ผลการเยี่ยม: ${b}`,c&&`บันทึกเพิ่มเติม: ${c}`].filter(Boolean).join('\n');}
+function setHomeVisit(v){let type='',result='',note='';for(const line of lines(v)){if(line.startsWith('ประเภทการเยี่ยม:'))type=line.split(':').slice(1).join(':').trim();else if(line.startsWith('ผลการเยี่ยม:'))result=line.split(':').slice(1).join(':').trim();else if(line.startsWith('บันทึกเพิ่มเติม:'))note=line.split(':').slice(1).join(':').trim();else note+=(note?'\n':'')+line;}e('hv-type').value=type;e('hv-result').value=result;e('hv-note').value=note;syncHomeVisit();}
+function syncInhomesss(){const rows=[...document.querySelectorAll('[data-inhomes-key]')].map(x=>x.value?`${x.dataset.inhomesKey}: ${x.value}`:'').filter(Boolean);const note=e('inh-note')?.value.trim();if(note)rows.push(`หมายเหตุ: ${note}`);e('f-inhomesss').value=rows.join('\n');}
+function setInhomesss(v){const map={};let note='';for(const line of lines(v)){const m=line.match(/^(I|N|H|O|M|E|S1|S2|S3):\s*(.*)$/);if(m)map[m[1]]=m[2];else if(line.startsWith('หมายเหตุ:'))note=line.slice(8).trim();}document.querySelectorAll('[data-inhomes-key]').forEach(x=>x.value=map[x.dataset.inhomesKey]||'');if(e('inh-note'))e('inh-note').value=note;syncInhomesss();}
+['hv-type','hv-result'].forEach(id=>document.addEventListener('change',ev=>{if(ev.target?.id===id)syncHomeVisit();}));
+document.addEventListener('input',ev=>{if(ev.target?.id==='hv-note')syncHomeVisit();});
+
+async function ocrImageSource(source,worker){const ret=await worker.recognize(source);return ret?.data?.text||'';}
+async function extractPdfTextOrOcr(file,worker,status){
+ const bytes=new Uint8Array(await file.arrayBuffer()); const pdf=await pdfjsLib.getDocument({data:bytes}).promise; let out=[];
+ for(let n=1;n<=pdf.numPages;n++){status.textContent=`กำลังอ่าน PDF หน้า ${n}/${pdf.numPages}...`;const page=await pdf.getPage(n);const tc=await page.getTextContent();let txt=tc.items.map(i=>i.str).join(' ').trim();
+   if(txt.length<40){const viewport=page.getViewport({scale:2});const canvas=document.createElement('canvas');canvas.width=Math.ceil(viewport.width);canvas.height=Math.ceil(viewport.height);await page.render({canvasContext:canvas.getContext('2d'),viewport}).promise;txt=await ocrImageSource(canvas,worker);}
+   out.push(`--- หน้า ${n} ---\n${txt}`);
+ } return out.join('\n');
+}
+function cleanLabText(raw){return raw.replace(/\r/g,'').replace(/[ \t]+/g,' ').replace(/\n{3,}/g,'\n\n').trim();}
+async function analyzeLabFiles(){
+ const files=[...e('f-lab-files').files];const status=e('lab-ocr-status');if(!files.length){alert('กรุณาเลือกภาพหรือ PDF ผล Lab ก่อน');return;}
+ if(!window.Tesseract||!window.pdfjsLib){alert('ไม่สามารถโหลดโมดูลอ่านไฟล์ได้ กรุณาตรวจสอบอินเทอร์เน็ตแล้วรีเฟรชหน้า');return;}
+ status.textContent='กำลังเตรียม OCR ภาษาไทย + อังกฤษ...';let worker;let chunks=[];
+ try{worker=await Tesseract.createWorker('tha+eng',1,{logger:m=>{if(m.status&&m.progress!=null)status.textContent=`${m.status} ${Math.round(m.progress*100)}%`;}});
+   for(let i=0;i<files.length;i++){const f=files[i];status.textContent=`กำลังอ่าน ${f.name} (${i+1}/${files.length})...`;let text='';if(f.type==='application/pdf'||f.name.toLowerCase().endsWith('.pdf'))text=await extractPdfTextOrOcr(f,worker,status);else text=await ocrImageSource(f,worker);chunks.push(`===== ${f.name} =====\n${cleanLabText(text)}`);}
+   const result=chunks.join('\n\n');e('f-lab').value=(e('f-lab').value.trim()?e('f-lab').value.trim()+'\n\n':'')+result;status.textContent='อ่านไฟล์เสร็จแล้ว กรุณาตรวจสอบค่าผล Lab ก่อนกดบันทึก';
+ }catch(err){console.error(err);status.textContent='อ่านไฟล์ไม่สำเร็จ';alert('อ่านผล Lab ไม่สำเร็จ: '+(err.message||err));}finally{if(worker)await worker.terminate();}
+}
+
 const thaiDate = iso => {
   if(!iso) return '—';
   const d = new Date(iso+'T00:00:00');
@@ -1179,7 +1256,7 @@ async function loadPatients(){
   renderDashboard(); renderList();
 }
 function normalizePatient(p){
-  return {...p,id:p.id,hn:p.hn||'',name:p.name||'',age:p.age??'',sex:p.sex||'',group:p.disease_group||'',lastVisit:thaiDate(p.last_visit),status:p.status||'ok',overdueDays:p.overdue_days||0,reason:p.reason||'',address:p.address||'',phone:p.phone||'',photos:Array.isArray(p.photos)?p.photos:[]};
+  return {...p,id:p.id,hn:p.hn||'',name:p.name||'',age:p.age??'',sex:p.sex||'',group:p.disease_group||'',lastVisit:thaiDate(p.last_visit),status:p.status||'ok',overdueDays:p.overdue_days||0,reason:p.reason||'',address:p.address||'',phone:p.phone||'',photos:Array.isArray(p.photos)?p.photos:[],labFiles:Array.isArray(p.lab_files)?p.lab_files:[]};
 }
 async function hydratePhotoUrls(){
   for(const p of patients){
@@ -1191,6 +1268,13 @@ async function hydratePhotoUrls(){
       items.push({...((typeof photo==='object')?photo:{}),path,url:error?'':data?.signedUrl||''});
     }
     p.photos=items;
+    const labItems=[];
+    for(const f of (p.labFiles||[])){
+      const path=typeof f==='string'?f:f.path; if(!path) continue;
+      const {data,error}=await supabaseClient.storage.from(LAB_BUCKET).createSignedUrl(path,3600);
+      labItems.push({...((typeof f==='object')?f:{}),path,url:error?'':data?.signedUrl||''});
+    }
+    p.labFiles=labItems;
   }
 }
 
@@ -1245,7 +1329,7 @@ function renderAllTabPanels(p){
   e('tab-panel-wrap').innerHTML=`
   <div class="tab-panel active" id="panel-history"><h3>ประวัติเดิม</h3><div class="kv-grid"><div class="kv"><div class="k">กลุ่มโรค</div><div class="v">${safe(p.group||'—')}</div></div><div class="kv"><div class="k">ประวัติแพ้ยา</div><div class="v">${safe(p.allergy||'—')}</div></div><div class="kv form-span-2"><div class="k">ประวัติเดิม</div><div class="v">${textBlock(p.history)}</div></div></div></div>
   <div class="tab-panel" id="panel-diagnosis"><h3>Diagnosis</h3><div class="kv-grid"><div class="kv"><div class="k">Diagnosis</div><div class="v">${safe(p.diagnosis||'—')}</div></div><div class="kv"><div class="k">ICD-10</div><div class="v">${safe(p.icd10||'—')}</div></div></div></div>
-  <div class="tab-panel" id="panel-lab"><h3>Lab / ผลตรวจ</h3><div class="visit-note">${textBlock(p.lab)}</div></div>
+  <div class="tab-panel" id="panel-lab"><h3>Lab / ผลตรวจ</h3><div class="visit-note" style="white-space:pre-wrap">${textBlock(p.lab)}</div>${p.labFiles?.length?`<h3 style="margin-top:24px">ไฟล์ Lab ที่แนบ</h3>${p.labFiles.map((f,i)=>`<div class="lab-file-link"><span>${safe(f.name||('ไฟล์ '+(i+1)))}</span><a href="${safe(f.url)}" target="_blank" rel="noopener">เปิดไฟล์</a></div>`).join('')}`:''}</div>
   <div class="tab-panel" id="panel-medication"><h3>Medication</h3>${lines(p.medication).map(x=>`<div class="med-row"><div class="med-name">${safe(x)}</div></div>`).join('')||'<div class="empty-state">ยังไม่มีข้อมูล</div>'}</div>
   <div class="tab-panel" id="panel-homevisit"><h3>Home Visit</h3><div class="visit-note">${textBlock(p.homevisit)}</div></div>
   <div class="tab-panel" id="panel-inhomesss"><h3>INHOMESSS Assessment</h3><div class="visit-note">${textBlock(p.inhomesss)}</div></div>
@@ -1258,20 +1342,25 @@ function printRows(p){const rows=[['อายุ / เพศ',`${p.age||'—'} �
 
 function openPatientForm(p=null){
   e('patient-form').reset(); e('patient-id').value=p?.id||'';e('patient-form-title').textContent=p?'แก้ไขข้อมูลผู้ป่วย':'เพิ่มผู้ป่วยใหม่';
-  const vals={ 'f-hn':p?.hn,'f-name':p?.name,'f-age':p?.age,'f-sex':p?.sex,'f-group':p?.group,'f-status':p?.status||'ok','f-overdue-days':p?.overdueDays,'f-reason':p?.reason,'f-address':p?.address,'f-phone':p?.phone,'f-diagnosis':p?.diagnosis,'f-icd10':p?.icd10,'f-allergy':p?.allergy,'f-history':p?.history,'f-lab':p?.lab,'f-medication':p?.medication,'f-homevisit':p?.homevisit,'f-inhomesss':p?.inhomesss,'f-problems':p?.problems,'f-careplan':p?.care_plan};
-  Object.entries(vals).forEach(([id,v])=>{if(e(id))e(id).value=v??'';}); if(p?.last_visit)e('f-last-visit').value=p.last_visit; e('patient-form-modal').classList.remove('hidden');
+  const vals={ 'f-hn':p?.hn,'f-name':p?.name,'f-age':p?.age,'f-sex':p?.sex,'f-status':p?.status||'ok','f-overdue-days':p?.overdueDays,'f-address':p?.address,'f-phone':p?.phone,'f-diagnosis':p?.diagnosis,'f-icd10':p?.icd10,'f-allergy':p?.allergy,'f-history':p?.history,'f-lab':p?.lab,'f-medication':p?.medication,'f-problems':p?.problems,'f-careplan':p?.care_plan};
+  Object.entries(vals).forEach(([id,v])=>{if(e(id))e(id).value=v??'';});
+  renderChoiceGroups();setChoiceValues('group',p?.group||'');setChoiceValues('reason',p?.reason||'');setBuddhistDate(p?.last_visit||'');setHomeVisit(p?.homevisit||'');setInhomesss(p?.inhomesss||'');e('lab-ocr-status').textContent='';
+  e('patient-form-modal').classList.remove('hidden');
 }
 function closePatientForm(){e('patient-form-modal').classList.add('hidden');}
 async function savePatient(ev){
   ev.preventDefault();const btn=e('save-patient-btn');btn.disabled=true;btn.textContent='กำลังบันทึก...';
   try{
     const id=e('patient-id').value||null;
-    const payload={hn:e('f-hn').value.trim(),name:e('f-name').value.trim(),age:e('f-age').value?Number(e('f-age').value):null,sex:e('f-sex').value,disease_group:e('f-group').value.trim(),status:e('f-status').value,last_visit:e('f-last-visit').value||null,overdue_days:Number(e('f-overdue-days').value||0),reason:e('f-reason').value.trim(),address:e('f-address').value.trim(),phone:e('f-phone').value.trim(),diagnosis:e('f-diagnosis').value.trim(),icd10:e('f-icd10').value.trim(),allergy:e('f-allergy').value.trim(),history:e('f-history').value.trim(),lab:e('f-lab').value.trim(),medication:e('f-medication').value.trim(),homevisit:e('f-homevisit').value.trim(),inhomesss:e('f-inhomesss').value.trim(),problems:e('f-problems').value.trim(),care_plan:e('f-careplan').value.trim()};
+    syncChoices('group');syncChoices('reason');syncHomeVisit();syncInhomesss();
+    if(!e('f-group').value.trim())throw new Error('กรุณาเลือกกลุ่มโรคอย่างน้อย 1 รายการ');
+    const payload={hn:e('f-hn').value.trim(),name:e('f-name').value.trim(),age:e('f-age').value?Number(e('f-age').value):null,sex:e('f-sex').value,disease_group:e('f-group').value.trim(),status:e('f-status').value,last_visit:getISOFromBuddhistDate(),overdue_days:Number(e('f-overdue-days').value||0),reason:e('f-reason').value.trim(),address:e('f-address').value.trim(),phone:e('f-phone').value.trim(),diagnosis:e('f-diagnosis').value.trim(),icd10:e('f-icd10').value.trim(),allergy:e('f-allergy').value.trim(),history:e('f-history').value.trim(),lab:e('f-lab').value.trim(),medication:e('f-medication').value.trim(),homevisit:e('f-homevisit').value.trim(),inhomesss:e('f-inhomesss').value.trim(),problems:e('f-problems').value.trim(),care_plan:e('f-careplan').value.trim()};
     let row,error;
     if(id){({data:row,error}=await supabaseClient.from(PATIENTS_TABLE).update(payload).eq('id',id).select().single());}
     else {({data:row,error}=await supabaseClient.from(PATIENTS_TABLE).insert(payload).select().single());}
     if(error)throw error;
     const files=[...e('f-photos').files]; if(files.length){const photoObjects=Array.isArray(row.photos)?row.photos:[];for(const file of files){const clean=file.name.replace(/[^a-zA-Z0-9._-]/g,'_');const path=`${row.id}/${Date.now()}-${clean}`;const up=await supabaseClient.storage.from(PHOTOS_BUCKET).upload(path,file,{upsert:false});if(up.error)throw up.error;photoObjects.push({path,name:file.name});}const u=await supabaseClient.from(PATIENTS_TABLE).update({photos:photoObjects}).eq('id',row.id);if(u.error)throw u.error;}
+    const labFiles=[...e('f-lab-files').files]; if(labFiles.length){const labObjects=Array.isArray(row.lab_files)?row.lab_files:[];for(const file of labFiles){const clean=file.name.replace(/[^a-zA-Z0-9._-]/g,'_');const path=`${row.id}/${Date.now()}-${clean}`;const up=await supabaseClient.storage.from(LAB_BUCKET).upload(path,file,{upsert:false,contentType:file.type||undefined});if(up.error)throw up.error;labObjects.push({path,name:file.name,type:file.type||''});}const u=await supabaseClient.from(PATIENTS_TABLE).update({lab_files:labObjects}).eq('id',row.id);if(u.error)throw u.error;}
     closePatientForm();await loadPatients();if(id||row?.id)openPatient(row.id);else showScreen('list');
   }catch(err){
     console.error(err);
@@ -1295,6 +1384,8 @@ async function doLogout(){await supabaseClient.auth.signOut();e('view-app').clas
 async function restoreSession(){try{const {data:{session}}=await supabaseClient.auth.getSession();if(session)await enterApp(session);}catch(err){console.error(err);await supabaseClient.auth.signOut();}}
 e('password').addEventListener('keydown',ev=>{if(ev.key==='Enter')doLogin();});
 (function setToday(){const x=e('today-badge');if(x)x.textContent=new Date().toLocaleDateString('th-TH',{weekday:'short',day:'numeric',month:'short',year:'numeric'});})();
+initBuddhistDateSelects();
+renderChoiceGroups();
 restoreSession();
 </script>
 </body>
