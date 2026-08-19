@@ -633,7 +633,7 @@
       <div style="font-weight:700;color:#24485c;margin-bottom:8px">รายการ Lab อื่นที่แพทย์สั่ง</div>
       <div id="lab-extra-rows"></div>
       <button type="button" class="btn-ghost" onclick="addExtraLabRow()">＋ เพิ่มรายการ Lab อื่น</button>
-      <div class="form-help" style="margin-top:6px">ตัวอย่าง: HbA1c, FBS, TSH, FT4, Vitamin D, Calcium, Urinalysis หรือรายการอื่นตามแพทย์สั่ง</div>
+      <div class="form-help" style="margin-top:6px">รายการมาตรฐานเพิ่มเติม เช่น HbA1c/FBS สามารถเพิ่มได้ และรายการเฉพาะอื่นตามแพทย์สั่งสามารถระบุค่าปกติจากใบ Lab ได้</div>
     </div>
 
     <div class="lab-tools" style="margin-top:14px">
@@ -1171,29 +1171,125 @@ function renderLabStructuredPreview(results,previous){
 }
 
 
+const LAB_REFERENCE={
+  hb:{label:'Hb',unit:'g/dL',male:[14,18],female:[12,16]},
+  hct:{label:'Hct',unit:'%',male:[40,52],female:[36,48]},
+  rbc:{label:'RBC count',unit:'10^6/mm³',range:[4.20,6.00]},
+  mcv:{label:'MCV',unit:'fL',range:[80,95]},
+  mch:{label:'MCH',unit:'pg',range:[27,31]},
+  mchc:{label:'MCHC',unit:'g/dL',range:[31,35]},
+  platelet:{label:'Platelet Count',unit:'10^3/mm³',range:[140,440]},
+  wbc:{label:'WBC count',unit:'10^3/mm³',range:[4.0,10.0]},
+  neutrophil:{label:'Neutrophil',unit:'%',range:[40,74]},
+  lymphocyte:{label:'Lymphocyte',unit:'%',range:[19,48]},
+  monocyte:{label:'Monocyte',unit:'%',range:[3,9]},
+  eosinophil:{label:'Eosinophil',unit:'%',range:[0,7]},
+  basophil:{label:'Basophil',unit:'%',range:[0,2]},
+
+  bun:{label:'BUN',unit:'mg/dL',range:[6,20]},
+  creatinine:{label:'Creatinine',unit:'mg/dL',male:[0.6,1.2],female:[0.5,1.0]},
+  egfr:{label:'eGFR',unit:'mL/min/1.73m²',min:90},
+
+  na:{label:'Na',unit:'mmol/L',range:[135,145]},
+  k:{label:'K',unit:'mmol/L',range:[3.5,5.0]},
+  cl:{label:'Cl',unit:'mmol/L',range:[96,107]},
+  co2:{label:'CO₂',unit:'mmol/L',range:[22,28]},
+
+  total_protein:{label:'Total Protein',unit:'g/dL',range:[6.0,8.0]},
+  albumin:{label:'Albumin',unit:'g/dL',range:[3.8,5.5]},
+  globulin:{label:'Globulin',unit:'g/dL',range:[2.2,3.8]},
+  total_bilirubin:{label:'Total Bilirubin',unit:'mg/dL',range:[0.2,1.2]},
+  direct_bilirubin:{label:'Direct Bilirubin',unit:'mg/dL',range:[0,0.4]},
+  ast:{label:'AST (SGOT)',unit:'U/L',male:[0,40],female:[0,35]},
+  alt:{label:'ALT (SGPT)',unit:'U/L',male:[0,40],female:[0,35]},
+  alp:{label:'ALP',unit:'U/L',range:[40,120]},
+
+  uric_acid:{label:'Uric acid',unit:'mg/dL',male:[3.4,7.0],female:[2.4,6.0]},
+
+  cholesterol:{label:'Cholesterol',unit:'mg/dL',range:[100,200]},
+  triglyceride:{label:'Triglyceride',unit:'mg/dL',max:150},
+  hdl:{label:'HDL-C',unit:'mg/dL',range:[30,80]},
+  ldl:{label:'LDL-C',unit:'mg/dL',max:130},
+
+  fbs:{label:'Glucose (FBS)',unit:'mg/dL',range:[70,100]},
+  hba1c:{label:'HbA1c',unit:'%',range:[4.0,6.0]},
+  calcium:{label:'Calcium',unit:'mg/dL',range:[8.9,10.6]},
+  phosphorus:{label:'Phosphorus',unit:'mg/dL',range:[2.5,4.5]},
+  magnesium:{label:'Magnesium',unit:'mg/dL',male:[1.8,2.6],female:[1.9,2.5]}
+};
+
 const LAB_FORM_GROUPS=[
-  {id:'cbc',title:'CBC',tests:[
-    ['hb','Hb','g/dL'],['hct','Hct','%'],['rbc','RBC count','10^6/mm³'],['mcv','MCV','fL'],
-    ['mch','MCH','pg'],['mchc','MCHC','g/dL'],['platelet','Platelet Count','10^3/mm³'],['wbc','WBC count','10^3/mm³'],
-    ['neutrophil','Neutrophil','%'],['lymphocyte','Lymphocyte','%'],['monocyte','Monocyte','%'],['eosinophil','Eosinophil','%'],['basophil','Basophil','%']
-  ]},
-  {id:'renal',title:'BUN / Creatinine / eGFR',tests:[
-    ['bun','BUN','mg/dL'],['creatinine','Creatinine','mg/dL'],['egfr','eGFR','mL/min/1.73m²']
-  ]},
-  {id:'electrolyte',title:'Electrolyte',tests:[
-    ['na','Na','mmol/L'],['k','K','mmol/L'],['cl','Cl','mmol/L'],['co2','CO₂','mmol/L']
-  ]},
-  {id:'lft',title:'Liver Function Test (LFT)',tests:[
-    ['total_protein','Total Protein','g/dL'],['albumin','Albumin','g/dL'],['globulin','Globulin','g/dL'],
-    ['total_bilirubin','Total Bilirubin','mg/dL'],['direct_bilirubin','Direct Bilirubin','mg/dL'],
-    ['ast','AST (SGOT)','U/L'],['alt','ALT (SGPT)','U/L'],['alp','ALP','U/L']
-  ]},
-  {id:'uric',title:'Uric acid',tests:[['uric_acid','Uric acid','mg/dL']]},
-  {id:'lipid',title:'Lipid profile',tests:[
-    ['cholesterol','Cholesterol','mg/dL'],['triglyceride','Triglyceride','mg/dL'],['hdl','HDL-C','mg/dL'],['ldl','LDL-C','mg/dL']
-  ]}
+  {id:'cbc',title:'CBC',keys:['hb','hct','rbc','mcv','mch','mchc','platelet','wbc','neutrophil','lymphocyte','monocyte','eosinophil','basophil']},
+  {id:'renal',title:'BUN / Creatinine / eGFR',keys:['bun','creatinine','egfr']},
+  {id:'electrolyte',title:'Electrolyte',keys:['na','k','cl','co2']},
+  {id:'lft',title:'Liver Function Test (LFT)',keys:['total_protein','albumin','globulin','total_bilirubin','direct_bilirubin','ast','alt','alp']},
+  {id:'uric',title:'Uric acid',keys:['uric_acid']},
+  {id:'lipid',title:'Lipid profile',keys:['cholesterol','triglyceride','hdl','ldl']}
 ];
 
+function patientSexKey(){
+  const sex=(e('f-sex')?.value||'').trim();
+  return sex==='ชาย'?'male':sex==='หญิง'?'female':'';
+}
+function referenceFor(key){
+  const d=LAB_REFERENCE[key]||{};
+  const sex=patientSexKey();
+  let low=null,high=null,refText='';
+  if(sex&&Array.isArray(d[sex])){low=d[sex][0];high=d[sex][1];refText=`${low}-${high}`;}
+  else if(Array.isArray(d.range)){low=d.range[0];high=d.range[1];refText=`${low}-${high}`;}
+  else if(d.min!=null){low=d.min;refText=`>${d.min}`;}
+  else if(d.max!=null){high=d.max;refText=`<${d.max}`;}
+  else if(d.male||d.female){
+    refText=`ชาย ${d.male?.[0]}-${d.male?.[1]}, หญิง ${d.female?.[0]}-${d.female?.[1]}`;
+  }
+  return {...d,low,high,refText};
+}
+function evaluateBuiltInLab(key,value){
+  const r=referenceFor(key);
+  if(value==null||!Number.isFinite(value))return {...r,status:'unknown'};
+  let status='unknown';
+  if(r.low!=null&&r.high!=null)status=value<r.low?'low':value>r.high?'high':'normal';
+  else if(r.low!=null)status=value>=r.low?'normal':'low';
+  else if(r.high!=null)status=value<=r.high?'normal':'high';
+  return {...r,status};
+}
+function inlineLabAdvice(key,status,value){
+  if(!['low','high'].includes(status))return '';
+  const side=status==='low'?'ต่ำ':'สูง';
+  const advice={
+    hb: status==='low'?'Hb ต่ำ: ควรประเมินภาวะซีด อาการเหนื่อย ใจสั่น หน้ามืด ประวัติเลือดออก โภชนาการ และติดตาม CBC/iron studies ตามแผนผู้รักษา':'Hb สูง: ควรประเมินภาวะขาดน้ำ ภาวะพร่องออกซิเจน/สูบบุหรี่ และเทียบผลเดิม',
+    hct: status==='low'?'Hct ต่ำ: ควรประเมินร่วมกับ Hb และดัชนีเม็ดเลือดแดงเพื่อหาสาเหตุของภาวะซีด':'Hct สูง: ควรประเมินภาวะขาดน้ำและภาวะที่ทำให้เม็ดเลือดแดงเพิ่ม',
+    rbc: status==='low'?'RBC ต่ำ: ควรดูร่วมกับ Hb/Hct, MCV และอาการ เพื่อประเมินภาวะซีด':'RBC สูง: ควรดูร่วมกับ Hb/Hct และภาวะขาดน้ำ/พร่องออกซิเจน',
+    mcv: status==='low'?'MCV ต่ำ: เม็ดเลือดแดงมีขนาดเล็ก ควรพิจารณา iron studies และสาเหตุอื่น เช่น thalassemia ตามบริบท':'MCV สูง: ควรประเมินภาวะขาดวิตามิน B12/folate ยา แอลกอฮอล์ และโรคตับตามบริบท',
+    mch: status==='low'?'MCH ต่ำ: ควรดูร่วมกับ MCV/MCHC และประเมินภาวะขาดธาตุเหล็ก/ความผิดปกติของฮีโมโกลบิน':'MCH สูง: ควรดูร่วมกับ MCV และ morphology ของเม็ดเลือดแดง',
+    mchc: status==='low'?'MCHC ต่ำ: เม็ดเลือดแดงติดสีจาง ควรดูร่วมกับ Hb/MCV และพิจารณา iron studies':'MCHC สูง: ควรตรวจสอบผลซ้ำ/สเมียร์เลือดและสาเหตุทางโลหิตวิทยาตามบริบท',
+    platelet: status==='low'?'Platelet ต่ำ: ประเมินเลือดออก/จ้ำเลือด ทบทวนยา และติดตามซ้ำตามระดับความรุนแรง':'Platelet สูง: ควรดูแนวโน้มและประเมินการอักเสบ/ติดเชื้อ ภาวะขาดธาตุเหล็ก หรือสาเหตุอื่น',
+    wbc: status==='low'?'WBC ต่ำ: ทบทวนยา การติดเชื้อ โรคประจำตัว และ differential count พร้อมพิจารณาตรวจซ้ำ':'WBC สูง: ประเมินไข้ การติดเชื้อ/อักเสบ ยา และ differential count',
+    neutrophil: status==='low'?'Neutrophil ต่ำ: ประเมินความเสี่ยงติดเชื้อและดู absolute neutrophil count ถ้ามี':'Neutrophil สูง: พิจารณาการติดเชื้อแบคทีเรีย/การอักเสบ ความเครียด และยาบางชนิดร่วมกับอาการ',
+    lymphocyte: status==='low'?'Lymphocyte ต่ำ: ประเมินร่วมกับ WBC/differential อาการ การติดเชื้อ ยา และภาวะภูมิคุ้มกัน':'Lymphocyte สูง: ประเมินร่วมกับอาการติดเชื้อและ differential count',
+    bun: status==='low'?'BUN ต่ำ: พิจารณาโภชนาการ การได้รับสารน้ำ และการทำงานของตับร่วมกับบริบท':'BUN สูง: ประเมินภาวะขาดน้ำ การทำงานของไต ภาวะเลือดออกทาง GI และเทียบ Creatinine',
+    creatinine: status==='low'?'Creatinine ต่ำ: อาจสัมพันธ์กับมวลกล้ามเนื้อน้อย ควรตีความร่วมกับอายุ เพศ และ eGFR':'Creatinine สูง: เทียบ baseline/eGFR ประเมินภาวะน้ำ ยาที่มีผลต่อไต และติดตาม renal function',
+    egfr: 'eGFR ต่ำ: ควรเทียบผลเดิม ดูแนวโน้ม Creatinine/eGFR ปัจจัยร่วมและ urine ACR; ไม่ควรสรุป CKD จากผลครั้งเดียว',
+    na: status==='low'?'Na ต่ำ: ประเมินภาวะน้ำ อาการทางระบบประสาท ยา และสาเหตุของ hyponatremia ตามความรุนแรง':'Na สูง: ประเมินภาวะขาดน้ำ การสูญเสียน้ำ และอาการทางระบบประสาท',
+    k: status==='low'?'K ต่ำ: ประเมินการสูญเสียทาง GI/ไต ยาขับปัสสาวะ อาการกล้ามเนื้ออ่อนแรง และ ECG ตามระดับ':'K สูง: ควรยืนยันผล ประเมินยาที่เพิ่ม K การทำงานของไต อาการ และ ECG ตามระดับความผิดปกติ',
+    cl: status==='low'?'Cl ต่ำ: ควรดูร่วมกับ Na/CO₂ ภาวะอาเจียน ยาขับปัสสาวะ และกรด-ด่าง':'Cl สูง: ควรดูร่วมกับ Na/CO₂ ภาวะน้ำและกรด-ด่าง',
+    co2: status==='low'?'CO₂ ต่ำ: ควรประเมินภาวะกรด-ด่างร่วมกับ electrolyte, renal function และอาการ; พิจารณาตรวจซ้ำ/ABG-VBG ตามบริบท':'CO₂ สูง: ควรประเมินภาวะด่างหรือการคั่ง CO₂ ร่วมกับอาการและผลอื่น',
+    total_protein: status==='low'?'Total protein ต่ำ: ประเมินโภชนาการ ตับ ไต และการสูญเสียโปรตีน':'Total protein สูง: ประเมินภาวะขาดน้ำ/ภาวะโปรตีนสูงและดู albumin/globulin ร่วมกัน',
+    albumin: status==='low'?'Albumin ต่ำ: ประเมินโภชนาการ โรคตับ การสูญเสียทางไต/ลำไส้ และภาวะอักเสบ':'Albumin สูง: มักสัมพันธ์กับภาวะขาดน้ำ ควรประเมินสถานะสารน้ำ',
+    globulin: status==='low'?'Globulin ต่ำ: ประเมินภูมิคุ้มกัน โภชนาการ และโรคร่วม':'Globulin สูง: ดูร่วมกับ total protein และพิจารณาภาวะอักเสบ/ภูมิคุ้มกันตามบริบท',
+    total_bilirubin: status==='low'?'Total bilirubin ต่ำโดยลำพังมักไม่มีความสำคัญทางคลินิกมาก':'Total bilirubin สูง: ประเมิน jaundice, AST/ALT/ALP และแยก direct/indirect bilirubin ตามบริบท',
+    direct_bilirubin: status==='low'?'Direct bilirubin ต่ำโดยลำพังมักไม่มีความสำคัญทางคลินิกมาก':'Direct bilirubin สูง: ประเมินภาวะ cholestasis/ตับร่วมกับ total bilirubin, AST/ALT และ ALP',
+    ast: status==='low'?'AST ต่ำโดยลำพังมักไม่ใช่ปัญหาหลัก ให้ดูร่วมกับค่าอื่น':'AST สูง: ทบทวนยา แอลกอฮอล์ กล้ามเนื้อ และดู ALT/ALP/bilirubin ร่วมกัน',
+    alt: status==='low'?'ALT ต่ำโดยลำพังมักไม่ใช่ปัญหาหลัก ให้ดูร่วมกับค่าอื่น':'ALT สูง: ประเมินภาวะตับอักเสบ ไขมันพอกตับ ยา/สมุนไพร และดู LFT อื่นร่วมกัน',
+    alp: status==='low'?'ALP ต่ำ: พิจารณาโภชนาการ/แร่ธาตุและบริบททางคลินิก':'ALP สูง: ประเมินแหล่งจากตับ/ทางเดินน้ำดีหรือกระดูก ร่วมกับ GGT/LFT และอาการ',
+    uric_acid: status==='low'?'Uric acid ต่ำ: ทบทวนยา โภชนาการ และโรคร่วมตามบริบท':'Uric acid สูง: ประเมินอาการเกาต์ ยา อาหาร การทำงานของไต และแนวโน้มผลเดิม',
+    cholesterol: status==='low'?'Cholesterol ต่ำ: ประเมินโภชนาการ/โรคร่วมถ้ามีอาการหรือค่าต่ำมาก':'Cholesterol สูง: ประเมินความเสี่ยงโรคหัวใจและหลอดเลือดร่วมกับ LDL/HDL/TG และปัจจัยเสี่ยง',
+    triglyceride: 'Triglyceride สูง: ทบทวนการงดอาหารก่อนตรวจ น้ำตาลในเลือด แอลกอฮอล์ อาหาร และยาที่เกี่ยวข้อง',
+    hdl: status==='low'?'HDL ต่ำ: ประเมินความเสี่ยงหัวใจและหลอดเลือดโดยรวม เน้นกิจกรรมทางกาย น้ำหนัก และปัจจัยเสี่ยง':'HDL สูงโดยทั่วไปไม่ต้องติดตามเพราะเกินช่วงแบบเดียวกับ LDL; ให้ประเมินตามบริบทและวิธีรายงานของห้อง Lab',
+    ldl: 'LDL สูง: ประเมินความเสี่ยงโรคหัวใจและหลอดเลือดและเป้าหมาย LDL รายบุคคลตามโรคร่วม/ความเสี่ยง'
+  };
+  return advice[key]||`${LAB_REFERENCE[key]?.label||key} ${side}กว่าช่วงอ้างอิง: ควรตรวจสอบผลกับใบ Lab ต้นฉบับ เปรียบเทียบผลเดิม และประเมินร่วมกับอาการ/โรคประจำตัว`;
+}
 function initLabDateSelects(){
   const d=e('lab-date-day'),m=e('lab-date-month'),y=e('lab-date-year'); if(!d||!m||!y)return;
   const months=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
@@ -1209,12 +1305,18 @@ function getLabISODate(){
   const y=yBE-543;
   return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
 }
-function labInputCell(key,label,unit){
+function labInputCell(key){
+  const r=referenceFor(key), d=LAB_REFERENCE[key];
   return `<tr data-lab-key="${safe(key)}">
-    <td style="padding:7px 5px;font-weight:600;white-space:nowrap">${safe(label)}</td>
-    <td style="padding:5px"><input class="lab-value" inputmode="decimal" placeholder="ผล" style="width:90px"></td>
-    <td style="padding:5px"><input class="lab-ref" placeholder="เช่น 4.0-10.0 หรือ >90" style="width:125px"></td>
-    <td style="padding:5px"><input class="lab-unit" value="${safe(unit||'')}" placeholder="หน่วย" style="width:105px"></td>
+    <td style="padding:7px 5px;font-weight:600;white-space:nowrap">${safe(d.label)}</td>
+    <td style="padding:5px"><input class="lab-value" inputmode="decimal" placeholder="ผล" oninput="updateLabRowFeedback(this)" style="width:95px"></td>
+    <td style="padding:5px"><span class="lab-auto-ref">${safe(r.refText||'—')}</span></td>
+    <td style="padding:5px">${safe(d.unit||'')}</td>
+  </tr>
+  <tr class="lab-advice-row" data-lab-advice-for="${safe(key)}" style="display:none">
+    <td colspan="4" style="padding:0 5px 9px">
+      <div class="lab-inline-advice" style="background:#fff7e8;border-left:4px solid #e6a23c;padding:8px 10px;border-radius:7px;font-size:12px;color:#5d4b20"></div>
+    </td>
   </tr>`;
 }
 function renderLabEntryGroups(){
@@ -1223,9 +1325,32 @@ function renderLabEntryGroups(){
     <div style="font-weight:700;color:#173d55;background:#eef5f7;padding:7px 9px;border-radius:7px">${safe(g.title)}</div>
     <div style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">
       <thead><tr><th style="text-align:left;padding:6px">รายการ</th><th>ผลตรวจ</th><th>ค่าปกติ</th><th>หน่วย</th></tr></thead>
-      <tbody>${g.tests.map(t=>labInputCell(...t)).join('')}</tbody>
+      <tbody>${g.keys.map(labInputCell).join('')}</tbody>
     </table></div>
   </div>`).join('');
+}
+function refreshAutomaticReferences(){
+  document.querySelectorAll('#lab-entry-groups tr[data-lab-key]').forEach(tr=>{
+    const key=tr.dataset.labKey,r=referenceFor(key);
+    const ref=tr.querySelector('.lab-auto-ref');if(ref)ref.textContent=r.refText||'—';
+    const inp=tr.querySelector('.lab-value');if(inp&&inp.value.trim())updateLabRowFeedback(inp);
+  });
+}
+function updateLabRowFeedback(input){
+  const tr=input.closest('tr[data-lab-key]');if(!tr)return;
+  const key=tr.dataset.labKey,raw=input.value.trim(),value=Number(raw.replace(',','.'));
+  const adviceRow=tr.nextElementSibling;
+  if(!raw||!Number.isFinite(value)){if(adviceRow)adviceRow.style.display='none';input.style.borderColor='';return;}
+  const r=evaluateBuiltInLab(key,value);
+  input.style.borderColor=r.status==='normal'?'#64b6a7':r.status==='high'||r.status==='low'?'#e35d6a':'';
+  if(!adviceRow)return;
+  if(r.status==='high'||r.status==='low'){
+    adviceRow.style.display='';
+    const box=adviceRow.querySelector('.lab-inline-advice');
+    box.innerHTML=`<b>${r.status==='high'?'🔴 สูงกว่าปกติ':'🔴 ต่ำกว่าปกติ'}</b> · ${safe(LAB_REFERENCE[key].label)} ${safe(value)} ${safe(LAB_REFERENCE[key].unit)} (ค่าปกติ ${safe(r.refText)})<br><span style="display:block;margin-top:4px">${safe(inlineLabAdvice(key,r.status,value))}</span>`;
+  }else{
+    adviceRow.style.display='none';
+  }
 }
 function addExtraLabRow(data={}){
   const box=e('lab-extra-rows');if(!box)return;
@@ -1264,13 +1389,9 @@ function collectManualLabResults(){
   document.querySelectorAll('#lab-entry-groups tr[data-lab-key]').forEach(tr=>{
     const valRaw=tr.querySelector('.lab-value').value.trim();
     if(valRaw==='')return;
-    const key=tr.dataset.labKey;
-    const label=tr.children[0].textContent.trim();
-    const refText=tr.querySelector('.lab-ref').value.trim();
-    const unit=tr.querySelector('.lab-unit').value.trim();
-    const value=Number(valRaw.replace(',','.'));
-    const parsed=parseReferenceText(refText,value);
-    out.push({key,label,value:Number.isFinite(value)?value:null,valueText:Number.isFinite(value)?'':valRaw,unit,refText,...parsed});
+    const key=tr.dataset.labKey,d=LAB_REFERENCE[key],value=Number(valRaw.replace(',','.'));
+    const ev=evaluateBuiltInLab(key,value);
+    out.push({key,label:d.label,value:Number.isFinite(value)?value:null,valueText:Number.isFinite(value)?'':valRaw,unit:d.unit,refText:ev.refText,low:ev.low,high:ev.high,status:ev.status});
   });
   document.querySelectorAll('.extra-lab-row').forEach((row,i)=>{
     const label=row.querySelector('.extra-name').value.trim();
@@ -1366,7 +1487,7 @@ function analyzeManualLab(){
   e('lab-ocr-status').textContent='ประเมินผลแล้ว — พร้อมบันทึก';
 }
 function clearManualLabForm(){
-  document.querySelectorAll('#lab-entry-groups .lab-value,#lab-entry-groups .lab-ref').forEach(x=>x.value='');
+  document.querySelectorAll('#lab-entry-groups .lab-value').forEach(x=>x.value='');document.querySelectorAll('.lab-advice-row').forEach(x=>x.style.display='none');
   e('lab-extra-rows').innerHTML='';
   e('f-lab').value='';e('f-lab-analysis').value='';e('lab-structured-preview').innerHTML='';
   window.__pendingLabSnapshot=null;e('lab-ocr-status').textContent='';
@@ -1726,7 +1847,7 @@ function openPatientForm(p=null){
   populateStageSelect(p?.stage||'new');
   renderChoiceGroups();setChoiceValues('group',p?.group||'');setChoiceValues('reason',p?.reason||'');setBEDate('birth',p?.birth_date||p?.birthDate||'');updateBirthAgePreview();setBuddhistDate(p?.last_visit||'');setBEDate('start',p?.home_visit_start_date||p?.startVisitDate||'');setBEDate('discharge',p?.home_visit_discharge_date||p?.dischargeDate||'');setBEDate('nextvisit',p?.nextVisitDate||'');
   e('hv-type').value='';e('hv-result').value='';e('hv-note').value='';syncHomeVisit();
-  setInhomesss(p?.inhomesss||'');renderVisitTeam(p?.home_visit_team||[]);window.__pendingLabSnapshot=null;initLabDateSelects();renderLabEntryGroups();e('lab-extra-rows').innerHTML='';renderLabStructuredPreview([],null);renderExistingLabHistory(p);e('lab-ocr-status').textContent='';
+  setInhomesss(p?.inhomesss||'');renderVisitTeam(p?.home_visit_team||[]);window.__pendingLabSnapshot=null;initLabDateSelects();renderLabEntryGroups();e('lab-extra-rows').innerHTML='';renderLabStructuredPreview([],null);renderExistingLabHistory(p);e('lab-ocr-status').textContent=''; if(e('f-sex'))e('f-sex').onchange=refreshAutomaticReferences;
   checkWarnings(p);
   e('patient-form-modal').classList.remove('hidden');
 }
