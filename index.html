@@ -429,6 +429,10 @@
   .today-list-main .meta{font-size:12px;color:var(--ink-soft);margin-top:2px;}
   .today-list-actions{display:flex;gap:8px;flex-shrink:0;}
 
+
+  .visit-subtabs{display:flex;flex-wrap:wrap;gap:0;border:1px solid #DCE5E9;background:#FAFCFD;margin:0 0 18px;}
+  .visit-subtab{background:#fff;border:0;border-right:1px solid #DCE5E9;border-bottom:1px solid #DCE5E9;padding:9px 12px;color:#647B88;font-size:12px;cursor:pointer;}
+  .visit-subtab.active{background:#EAF6F7;color:#137C8B;font-weight:600;}
 </style>
 </head>
 <body>
@@ -1713,7 +1717,7 @@ function openDiseaseModal(encoded){
 }
 function closeDiseaseModal(){e('disease-modal').classList.add('hidden');}
 
-const tabs=[['history','ประวัติเดิม'],['diagnosis','Diagnosis'],['lab','Lab'],['medication','Medication'],['homevisit','Home Visit'],['inhomesss','INHOMESSS'],['problems','Problems'],['careplan','Care Plan'],['photos','รูปภาพ'],['print','Print A4'],['compare','เปรียบเทียบผล']];
+const tabs=[['history','ประวัติเดิม'],['visits','การเยี่ยม'],['compare','เปรียบเทียบผล']];
 function openPatient(id){
   currentPatient=patients.find(p=>String(p.id)===String(id)); if(!currentPatient)return; const p=currentPatient;
   e('pd-initials').textContent=(p.name||'ผู้ป่วย').replace(/\s/g,'').slice(0,2);e('pd-name').textContent=`${p.name} · เยี่ยมครั้งที่ ${visitCount(p)||0}`;e('pd-hn').textContent=p.hn;e('pd-age').textContent=`${p.age==null?'—':p.age+' ปี'} · ${p.sex||'—'} · เกิด ${p.birthDate?thaiDate(p.birthDate):'—'}`;e('pd-address').textContent=`📍 ${p.address||'—'}`;e('pd-phone').textContent=`📞 ${p.phone||'—'}`;e('pd-start').textContent=`เริ่มเยี่ยมบ้าน ${p.startVisit||'—'}`;e('pd-discharge').textContent=p.dischargeDate?`จำหน่าย ${p.dischargeVisit}`:'ยังอยู่ในระบบเยี่ยมบ้าน';
@@ -1723,7 +1727,11 @@ function openPatient(id){
   if(!document.getElementById('edit-patient-btn')){const btn=document.createElement('button');btn.id='edit-patient-btn';btn.className='btn-ghost detail-edit-btn';btn.textContent='แก้ไขข้อมูล';btn.onclick=()=>openPatientForm(currentPatient);e('pd-actions').insertBefore(btn,e('pd-actions').lastElementChild);}
   if(!document.getElementById('quick-visit-btn')){const btn2=document.createElement('button');btn2.id='quick-visit-btn';btn2.className='btn-ghost detail-edit-btn';btn2.textContent='＋ บันทึกเยี่ยมด่วน';btn2.onclick=()=>openQuickUpdate(currentPatient.id);e('pd-actions').insertBefore(btn2,e('pd-actions').lastElementChild);}
   if(!document.getElementById('delete-patient-btn')){const btn3=document.createElement('button');btn3.id='delete-patient-btn';btn3.className='btn-ghost detail-edit-btn';btn3.style.color='#B73E4B';btn3.style.borderColor='#E8B8BE';btn3.textContent='ลบผู้ป่วย';btn3.onclick=()=>deletePatient(currentPatient);e('pd-actions').insertBefore(btn3,e('pd-actions').lastElementChild);}
-  e('tab-strip').innerHTML=tabs.map((t,i)=>`<button class="tab-btn ${i===0?'active':''}" data-tab="${t[0]}" onclick="showTab('${t[0]}')">${t[1]}</button>`).join('');
+  e('tab-strip').innerHTML=(()=>{
+    const vh=patientVisitHistory(p);
+    const visitTabs=vh.map((v,i)=>`<button class="tab-btn" data-tab="visit-${i}" onclick="showVisitTab(${i})">ครั้งที่${i+1}</button>`).join('');
+    return `<button class="tab-btn active" data-tab="history" onclick="showTab('history')">ประวัติเดิม</button>${visitTabs}<button class="tab-btn" data-tab="compare" onclick="showTab('compare')">เปรียบเทียบผล</button>`;
+  })();
   renderAllTabPanels(p);showScreen('detail');showTab('history');
 }
 async function deletePatient(p){
@@ -1795,22 +1803,56 @@ function visitSelectorHtml(p){
   return `<div id="visit-selector" class="visit-selector">${h.map((v,i)=>`<button type="button" class="visit-select-btn ${i===h.length-1?'active':''}" onclick="selectVisitSnapshot('${p.id}',${i},this)">ครั้งที่ ${i+1}${v.date?` · ${safe(thaiDate(v.date))}`:''}</button>`).join('')}</div>
   <div id="visit-snapshot-content">${visitSnapshotHtml(p,h.length-1)}</div>`;
 }
+
+function showVisitTab(index){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===`visit-${index}`));
+  document.querySelectorAll('.tab-panel').forEach(x=>x.classList.remove('active'));
+  const panel=e(`panel-visit-${index}`); if(panel)panel.classList.add('active');
+}
+function visitMainTabHtml(p,index){
+  const h=patientVisitHistory(p),v=h[index]; if(!v)return '';
+  const lab=labForVisitIndex(p,index),prev=index>0?labForVisitIndex(p,index-1):null;
+  return `<div class="tab-panel" id="panel-visit-${index}">
+    <h3>การเยี่ยมครั้งที่ ${index+1}${v.date?` · ${safe(thaiDate(v.date))}`:''}</h3>
+    <div class="visit-subtabs">
+      <button type="button" class="visit-subtab active" onclick="showVisitSubtab(${index},'diagnosis',this)">Diagnosis</button>
+      <button type="button" class="visit-subtab" onclick="showVisitSubtab(${index},'lab',this)">Lab</button>
+      <button type="button" class="visit-subtab" onclick="showVisitSubtab(${index},'medication',this)">Medication</button>
+      <button type="button" class="visit-subtab" onclick="showVisitSubtab(${index},'homevisit',this)">Home Visit</button>
+      <button type="button" class="visit-subtab" onclick="showVisitSubtab(${index},'inhomesss',this)">INHOMESSS</button>
+      <button type="button" class="visit-subtab" onclick="showVisitSubtab(${index},'problems',this)">Problems</button>
+      <button type="button" class="visit-subtab" onclick="showVisitSubtab(${index},'careplan',this)">Care Plan</button>
+      <button type="button" class="visit-subtab" onclick="showVisitSubtab(${index},'photos',this)">รูปภาพ</button>
+      <button type="button" class="visit-subtab" onclick="showVisitSubtab(${index},'print',this)">Print A4</button>
+    </div>
+    <div id="visit-subcontent-${index}">${visitSubContentHtml(p,index,'diagnosis')}</div>
+  </div>`;
+}
+function showVisitSubtab(index,type,btn){
+  btn?.parentElement?.querySelectorAll('.visit-subtab').forEach(x=>x.classList.remove('active'));
+  btn?.classList.add('active');
+  const box=e(`visit-subcontent-${index}`); if(box)box.innerHTML=visitSubContentHtml(currentPatient,index,type);
+}
+function visitSubContentHtml(p,index,type){
+  const h=patientVisitHistory(p),v=h[index]||{},lab=labForVisitIndex(p,index),prev=index>0?labForVisitIndex(p,index-1):null;
+  if(type==='diagnosis')return `<div class="kv-grid"><div class="kv"><div class="k">Diagnosis</div><div class="v">${safe(v.diagnosis||p.diagnosis||'—')}</div></div><div class="kv"><div class="k">ICD-10</div><div class="v">${safe(v.icd10||p.icd10||'—')}</div></div></div>`;
+  if(type==='lab')return lab?`${structuredLabTableHtml(lab.results||[],prev)}<h3 style="margin-top:20px">สรุปผล / สิ่งที่ควรติดตาม</h3><div class="visit-note">${textBlock(buildManualLabAnalysis(lab.results||[],prev,lab.date||todayISO()))}</div>`:'<div class="empty-state">ยังไม่มีผล Lab ของครั้งนี้</div>';
+  if(type==='medication')return lines(v.medication||p.medication).map(x=>`<div class="med-row"><div class="med-name">${safe(x)}</div></div>`).join('')||'<div class="empty-state">ยังไม่มีข้อมูลยา</div>';
+  if(type==='homevisit')return `<div class="visit-note">${textBlock(v.note||'—')}</div>`;
+  if(type==='inhomesss')return `<div class="visit-note">${textBlock(v.inhomesss||'—')}</div>`;
+  if(type==='problems')return `<div class="visit-note">${textBlock(v.problems||'—')}</div>`;
+  if(type==='careplan')return `<div class="visit-note">${textBlock(v.care_plan||'—')}</div>`;
+  if(type==='photos'){
+    const photos=Array.isArray(v.photos)&&v.photos.length?v.photos:(index===h.length-1?p.photos:[]);
+    return `<div class="photo-grid">${photos.length?photos.map((x,i)=>`<div class="photo-tile photo-real"><img src="${safe(x.url||x)}"><div class="photo-caption">ภาพที่ ${i+1}</div></div>`).join(''):'<div class="empty-state" style="grid-column:1/-1">ยังไม่มีภาพของครั้งนี้</div>'}</div>`;
+  }
+  if(type==='print')return `<div class="a4-preview" style="max-width:760px"><h4>ข้อมูลผู้ป่วยเยี่ยมบ้าน — ครั้งที่ ${index+1}</h4><div class="a4-sub">${safe(p.name)} · ${safe(p.hn)}</div><div class="visit-note">${textBlock(v.note||'—')}</div>${visitorSignatureHtml(p)}</div><button class="btn-primary print-btn" style="max-width:220px;margin:12px auto" onclick="window.print()">🖨 พิมพ์ครั้งที่ ${index+1}</button>`;
+  return '';
+}
 function renderAllTabPanels(p){
-  const photoHtml=(p.photos||[]).map((x,i)=>`<div class="photo-tile photo-real"><img src="${safe(x.url||x)}" alt="ภาพผู้ป่วย ${i+1}"><div class="photo-caption">ภาพที่ ${i+1}</div></div>`).join('');
   e('tab-panel-wrap').innerHTML=`
   <div class="tab-panel active" id="panel-history"><h3>ประวัติเดิม</h3><div class="kv-grid"><div class="kv"><div class="k">วันเดือนปีเกิด / อายุปัจจุบัน</div><div class="v">${p.birthDate?safe(thaiDate(p.birthDate)):'—'} · ${p.age==null?'—':safe(p.age)+' ปี'}</div></div><div class="kv"><div class="k">กลุ่มโรค</div><div class="v">${safe(p.group||'—')}</div></div><div class="kv"><div class="k">วันที่เริ่มส่งเยี่ยมบ้าน</div><div class="v">${safe(p.startVisit||'—')}</div></div><div class="kv"><div class="k">วันที่จำหน่ายจากผู้ป่วยเยี่ยมบ้าน</div><div class="v">${safe(p.dischargeVisit||'—')}</div></div><div class="kv"><div class="k">ประวัติแพ้ยา</div><div class="v">${safe(p.allergy||'—')}</div></div><div class="kv"><div class="k">นัดเยี่ยมครั้งถัดไป</div><div class="v">${p.nextVisitDate?safe(thaiDate(p.nextVisitDate)):'—'}</div></div><div class="kv form-span-2"><div class="k">ประวัติเดิม</div><div class="v">${textBlock(p.history)}</div></div></div></div>
-  <div class="tab-panel" id="panel-diagnosis"><h3>Diagnosis</h3><div class="kv-grid"><div class="kv"><div class="k">Diagnosis</div><div class="v">${safe(p.diagnosis||'—')}</div></div><div class="kv"><div class="k">ICD-10</div><div class="v">${safe(p.icd10||'—')}</div></div></div></div>
-  <div class="tab-panel" id="panel-lab"><h3>Lab / ผลตรวจ</h3>
-  ${(()=>{const h=Array.isArray(p.lab_history)?p.lab_history:[];if(!h.length)return `<div class="visit-note" style="white-space:pre-wrap">${textBlock(p.lab)}</div>${p.lab_analysis?`<h3 style="margin-top:20px">สรุปผล / สิ่งที่ควรติดตาม</h3><div class="visit-note" style="white-space:pre-wrap">${textBlock(p.lab_analysis)}</div>`:''}`;const cur=h[h.length-1],prev=h.length>1?h[h.length-2]:null;return `<div class="warning-banner" style="background:#f4fafb;color:#294e60;border-color:#cde1e7">Lab ครั้งที่ ${h.length} · ${safe(thaiDate(cur.date||cur.created_at?.slice(0,10)||todayISO()))}${prev?' · เปรียบเทียบกับครั้งก่อนแล้ว':''}</div>${structuredLabTableHtml(cur.results||[],prev)}<h3 style="margin-top:22px">สรุปผล / สิ่งที่ควรติดตาม</h3><div class="visit-note" style="white-space:pre-wrap">${textBlock(buildManualLabAnalysis(cur.results||[],prev,cur.date||todayISO()))}</div>${h.length>1?`<h3 style="margin-top:22px">ประวัติผล Lab</h3>${h.slice().reverse().map((x,i)=>`<div class="lab-file-link"><span>ครั้งที่ ${h.length-i} · ${safe(thaiDate(x.date||x.created_at?.slice(0,10)||''))}</span><span>${(x.results||[]).filter(v=>v.status==='high'||v.status==='low'||v.status==='abnormal').length} ค่าที่ควรติดตาม</span></div>`).join('')}`:''}`})()}
-  <div class="lab-tools" style="margin-top:12px"><button type="button" class="btn-ghost" onclick="openPatientForm(currentPatient)">＋ เพิ่มผล Lab ครั้งใหม่</button></div>
-  </div>
-  <div class="tab-panel" id="panel-medication"><h3>Medication</h3>${lines(p.medication).map(x=>`<div class="med-row"><div class="med-name">${safe(x)}</div></div>`).join('')||'<div class="empty-state">ยังไม่มีข้อมูล</div>'}</div>
-  <div class="tab-panel" id="panel-homevisit"><h3>Home Visit — เลือกดูแต่ละครั้ง</h3><div class="form-help" style="margin-bottom:14px">กด “ครั้งที่ 1 / 2 / 3 ...” เพื่อดูข้อมูลที่บันทึกในการเยี่ยมครั้งนั้น รวมถึง Problems, INHOMESSS, Care Plan และผล Lab ของครั้งนั้น</div>${visitSelectorHtml(p)}<h3 style="margin-top:26px">ไทม์ไลน์ทั้งหมด</h3>${homeVisitTimelineHtml(p)}</div>
-  <div class="tab-panel" id="panel-inhomesss"><h3>INHOMESSS Assessment</h3><div class="visit-note">${textBlock(p.inhomesss)}</div></div>
-  <div class="tab-panel" id="panel-problems"><h3>Problem List</h3><div class="visit-note">${textBlock(p.problems)}</div></div>
-  <div class="tab-panel" id="panel-careplan"><h3>Care Plan</h3><div class="visit-note">${textBlock(p.care_plan)}</div></div>
-  <div class="tab-panel" id="panel-photos"><h3>รูปภาพที่แนบ</h3><div class="photo-grid">${photoHtml||'<div class="empty-state" style="grid-column:1/-1">ยังไม่มีภาพแนบ</div>'}</div></div>
-  <div class="tab-panel" id="panel-print"><h3>พิมพ์ข้อมูลผู้ป่วย</h3><div id="print-area" class="a4-preview" style="max-width:760px"><h4>ข้อมูลผู้ป่วยเยี่ยมบ้าน</h4><div class="a4-sub">${safe(p.name)} · ${safe(p.hn)}</div>${printRows(p)}${p.photos?.length?`<h4 style="text-align:left;margin-top:20px">ภาพถ่ายที่แนบ</h4><div class="print-photo-grid">${p.photos.map(x=>`<img src="${safe(x.url||x)}">`).join('')}</div>`:''}${visitorSignatureHtml(p)}</div><button class="btn-primary print-btn" style="max-width:220px;margin:0 auto" onclick="window.print()">🖨 พิมพ์ข้อมูลผู้ป่วย</button></div>
+  ${patientVisitHistory(p).map((v,i)=>visitMainTabHtml(p,i)).join('')}
   <div class="tab-panel" id="panel-compare"><h3>เปรียบเทียบผล</h3><div class="form-help" style="margin-bottom:14px">เปรียบเทียบพัฒนาการของผู้ป่วยระหว่างการเยี่ยมแต่ละครั้ง ทั้งปัญหาและผล Lab</div>${visitAnalysisHtml(p)}</div>`;
 }
 
