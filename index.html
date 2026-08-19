@@ -617,16 +617,9 @@
         <div class="field form-span-2"><label>ประวัติเดิม</label><textarea id="f-history" rows="3"></textarea></div>
         
 <div class="field form-span-2">
-  <label>Lab / คีย์ผลตรวจ <span class="form-help">กรอกตามใบ Lab จริง ระบบจะประเมินจากช่วงอ้างอิงและเปรียบเทียบกับครั้งก่อน</span></label>
+  <label>Lab / คีย์ผลตรวจ <span class="form-help">กรอกตามใบ Lab จริง ระบบจะผูกผลกับการเยี่ยมครั้งล่าสุดอัตโนมัติและเปรียบเทียบกับครั้งก่อน</span></label>
   <div class="structured-box">
-    <div class="structured-row">
-      <label>วันที่ตรวจ Lab (พ.ศ.)</label>
-      <div class="be-date-row">
-        <select id="lab-date-day"></select>
-        <select id="lab-date-month"></select>
-        <select id="lab-date-year"></select>
-      </div>
-    </div>
+    
     <div id="lab-entry-groups"></div>
 
     <div style="margin-top:14px;padding-top:14px;border-top:1px solid #e2e9ed">
@@ -1290,20 +1283,14 @@ function inlineLabAdvice(key,status,value){
   };
   return advice[key]||`${LAB_REFERENCE[key]?.label||key} ${side}กว่าช่วงอ้างอิง: ควรตรวจสอบผลกับใบ Lab ต้นฉบับ เปรียบเทียบผลเดิม และประเมินร่วมกับอาการ/โรคประจำตัว`;
 }
-function initLabDateSelects(){
-  const d=e('lab-date-day'),m=e('lab-date-month'),y=e('lab-date-year'); if(!d||!m||!y)return;
-  const months=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
-  d.innerHTML='<option value="">วัน</option>'+Array.from({length:31},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join('');
-  m.innerHTML='<option value="">เดือน</option>'+months.map((x,i)=>`<option value="${i+1}">${x}</option>`).join('');
-  const nowBE=new Date().getFullYear()+543;
-  y.innerHTML='<option value="">พ.ศ.</option>'+Array.from({length:8},(_,i)=>nowBE-i).map(v=>`<option value="${v}">${v}</option>`).join('');
-  const now=new Date(); d.value=now.getDate();m.value=now.getMonth()+1;y.value=now.getFullYear()+543;
-}
+
 function getLabISODate(){
-  const d=+e('lab-date-day').value,m=+e('lab-date-month').value,yBE=+e('lab-date-year').value;
-  if(!d||!m||!yBE)return todayISO();
-  const y=yBE-543;
-  return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  const patientId=e('patient-id')?.value||null;
+  const existing=patientId?patients.find(x=>String(x.id)===String(patientId)):null;
+  const visits=patientVisitHistory(existing||{});
+  const latest=visits.length?visits[visits.length-1]:null;
+  if(latest?.date)return latest.date;
+  return existing?.last_visit||todayISO();
 }
 function labInputCell(key){
   const r=referenceFor(key), d=LAB_REFERENCE[key];
@@ -1719,7 +1706,7 @@ function openDiseaseModal(encoded){
 }
 function closeDiseaseModal(){e('disease-modal').classList.add('hidden');}
 
-const tabs=[['history','ประวัติเดิม'],['diagnosis','Diagnosis'],['lab','Lab'],['medication','Medication'],['homevisit','Home Visit'],['inhomesss','INHOMESSS'],['problems','Problems'],['careplan','Care Plan'],['photos','รูปภาพ'],['print','Print A4']];
+const tabs=[['history','ประวัติเดิม'],['diagnosis','Diagnosis'],['lab','Lab'],['medication','Medication'],['homevisit','Home Visit'],['inhomesss','INHOMESSS'],['problems','Problems'],['careplan','Care Plan'],['photos','รูปภาพ'],['print','Print A4'],['compare','เปรียบเทียบผล']];
 function openPatient(id){
   currentPatient=patients.find(p=>String(p.id)===String(id)); if(!currentPatient)return; const p=currentPatient;
   e('pd-initials').textContent=(p.name||'ผู้ป่วย').replace(/\s/g,'').slice(0,2);e('pd-name').textContent=`${p.name} · เยี่ยมครั้งที่ ${visitCount(p)||0}`;e('pd-hn').textContent=p.hn;e('pd-age').textContent=`${p.age==null?'—':p.age+' ปี'} · ${p.sex||'—'} · เกิด ${p.birthDate?thaiDate(p.birthDate):'—'}`;e('pd-address').textContent=`📍 ${p.address||'—'}`;e('pd-phone').textContent=`📞 ${p.phone||'—'}`;e('pd-start').textContent=`เริ่มเยี่ยมบ้าน ${p.startVisit||'—'}`;e('pd-discharge').textContent=p.dischargeDate?`จำหน่าย ${p.dischargeVisit}`:'ยังอยู่ในระบบเยี่ยมบ้าน';
@@ -1767,12 +1754,13 @@ function renderAllTabPanels(p){
   <div class="lab-tools" style="margin-top:12px"><button type="button" class="btn-ghost" onclick="openPatientForm(currentPatient)">＋ เพิ่มผล Lab ครั้งใหม่</button></div>
   </div>
   <div class="tab-panel" id="panel-medication"><h3>Medication</h3>${lines(p.medication).map(x=>`<div class="med-row"><div class="med-name">${safe(x)}</div></div>`).join('')||'<div class="empty-state">ยังไม่มีข้อมูล</div>'}</div>
-  <div class="tab-panel" id="panel-homevisit"><h3>Home Visit — ไทม์ไลน์</h3><div class="form-help" style="margin-bottom:14px">แต่ละครั้งจะถูกบันทึกแยกกันตามวันที่แก้ไข ไม่ทับของเดิม</div>${homeVisitTimelineHtml(p)}<h3 style="margin-top:24px">วิเคราะห์พัฒนาการจากการเยี่ยมบ้าน</h3>${visitAnalysisHtml(p)}</div>
+  <div class="tab-panel" id="panel-homevisit"><h3>Home Visit — ไทม์ไลน์</h3><div class="form-help" style="margin-bottom:14px">แต่ละครั้งจะถูกบันทึกแยกกันตามวันที่แก้ไข ไม่ทับของเดิม</div>${homeVisitTimelineHtml(p)}</div>
   <div class="tab-panel" id="panel-inhomesss"><h3>INHOMESSS Assessment</h3><div class="visit-note">${textBlock(p.inhomesss)}</div></div>
   <div class="tab-panel" id="panel-problems"><h3>Problem List</h3><div class="visit-note">${textBlock(p.problems)}</div></div>
   <div class="tab-panel" id="panel-careplan"><h3>Care Plan</h3><div class="visit-note">${textBlock(p.care_plan)}</div></div>
   <div class="tab-panel" id="panel-photos"><h3>รูปภาพที่แนบ</h3><div class="photo-grid">${photoHtml||'<div class="empty-state" style="grid-column:1/-1">ยังไม่มีภาพแนบ</div>'}</div></div>
-  <div class="tab-panel" id="panel-print"><h3>พิมพ์ข้อมูลผู้ป่วย</h3><div id="print-area" class="a4-preview" style="max-width:760px"><h4>ข้อมูลผู้ป่วยเยี่ยมบ้าน</h4><div class="a4-sub">${safe(p.name)} · ${safe(p.hn)}</div>${printRows(p)}${p.photos?.length?`<h4 style="text-align:left;margin-top:20px">ภาพถ่ายที่แนบ</h4><div class="print-photo-grid">${p.photos.map(x=>`<img src="${safe(x.url||x)}">`).join('')}</div>`:''}${visitorSignatureHtml(p)}</div><button class="btn-primary print-btn" style="max-width:220px;margin:0 auto" onclick="window.print()">🖨 พิมพ์ข้อมูลผู้ป่วย</button></div>`;
+  <div class="tab-panel" id="panel-print"><h3>พิมพ์ข้อมูลผู้ป่วย</h3><div id="print-area" class="a4-preview" style="max-width:760px"><h4>ข้อมูลผู้ป่วยเยี่ยมบ้าน</h4><div class="a4-sub">${safe(p.name)} · ${safe(p.hn)}</div>${printRows(p)}${p.photos?.length?`<h4 style="text-align:left;margin-top:20px">ภาพถ่ายที่แนบ</h4><div class="print-photo-grid">${p.photos.map(x=>`<img src="${safe(x.url||x)}">`).join('')}</div>`:''}${visitorSignatureHtml(p)}</div><button class="btn-primary print-btn" style="max-width:220px;margin:0 auto" onclick="window.print()">🖨 พิมพ์ข้อมูลผู้ป่วย</button></div>
+  <div class="tab-panel" id="panel-compare"><h3>เปรียบเทียบผล</h3><div class="form-help" style="margin-bottom:14px">เปรียบเทียบพัฒนาการของผู้ป่วยระหว่างการเยี่ยมแต่ละครั้ง ทั้งปัญหาและผล Lab</div>${visitAnalysisHtml(p)}</div>`;
 }
 
 function legacyVisitBlocks(p){
@@ -1961,7 +1949,7 @@ function openPatientForm(p=null){
   populateStageSelect(p?.stage||'new');
   renderChoiceGroups();setChoiceValues('group',p?.group||'');setChoiceValues('reason',p?.reason||'');setBEDate('birth',p?.birth_date||p?.birthDate||'');updateBirthAgePreview();setBuddhistDate(p?.last_visit||'');setBEDate('start',p?.home_visit_start_date||p?.startVisitDate||'');setBEDate('discharge',p?.home_visit_discharge_date||p?.dischargeDate||'');setBEDate('nextvisit',p?.nextVisitDate||'');
   e('hv-type').value='';e('hv-result').value='';e('hv-note').value='';syncHomeVisit();
-  setInhomesss(p?.inhomesss||'');renderVisitTeam(p?.home_visit_team||[]);window.__pendingLabSnapshot=null;initLabDateSelects();renderLabEntryGroups();e('lab-extra-rows').innerHTML='';renderLabStructuredPreview([],null);renderExistingLabHistory(p);e('lab-ocr-status').textContent=''; if(e('f-sex'))e('f-sex').onchange=refreshAutomaticReferences;
+  setInhomesss(p?.inhomesss||'');renderVisitTeam(p?.home_visit_team||[]);window.__pendingLabSnapshot=null;renderLabEntryGroups();e('lab-extra-rows').innerHTML='';renderLabStructuredPreview([],null);renderExistingLabHistory(p);e('lab-ocr-status').textContent=''; if(e('f-sex'))e('f-sex').onchange=refreshAutomaticReferences;
   checkWarnings(p);
   e('patient-form-modal').classList.remove('hidden');
 }
