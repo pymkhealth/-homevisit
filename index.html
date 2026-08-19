@@ -207,6 +207,13 @@
   .rank-row:nth-child(1) .rank-num{background:var(--clay-100);color:var(--clay-800);}
   .rank-body{flex:1;}
   .rank-body .name{font-size:13.5px;font-weight:500;margin-bottom:2px;}
+  .visit-count-badge{display:inline-flex;align-items:center;margin-left:7px;padding:2px 8px;border-radius:999px;background:#E8F5F6;color:#167C89;font-size:11px;font-weight:600;white-space:nowrap;vertical-align:middle;}
+  .visit-selector{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px;}
+  .visit-select-btn{border:1px solid #D7E3E8;background:#fff;color:#486675;border-radius:9px;padding:7px 12px;font-size:12.5px;cursor:pointer;}
+  .visit-select-btn.active{background:#E7F5F6;border-color:#9ED5DA;color:#137C8B;font-weight:600;}
+  .visit-snapshot{border:1px solid #DFE8EC;border-radius:12px;background:#fff;padding:16px;}
+  .visit-snapshot .snapshot-head{font-weight:700;color:#173D55;margin-bottom:12px;}
+
   .rank-body .note{font-size:12px;color:var(--ink-soft);}
   .risk-score{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--ink-soft);}
 
@@ -1662,7 +1669,7 @@ function setTodayBucket(key,silent){
 
 function renderDashboard(){
   const urgent=patients.filter(p=>p.status==='urgent');
-  e('urgent-list').innerHTML=urgent.length?urgent.map(p=>`<div class="card urgent-card" onclick="openPatient('${p.id}')"><div class="name">${safe(p.name)}</div><div class="reason">${safe(p.reason||'ควรติดตามเร่งด่วน')}</div><div class="meta">${safe(p.hn)} · เยี่ยมล่าสุด ${safe(p.lastVisit)}</div></div>`).join(''):'<div class="empty-state" style="grid-column:1/-1">ไม่มีเคสเร่งด่วน</div>';
+  e('urgent-list').innerHTML=urgent.length?urgent.map(p=>`<div class="card urgent-card" onclick="openPatient('${p.id}')"><div class="name">${safe(p.name)}<span class="visit-count-badge">เยี่ยมครั้งที่ ${visitCount(p)||0}</span></div><div class="reason">${safe(p.reason||'ควรติดตามเร่งด่วน')}</div><div class="meta">${safe(p.hn)} · เยี่ยมล่าสุด ${safe(p.lastVisit)}</div></div>`).join(''):'<div class="empty-state" style="grid-column:1/-1">ไม่มีเคสเร่งด่วน</div>';
   const map=new Map();
   patients.forEach(p=>{ lines((p.group||'').replace(/\//g,'\n')).forEach(g=>map.set(g,(map.get(g)||0)+1)); });
   const diseaseGroups=[...map.entries()].sort((a,b)=>b[1]-a[1]);
@@ -1671,9 +1678,9 @@ function renderDashboard(){
   if(headCounts[0]) headCounts[0].textContent=`${urgent.length} ราย`;
   if(headCounts[1]){ headCounts[1].textContent=`ผู้ป่วยทั้งหมด ${patients.length} ราย`; headCounts[1].style.cursor='pointer'; headCounts[1].onclick=()=>{setPatientFilter('all',null);showScreen('list');}; }
   const ranked=[...patients].sort((a,b)=>scorePatient(b)-scorePatient(a)).slice(0,5);
-  e('top5-list').innerHTML=ranked.length?ranked.map((p,i)=>`<div class="rank-row" onclick="openPatient('${p.id}')"><div class="rank-num">${i+1}</div><div class="rank-body"><div class="name">${safe(p.name)}</div><div class="note">${safe(p.group||'—')}</div></div><div class="risk-score">${safe(p.hn)}</div></div>`).join(''):'<div class="empty-state">ยังไม่มีข้อมูลผู้ป่วย</div>';
+  e('top5-list').innerHTML=ranked.length?ranked.map((p,i)=>`<div class="rank-row" onclick="openPatient('${p.id}')"><div class="rank-num">${i+1}</div><div class="rank-body"><div class="name">${safe(p.name)}<span class="visit-count-badge">เยี่ยมครั้งที่ ${visitCount(p)||0}</span></div><div class="note">${safe(p.group||'—')}</div></div><div class="risk-score">${safe(p.hn)}</div></div>`).join(''):'<div class="empty-state">ยังไม่มีข้อมูลผู้ป่วย</div>';
   const overdue=patients.filter(p=>p.status==='overdue');
-  e('overdue-list').innerHTML=overdue.length?overdue.map(p=>`<div class="card overdue-card" onclick="openPatient('${p.id}')"><div><div class="name">${safe(p.name)}</div><div class="meta">${safe(p.group)} · เยี่ยมล่าสุด ${safe(p.lastVisit)}</div></div><div class="days">${p.overdueDays}<span>วันเกินกำหนด</span></div></div>`).join(''):'<div class="empty-state">ไม่มีเคสเกินกำหนด</div>';
+  e('overdue-list').innerHTML=overdue.length?overdue.map(p=>`<div class="card overdue-card" onclick="openPatient('${p.id}')"><div><div class="name">${safe(p.name)}<span class="visit-count-badge">เยี่ยมครั้งที่ ${visitCount(p)||0}</span></div><div class="meta">${safe(p.group)} · เยี่ยมล่าสุด ${safe(p.lastVisit)}</div></div><div class="days">${p.overdueDays}<span>วันเกินกำหนด</span></div></div>`).join(''):'<div class="empty-state">ไม่มีเคสเกินกำหนด</div>';
   if(headCounts[2]){ headCounts[2].textContent=`${overdue.length} ราย`; headCounts[2].style.cursor='pointer'; headCounts[2].onclick=()=>{setPatientFilter('overdue',null);showScreen('list');}; }
 }
 function scorePatient(p){return p.status==='urgent'?1000:p.status==='overdue'?500+(p.overdueDays||0):0;}
@@ -1694,7 +1701,7 @@ function renderList(){
   else if(activePatientFilter==='today') arr=arr.filter(p=>p.nextVisitDate===today&&p.stage!=='discharged');
   else if(activePatientFilter==='incomplete') arr=arr.filter(p=>patientCompleteness(p).pct<70);
   else if(activePatientFilter==='discharged') arr=arr.filter(p=>p.stage==='discharged');
-  e('patient-table-body').innerHTML=arr.length?arr.map(p=>`<tr><td class="hn" onclick="openPatient('${p.id}')">${safe(p.hn)}</td><td onclick="openPatient('${p.id}')"><div class="p-name">${safe(p.name)}</div><div class="p-sub">${p.age==null?'—':safe(p.age)+' ปี'} · ${safe(p.sex||'—')}</div></td><td onclick="openPatient('${p.id}')">${safe(p.group||'—')}</td><td onclick="openPatient('${p.id}')">${stageBadgeHtml(p)}</td><td onclick="openPatient('${p.id}')">${safe(p.lastVisit)}</td><td onclick="openPatient('${p.id}')">${p.nextVisitDate?safe(thaiDate(p.nextVisitDate)):'—'}</td><td><button class="quick-btn" onclick="event.stopPropagation();openQuickUpdate('${p.id}')">＋ บันทึกเยี่ยม</button></td></tr>`).join(''):'<tr><td colspan="7"><div class="empty-state">ไม่พบข้อมูลผู้ป่วย</div></td></tr>';
+  e('patient-table-body').innerHTML=arr.length?arr.map(p=>`<tr><td class="hn" onclick="openPatient('${p.id}')">${safe(p.hn)}</td><td onclick="openPatient('${p.id}')"><div class="p-name">${safe(p.name)}<span class="visit-count-badge">เยี่ยมครั้งที่ ${visitCount(p)||0}</span></div><div class="p-sub">${p.age==null?'—':safe(p.age)+' ปี'} · ${safe(p.sex||'—')}</div></td><td onclick="openPatient('${p.id}')">${safe(p.group||'—')}</td><td onclick="openPatient('${p.id}')">${stageBadgeHtml(p)}</td><td onclick="openPatient('${p.id}')">${safe(p.lastVisit)}</td><td onclick="openPatient('${p.id}')">${p.nextVisitDate?safe(thaiDate(p.nextVisitDate)):'—'}</td><td><button class="quick-btn" onclick="event.stopPropagation();openQuickUpdate('${p.id}')">＋ บันทึกเยี่ยม</button></td></tr>`).join(''):'<tr><td colspan="7"><div class="empty-state">ไม่พบข้อมูลผู้ป่วย</div></td></tr>';
   document.querySelector('#screen-list .topline .sub').textContent=`ทั้งหมด ${patients.length} ราย ในความดูแล`;
 }
 
@@ -1744,6 +1751,50 @@ async function deletePatient(p){
 }
 function showTab(id){document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id==='panel-'+id));}
 function textBlock(v){return safe(v||'—').replace(/\n/g,'<br>');}
+
+function labForVisitIndex(p,index){
+  const visits=patientVisitHistory(p), labs=Array.isArray(p?.lab_history)?p.lab_history:[];
+  if(labs[index])return labs[index];
+  const v=visits[index];
+  if(!v?.date)return null;
+  const vd=new Date(v.date+'T00:00:00').getTime();
+  let best=null,diff=Infinity;
+  for(const l of labs){
+    const d=l.date||l.created_at?.slice(0,10); if(!d)continue;
+    const x=Math.abs(new Date(d+'T00:00:00').getTime()-vd);
+    if(x<diff){diff=x;best=l;}
+  }
+  return diff<=7*86400000?best:null;
+}
+function visitSnapshotHtml(p,index){
+  const h=patientVisitHistory(p),v=h[index]; if(!v)return '<div class="empty-state">ไม่พบข้อมูลการเยี่ยมครั้งนี้</div>';
+  const lab=labForVisitIndex(p,index), prev=index>0?labForVisitIndex(p,index-1):null;
+  const probs=v.problems||'',care=v.care_plan||'',inh=v.inhomesss||'';
+  return `<div class="visit-snapshot">
+    <div class="snapshot-head">การเยี่ยมครั้งที่ ${index+1}${v.date?` · ${safe(thaiDate(v.date))}`:v.dateText?` · ${safe(v.dateText)}`:''}</div>
+    <div class="kv-grid">
+      <div class="kv form-span-2"><div class="k">ผลการเยี่ยมบ้าน</div><div class="v">${textBlock(v.note)}</div></div>
+      <div class="kv form-span-2"><div class="k">Problems ครั้งนี้</div><div class="v">${textBlock(probs||'—')}</div></div>
+      <div class="kv form-span-2"><div class="k">INHOMESSS ครั้งนี้</div><div class="v">${textBlock(inh||'—')}</div></div>
+      <div class="kv form-span-2"><div class="k">Care Plan ครั้งนี้</div><div class="v">${textBlock(care||'—')}</div></div>
+    </div>
+    <h3 style="margin-top:20px">ผล Lab ของการเยี่ยมครั้งนี้</h3>
+    ${lab?structuredLabTableHtml(lab.results||[],prev):'<div class="empty-state">ยังไม่มีผล Lab ที่ผูกกับการเยี่ยมครั้งนี้</div>'}
+    ${lab?`<h3 style="margin-top:20px">สรุปผล Lab / สิ่งที่ควรติดตาม</h3><div class="visit-note">${textBlock(buildManualLabAnalysis(lab.results||[],prev,lab.date||todayISO()))}</div>`:''}
+  </div>`;
+}
+function selectVisitSnapshot(patientId,index,btn){
+  const p=patients.find(x=>String(x.id)===String(patientId)); if(!p)return;
+  document.querySelectorAll('#visit-selector .visit-select-btn').forEach(x=>x.classList.remove('active'));
+  btn?.classList.add('active');
+  const box=e('visit-snapshot-content'); if(box)box.innerHTML=visitSnapshotHtml(p,index);
+}
+function visitSelectorHtml(p){
+  const h=patientVisitHistory(p);
+  if(!h.length)return '<div class="empty-state">ยังไม่มีข้อมูลการเยี่ยมบ้าน</div>';
+  return `<div id="visit-selector" class="visit-selector">${h.map((v,i)=>`<button type="button" class="visit-select-btn ${i===h.length-1?'active':''}" onclick="selectVisitSnapshot('${p.id}',${i},this)">ครั้งที่ ${i+1}${v.date?` · ${safe(thaiDate(v.date))}`:''}</button>`).join('')}</div>
+  <div id="visit-snapshot-content">${visitSnapshotHtml(p,h.length-1)}</div>`;
+}
 function renderAllTabPanels(p){
   const photoHtml=(p.photos||[]).map((x,i)=>`<div class="photo-tile photo-real"><img src="${safe(x.url||x)}" alt="ภาพผู้ป่วย ${i+1}"><div class="photo-caption">ภาพที่ ${i+1}</div></div>`).join('');
   e('tab-panel-wrap').innerHTML=`
@@ -1754,7 +1805,7 @@ function renderAllTabPanels(p){
   <div class="lab-tools" style="margin-top:12px"><button type="button" class="btn-ghost" onclick="openPatientForm(currentPatient)">＋ เพิ่มผล Lab ครั้งใหม่</button></div>
   </div>
   <div class="tab-panel" id="panel-medication"><h3>Medication</h3>${lines(p.medication).map(x=>`<div class="med-row"><div class="med-name">${safe(x)}</div></div>`).join('')||'<div class="empty-state">ยังไม่มีข้อมูล</div>'}</div>
-  <div class="tab-panel" id="panel-homevisit"><h3>Home Visit — ไทม์ไลน์</h3><div class="form-help" style="margin-bottom:14px">แต่ละครั้งจะถูกบันทึกแยกกันตามวันที่แก้ไข ไม่ทับของเดิม</div>${homeVisitTimelineHtml(p)}</div>
+  <div class="tab-panel" id="panel-homevisit"><h3>Home Visit — เลือกดูแต่ละครั้ง</h3><div class="form-help" style="margin-bottom:14px">กด “ครั้งที่ 1 / 2 / 3 ...” เพื่อดูข้อมูลที่บันทึกในการเยี่ยมครั้งนั้น รวมถึง Problems, INHOMESSS, Care Plan และผล Lab ของครั้งนั้น</div>${visitSelectorHtml(p)}<h3 style="margin-top:26px">ไทม์ไลน์ทั้งหมด</h3>${homeVisitTimelineHtml(p)}</div>
   <div class="tab-panel" id="panel-inhomesss"><h3>INHOMESSS Assessment</h3><div class="visit-note">${textBlock(p.inhomesss)}</div></div>
   <div class="tab-panel" id="panel-problems"><h3>Problem List</h3><div class="visit-note">${textBlock(p.problems)}</div></div>
   <div class="tab-panel" id="panel-careplan"><h3>Care Plan</h3><div class="visit-note">${textBlock(p.care_plan)}</div></div>
