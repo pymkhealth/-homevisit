@@ -487,9 +487,10 @@
     .visit-a4 .a4-visit-section{
       display:grid!important;
       grid-template-columns:135px 1fr!important;
-      padding:7px 0!important;
+      padding:6px 0!important;
       border-bottom:1px solid #d8e1e5!important;
-      break-inside:avoid!important;
+      break-inside:auto!important;
+      page-break-inside:auto!important;
     }
 
     .visit-a4 .a4-visit-label{
@@ -580,7 +581,7 @@
   .visit-tab-delete{border:0;border-left:1px solid #E3EAED;background:#fff;color:#9A6970;padding:0 8px;font-size:16px;cursor:pointer;}
   .visit-tab-delete:hover{background:#FFF0F1;color:#B73343;}
 
-/* ===== v14.1 Bright Medical Theme ===== */
+/* ===== v14.4 Bright Medical Theme ===== */
 :root{
   --navy:#123B5D;
   --teal:#12A6B5;
@@ -704,7 +705,7 @@ body{
   box-shadow:0 0 0 3px rgba(66,191,199,.12);
 }
 
-/* ===== v14.1 Formal Teal Pastel Theme (matched to selected reference) ===== */
+/* ===== v14.4 Formal Teal Pastel Theme (matched to selected reference) ===== */
 :root{
   --navy:#123F59;
   --teal:#0786A0;
@@ -887,6 +888,103 @@ body{
   .a4-visit-value{color:#263F4D;white-space:pre-wrap;min-width:0;}
   .visit-a4 .print-photo-grid{margin-top:10px;}
   
+
+  @media print{
+    .visit-a4,
+    .visit-a4 *{
+      orphans:2;
+      widows:2;
+    }
+
+    .visit-a4 h1,
+    .visit-a4 h2,
+    .visit-a4 h3,
+    .visit-a4 h4{
+      break-after:avoid!important;
+      page-break-after:avoid!important;
+      margin-top:8px!important;
+      margin-bottom:6px!important;
+    }
+
+    .visit-a4 table{
+      break-inside:auto!important;
+      page-break-inside:auto!important;
+    }
+
+    .visit-a4 thead{
+      display:table-header-group!important;
+    }
+
+    .visit-a4 tbody{
+      display:table-row-group!important;
+    }
+
+    .visit-a4 tr{
+      break-inside:auto!important;
+      page-break-inside:auto!important;
+    }
+
+    .visit-a4 td,
+    .visit-a4 th{
+      break-inside:auto!important;
+      page-break-inside:auto!important;
+    }
+
+    .visit-a4 .kv-grid,
+    .visit-a4 .kv,
+    .visit-a4 .visit-note,
+    .visit-a4 .a4-visit-value,
+    .visit-a4 .a4-visit-label{
+      break-inside:auto!important;
+      page-break-inside:auto!important;
+    }
+
+    /* รูปภาพแต่ละภาพไม่ถูกตัดกลางภาพ แต่ grid สามารถไหลต่อหน้าใหม่ได้ */
+    .visit-a4 .print-photo-grid{
+      break-inside:auto!important;
+      page-break-inside:auto!important;
+      margin-top:8px!important;
+      margin-bottom:8px!important;
+    }
+
+    .visit-a4 .print-photo-grid > div{
+      break-inside:avoid!important;
+      page-break-inside:avoid!important;
+      margin-bottom:6px!important;
+    }
+
+    /* ลายเซ็นให้เริ่มต่อจากเนื้อหาทันที ไม่บังคับยกทั้งชุดถ้าไม่จำเป็น */
+    .visit-a4 .visitor-signatures{
+      break-inside:auto!important;
+      page-break-inside:auto!important;
+      margin-top:10px!important;
+      padding-top:8px!important;
+    }
+
+    .visit-a4 .visitor-signature-item{
+      break-inside:avoid!important;
+      page-break-inside:avoid!important;
+    }
+
+    /* ลดช่องว่างทั่วไปในเอกสาร */
+    .visit-a4 p,
+    .visit-a4 .visit-note,
+    .visit-a4 .a4-sub{
+      margin-top:3px!important;
+      margin-bottom:4px!important;
+    }
+
+    .visit-a4 .kv-grid{
+      gap:4px!important;
+      margin-top:6px!important;
+      margin-bottom:6px!important;
+    }
+
+    .visit-a4 .kv{
+      padding:6px!important;
+      margin:0!important;
+    }
+  }
 </style>
 </head>
 <body>
@@ -1041,7 +1139,7 @@ body{
           <div class="pd-actions" id="pd-actions">
             <span class="stage-badge" id="pd-stage">—</span>
             <span class="badge urgent" id="pd-badge">เร่งด่วน</span>
-            <button class="btn-ghost" onclick="showTab('print')">พิมพ์ A4</button>
+            
           </div>
         </div>
         <div class="tab-strip" id="tab-strip"></div>
@@ -2392,7 +2490,7 @@ function visitMainTabHtml(p,index){
       <button type="button" class="visit-subtab" onclick="showVisitSubtab(${index},'problems',this)">Problems</button>
       <button type="button" class="visit-subtab" onclick="showVisitSubtab(${index},'careplan',this)">Care Plan</button>
       <button type="button" class="visit-subtab" onclick="showVisitSubtab(${index},'photos',this)">รูปภาพ</button>
-      <button type="button" class="visit-subtab" onclick="showVisitSubtab(${index},'print',this)">Print A4</button>
+      <button type="button" class="visit-subtab" onclick="showVisitSubtab(${index},'print',this)">รายงานผลการเยี่ยมบ้าน</button>
     </div>
     <div id="visit-subcontent-${index}">${visitSubContentHtml(p,index,'diagnosis')}</div>
   </div>`;
