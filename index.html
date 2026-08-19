@@ -581,7 +581,7 @@
   .visit-tab-delete{border:0;border-left:1px solid #E3EAED;background:#fff;color:#9A6970;padding:0 8px;font-size:16px;cursor:pointer;}
   .visit-tab-delete:hover{background:#FFF0F1;color:#B73343;}
 
-/* ===== v14.4 Bright Medical Theme ===== */
+/* ===== v14.5 Bright Medical Theme ===== */
 :root{
   --navy:#123B5D;
   --teal:#12A6B5;
@@ -705,7 +705,7 @@ body{
   box-shadow:0 0 0 3px rgba(66,191,199,.12);
 }
 
-/* ===== v14.4 Formal Teal Pastel Theme (matched to selected reference) ===== */
+/* ===== v14.5 Formal Teal Pastel Theme (matched to selected reference) ===== */
 :root{
   --navy:#123F59;
   --teal:#0786A0;
@@ -985,6 +985,19 @@ body{
       margin:0!important;
     }
   }
+
+  .disease-lab-box{margin:0 0 12px;padding:12px;border:1px solid #CFE3E8;border-radius:10px;background:#F7FBFC}
+  .disease-lab-title{font-weight:700;color:#16495F;margin-bottom:7px}
+  .disease-lab-chips{display:flex;flex-wrap:wrap;gap:6px}
+  .disease-lab-chip,.disease-lab-tag{display:inline-flex;padding:3px 8px;border-radius:999px;background:#DDEEF3;color:#075F75;font-size:11px;font-weight:600}
+  .disease-lab-tag{margin-left:6px;background:#E8F6EA;color:#26704F}
+  .disease-lab-recommended-row{background:#FCFEFC}
+  .lab-ref-mini{font-size:10.5px;color:#7A8F99;font-weight:400;margin-top:2px}
+  .lab-target-row td{border-bottom:1px solid #EDF2F4}
+  .lab-target-note{width:100%;padding:7px 9px!important;font-size:12px!important;background:#FBFCFD!important}
+  .lab-target-feedback{font-size:11px;margin-top:3px;color:#738994}
+  .lab-target-feedback.target-met{color:#187A55;font-weight:600}
+  .lab-target-feedback.target-not-met{color:#A45D14;font-weight:600}
 </style>
 </head>
 <body>
@@ -1174,7 +1187,7 @@ body{
         <div class="field form-span-2"><label>เหตุผล/ข้อควรติดตาม <span class="form-help">เลือกได้หลายข้อ</span></label><input id="f-reason" type="hidden"><div id="reason-options" class="option-box"></div><div class="lab-tools"><input id="f-reason-other" placeholder="เหตุผลอื่น ๆ" style="max-width:420px"><button type="button" class="btn-ghost" onclick="addOtherOption('reason')">เพิ่ม</button></div></div>
         <div class="field form-span-2"><label>ที่อยู่</label><textarea id="f-address" rows="2"></textarea></div>
         <div class="field"><label>โทรศัพท์</label><input id="f-phone" type="tel"></div>
-        <div class="field"><label>Diagnosis</label><input id="f-diagnosis"></div>
+        <div class="field"><label>Diagnosis</label><input id="f-diagnosis" oninput="renderLabEntryGroups()"></div>
         <div class="field"><label>ICD-10</label><input id="f-icd10"></div>
         <div class="field"><label>ประวัติแพ้ยา</label><input id="f-allergy"></div>
         <div class="field form-span-2"><label>ประวัติเดิม</label><textarea id="f-history" rows="3"></textarea></div>
@@ -1183,6 +1196,7 @@ body{
   <label>Lab / คีย์ผลตรวจ <span class="form-help">กรอกตามใบ Lab จริง ระบบจะผูกผลกับการเยี่ยมครั้งล่าสุดอัตโนมัติและเปรียบเทียบกับครั้งก่อน</span></label>
   <div class="structured-box">
     
+    <div id="disease-lab-recommendation" class="disease-lab-box"></div>
     <div id="lab-entry-groups"></div>
 
     <div style="margin-top:14px;padding-top:14px;border-top:1px solid #e2e9ed">
@@ -1703,23 +1717,22 @@ function buildLabAnalysis(results,previous){
   return out;
 }
 function structuredLabTableHtml(results,previous=null){
-  if(!results?.length)return '<div class="empty-state">ยังไม่มีค่าที่ระบบแยกได้</div>';
+  if(!results?.length)return '<div class="empty-state">ยังไม่มีผล Lab</div>';
   const pm=new Map((previous?.results||[]).map(x=>[x.key,x]));
   return `<div style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">
-  <thead><tr>
-    <th style="text-align:left;padding:8px;border-bottom:1px solid #d8e1e7">รายการ</th>
-    <th>ผลครั้งนี้</th><th>เกณฑ์</th><th>สถานะ</th>
-    ${previous?'<th>ครั้งก่อน</th><th>เปลี่ยนแปลง</th>':''}
-  </tr></thead><tbody>
-  ${results.map(x=>{const p=pm.get(x.key);return `<tr>
-    <td style="padding:8px;border-bottom:1px solid #edf1f3;font-weight:600">${safe(x.label)}</td>
-    <td style="padding:8px;text-align:center">${safe(resultDisplay(x))}</td>
-    <td style="padding:8px;text-align:center">${safe(x.refText||'—')}</td>
-    <td style="padding:8px;text-align:center"><b>${safe(labStatusThai(x.status))}</b></td>
-    ${previous?`<td style="padding:8px;text-align:center">${p?safe(resultDisplay(p)):'—'}</td>
-    <td style="padding:8px;text-align:center">${p?safe(compareLabValue(x,p)):'—'}</td>`:''}
-  </tr>`}).join('')}
-  </tbody></table></div>`;
+    <thead><tr><th style="text-align:left;padding:8px">รายการ</th><th>ผล</th><th>ค่าปกติ</th><th>สถานะ</th><th>เป้าหมายการรักษา</th>${previous?'<th>ครั้งก่อน</th><th>แนวโน้ม</th>':''}</tr></thead>
+    <tbody>${results.map(x=>{
+      const p=pm.get(x.key);
+      return `<tr>
+        <td style="padding:8px;border-bottom:1px solid #edf1f3;font-weight:600">${safe(x.label)}</td>
+        <td style="padding:8px;text-align:center">${safe(resultDisplay(x))}</td>
+        <td style="padding:8px;text-align:center">${safe(x.refText||'—')}</td>
+        <td style="padding:8px;text-align:center"><b>${safe(labStatusThai(x.status))}</b></td>
+        <td style="padding:8px">${x.treatmentTargetNote?`${safe(x.treatmentTargetNote)}<div style="font-size:11px;margin-top:3px">${safe(targetStatusThai(x.treatmentTargetStatus))}</div>`:'—'}</td>
+        ${previous?`<td style="padding:8px;text-align:center">${p?safe(resultDisplay(p)):'—'}</td><td style="padding:8px">${p?safe(labTrendInterpretation(x,p)):'—'}</td>`:''}
+      </tr>`;
+    }).join('')}</tbody>
+  </table></div>`;
 }
 function renderLabStructuredPreview(results,previous){
   const box=e('lab-structured-preview');if(!box)return;
@@ -1771,7 +1784,12 @@ const LAB_REFERENCE={
   hba1c:{label:'HbA1c',unit:'%',range:[4.0,6.0]},
   calcium:{label:'Calcium',unit:'mg/dL',range:[8.9,10.6]},
   phosphorus:{label:'Phosphorus',unit:'mg/dL',range:[2.5,4.5]},
-  magnesium:{label:'Magnesium',unit:'mg/dL',male:[1.8,2.6],female:[1.9,2.5]}
+  magnesium:{label:'Magnesium',unit:'mg/dL',male:[1.8,2.6],female:[1.9,2.5]},
+  urine_acr:{label:'Urine ACR',unit:'mg/g',max:30},
+  ferritin:{label:'Ferritin',unit:'ng/mL'},
+  tsh:{label:'TSH',unit:'µIU/mL'},
+  ft4:{label:'FT4',unit:'ng/dL'},
+  pt_inr:{label:'PT/INR',unit:''}
 };
 
 const LAB_FORM_GROUPS=[
@@ -1782,6 +1800,47 @@ const LAB_FORM_GROUPS=[
   {id:'uric',title:'Uric acid',keys:['uric_acid']},
   {id:'lipid',title:'Lipid profile',keys:['cholesterol','triglyceride','hdl','ldl']}
 ];
+
+const DISEASE_LAB_MAP=[
+  {id:'dm',match:/เบาหวาน|diabetes|\bdm\b/i,label:'เบาหวาน (DM)',keys:['fbs','hba1c','creatinine','egfr','urine_acr','cholesterol','triglyceride','hdl','ldl']},
+  {id:'ht',match:/ความดัน|hypertension|\bht\b/i,label:'ความดันโลหิตสูง (HT)',keys:['creatinine','egfr','na','k','urine_acr','fbs','hba1c','cholesterol','triglyceride','hdl','ldl']},
+  {id:'lipid',match:/ไขมัน|dyslip|hyperlip|cholesterol/i,label:'ไขมันในเลือดสูง',keys:['cholesterol','triglyceride','hdl','ldl','ast','alt']},
+  {id:'ckd',match:/ไตเรื้อรัง|chronic kidney|\bckd\b|renal/i,label:'โรคไตเรื้อรัง (CKD)',keys:['bun','creatinine','egfr','na','k','co2','hb','hct','urine_acr','calcium','phosphorus']},
+  {id:'hf',match:/heart failure|หัวใจล้มเหลว|\bhf\b/i,label:'Heart failure',keys:['bun','creatinine','egfr','na','k']},
+  {id:'cad',match:/cad|coronary|ischemic heart|หลอดเลือดหัวใจ/i,label:'โรคหลอดเลือดหัวใจ',keys:['cholesterol','triglyceride','hdl','ldl','fbs','hba1c','creatinine','egfr']},
+  {id:'stroke',match:/stroke|cva|หลอดเลือดสมอง/i,label:'โรคหลอดเลือดสมอง',keys:['cholesterol','triglyceride','hdl','ldl','fbs','hba1c','creatinine','egfr','hb','hct']},
+  {id:'anemia',match:/anemia|โลหิตจาง|ซีด/i,label:'ภาวะโลหิตจาง',keys:['hb','hct','rbc','mcv','mch','mchc','ferritin']},
+  {id:'gout',match:/gout|เกาต์|uric/i,label:'เกาต์ / Uric acid สูง',keys:['uric_acid','creatinine','egfr']},
+  {id:'liver',match:/liver|ตับ|cirrhosis|hepat/i,label:'โรคตับ',keys:['ast','alt','alp','total_bilirubin','direct_bilirubin','albumin','total_protein']},
+  {id:'thyroid',match:/thyroid|ไทรอยด์/i,label:'โรคไทรอยด์',keys:['tsh','ft4']},
+  {id:'warfarin',match:/warfarin|วาร์ฟาริน/i,label:'ใช้ Warfarin',keys:['pt_inr','hb','hct']}
+];
+
+function currentDiseaseText(){
+  return `${e('f-group')?.value||''} ${e('f-diagnosis')?.value||''}`;
+}
+function diseaseLabRecommendations(){
+  const text=currentDiseaseText();
+  const matched=DISEASE_LAB_MAP.filter(d=>d.match.test(text));
+  const keys=[...new Set(matched.flatMap(d=>d.keys))];
+  return {matched,keys};
+}
+function renderDiseaseLabRecommendation(){
+  const box=e('disease-lab-recommendation');if(!box)return;
+  const {matched,keys}=diseaseLabRecommendations();
+  if(!matched.length){
+    box.innerHTML=`<div class="disease-lab-title">Lab แนะนำตามโรค</div>
+      <div class="form-help">เมื่อเลือกกลุ่มโรคหรือกรอก Diagnosis ระบบจะแสดงรายการ Lab ที่ควรพิจารณาติดตาม โดยยังสามารถกรอก Lab อื่นตามคำสั่งแพทย์ได้</div>`;
+    return;
+  }
+  box.innerHTML=`<div class="disease-lab-title">Lab แนะนำตามโรค: ${matched.map(x=>safe(x.label)).join(' + ')}</div>
+    <div class="disease-lab-chips">${keys.map(k=>{
+      const d=LAB_REFERENCE[k]||{label:k};
+      return `<span class="disease-lab-chip">${safe(d.label||k)}</span>`;
+    }).join('')}</div>
+    <div class="form-help" style="margin-top:7px">รายการนี้เป็นตัวช่วยเตือนการติดตาม ไม่แทนคำสั่งแพทย์หรือแนวทางเฉพาะราย</div>`;
+}
+
 
 function patientSexKey(){
   const sex=(e('f-sex')?.value||'').trim();
@@ -1858,9 +1917,18 @@ function getLabISODate(){
 function labInputCell(key){
   const r=referenceFor(key), d=LAB_REFERENCE[key];
   return `<tr data-lab-key="${safe(key)}">
-    <td style="padding:7px 5px;font-weight:600;white-space:nowrap">${safe(d.label)}</td>
+    <td style="padding:7px 5px;font-weight:600;white-space:nowrap">
+      ${safe(d.label)}
+      <div class="lab-ref-mini">ค่าปกติ ${safe(r.refText||'ขึ้นกับห้องปฏิบัติการ')}</div>
+    </td>
     <td style="padding:5px"><input class="lab-value" inputmode="decimal" placeholder="ผล" oninput="updateLabRowFeedback(this)" style="width:95px"></td>
     <td style="padding:5px">${safe(d.unit||'')}</td>
+  </tr>
+  <tr class="lab-target-row" data-lab-target-for="${safe(key)}">
+    <td colspan="3" style="padding:0 5px 7px">
+      <input class="lab-target-note" placeholder="หมายเหตุ / เป้าหมายการรักษาตามแผนแพทย์ (ไม่บังคับ)" oninput="updateLabTargetFeedback(this)">
+      <div class="lab-target-feedback"></div>
+    </td>
   </tr>
   <tr class="lab-advice-row" data-lab-advice-for="${safe(key)}" style="display:none">
     <td colspan="3" style="padding:0 5px 9px">
@@ -1870,6 +1938,8 @@ function labInputCell(key){
 }
 function renderLabEntryGroups(){
   const box=e('lab-entry-groups'); if(!box)return;
+  renderDiseaseLabRecommendation();
+  const recommended=new Set(diseaseLabRecommendations().keys);
   box.innerHTML=LAB_FORM_GROUPS.map(g=>`<div style="margin-top:14px">
     <div style="font-weight:700;color:#173d55;background:#eef5f7;padding:7px 9px;border-radius:7px">${safe(g.title)}</div>
     <div style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">
@@ -1877,6 +1947,13 @@ function renderLabEntryGroups(){
       <tbody>${g.keys.map(labInputCell).join('')}</tbody>
     </table></div>
   </div>`).join('');
+  document.querySelectorAll('#lab-entry-groups tr[data-lab-key]').forEach(tr=>{
+    if(recommended.has(tr.dataset.labKey)){
+      tr.classList.add('disease-lab-recommended-row');
+      const first=tr.querySelector('td');
+      if(first&&!first.querySelector('.disease-lab-tag'))first.insertAdjacentHTML('beforeend','<span class="disease-lab-tag">แนะนำตามโรค</span>');
+    }
+  });
 }
 function refreshAutomaticReferences(){
   document.querySelectorAll('#lab-entry-groups tr[data-lab-key]').forEach(tr=>{
@@ -1884,13 +1961,48 @@ function refreshAutomaticReferences(){
     if(inp&&inp.value.trim())updateLabRowFeedback(inp);
   });
 }
+function parseTreatmentTarget(note,value){
+  const t=String(note||'').trim();
+  if(!t||value==null||!Number.isFinite(value))return {status:'none',text:''};
+
+  // รองรับข้อความที่มีรูปแบบ <7, <=7, ≥90, 70-130 เป็นต้น
+  let m=t.match(/(<=|>=|<|>|≤|≥)\s*(-?\d+(?:\.\d+)?)/);
+  if(m){
+    const op=m[1],z=Number(m[2]);let met=false;
+    if(op==='<' )met=value<z;
+    else if(op==='<='||op==='≤')met=value<=z;
+    else if(op==='>')met=value>z;
+    else if(op==='>='||op==='≥')met=value>=z;
+    return {status:met?'met':'not_met',text:met?'ถึงเป้าหมายการรักษาที่ระบุ':'ยังไม่ถึงเป้าหมายการรักษาที่ระบุ'};
+  }
+  m=t.match(/(-?\d+(?:\.\d+)?)\s*[-–]\s*(-?\d+(?:\.\d+)?)/);
+  if(m){
+    const lo=Number(m[1]),hi=Number(m[2]),met=value>=lo&&value<=hi;
+    return {status:met?'met':'not_met',text:met?'อยู่ในเป้าหมายการรักษาที่ระบุ':'ยังอยู่นอกเป้าหมายการรักษาที่ระบุ'};
+  }
+  return {status:'note_only',text:'บันทึกเป็นเป้าหมาย/หมายเหตุของทีมรักษา'};
+}
+function updateLabTargetFeedback(input){
+  const row=input.closest('.lab-target-row');if(!row)return;
+  const key=row.dataset.labTargetFor;
+  const valueInput=document.querySelector(`#lab-entry-groups tr[data-lab-key="${CSS.escape(key)}"] .lab-value`);
+  const raw=valueInput?.value?.trim()||'',value=Number(raw.replace(',','.'));
+  const res=parseTreatmentTarget(input.value,Number.isFinite(value)?value:null);
+  const box=row.querySelector('.lab-target-feedback');
+  if(!box)return;
+  box.className='lab-target-feedback '+(res.status==='met'?'target-met':res.status==='not_met'?'target-not-met':'');
+  box.textContent=res.text;
+}
 function updateLabRowFeedback(input){
   const tr=input.closest('tr[data-lab-key]');if(!tr)return;
   const key=tr.dataset.labKey,raw=input.value.trim(),value=Number(raw.replace(',','.'));
-  const adviceRow=tr.nextElementSibling;
+  const adviceRow=tr.nextElementSibling?.nextElementSibling;
   if(!raw||!Number.isFinite(value)){if(adviceRow)adviceRow.style.display='none';input.style.borderColor='';return;}
   const r=evaluateBuiltInLab(key,value);
   input.style.borderColor=r.status==='normal'?'#64b6a7':r.status==='high'||r.status==='low'?'#e35d6a':'';
+  const targetRow=tr.nextElementSibling;
+  const targetInput=targetRow?.querySelector?.('.lab-target-note');
+  if(targetInput)updateLabTargetFeedback(targetInput);
   if(!adviceRow)return;
   if(r.status==='high'||r.status==='low'){
     adviceRow.style.display='';
@@ -1939,7 +2051,14 @@ function collectManualLabResults(){
     if(valRaw==='')return;
     const key=tr.dataset.labKey,d=LAB_REFERENCE[key],value=Number(valRaw.replace(',','.'));
     const ev=evaluateBuiltInLab(key,value);
-    out.push({key,label:d.label,value:Number.isFinite(value)?value:null,valueText:Number.isFinite(value)?'':valRaw,unit:d.unit,refText:ev.refText,low:ev.low,high:ev.high,status:ev.status});
+    const targetRow=tr.nextElementSibling;
+    const targetNote=targetRow?.querySelector('.lab-target-note')?.value?.trim()||'';
+    const targetEval=parseTreatmentTarget(targetNote,Number.isFinite(value)?value:null);
+    out.push({
+      key,label:d.label,value:Number.isFinite(value)?value:null,valueText:Number.isFinite(value)?'':valRaw,
+      unit:d.unit,refText:ev.refText,low:ev.low,high:ev.high,status:ev.status,
+      treatmentTargetNote:targetNote,treatmentTargetStatus:targetEval.status
+    });
   });
   document.querySelectorAll('.extra-lab-row').forEach((row,i)=>{
     const label=row.querySelector('.extra-name').value.trim();
@@ -1950,7 +2069,7 @@ function collectManualLabResults(){
     const value=Number(valRaw.replace(',','.'));
     const parsed=parseReferenceText(refText,value);
     const key='extra_'+label.toLowerCase().replace(/[^a-z0-9ก-๙]+/g,'_');
-    out.push({key,label,value:Number.isFinite(value)?value:null,valueText:Number.isFinite(value)?'':valRaw,unit,refText,...parsed});
+    out.push({key,label,value:Number.isFinite(value)?value:null,valueText:Number.isFinite(value)?'':valRaw,unit,refText,...parsed,treatmentTargetNote:'',treatmentTargetStatus:'none'});
   });
   return out;
 }
@@ -1968,6 +2087,28 @@ function compareLabValue(cur,prev){
     return `${d>0?'↑ มากขึ้น':'↓ น้อยลง'} ${Math.abs(d).toLocaleString()}${pct!=null?` (${pct.toFixed(1)}%)`:''}`;
   }
   return (cur?.valueText||'')===(prev?.valueText||'')?'เท่าเดิม':`${prev?.valueText||'—'} → ${cur?.valueText||'—'}`;
+}
+function targetStatusThai(x){
+  if(x==='met')return '✅ ถึงเป้าหมายการรักษา';
+  if(x==='not_met')return '⚠️ ยังไม่ถึงเป้าหมายการรักษา';
+  if(x==='note_only')return '📝 มีหมายเหตุเป้าหมาย';
+  return '';
+}
+function labTrendInterpretation(cur,prev){
+  const trend=compareLabValue(cur,prev);
+  const parts=[trend];
+  if(cur.treatmentTargetNote){
+    const target=targetStatusThai(cur.treatmentTargetStatus);
+    if(target)parts.push(target);
+  }
+  if(prev?.status && cur?.status){
+    const prevAb=['high','low','abnormal'].includes(prev.status);
+    const curAb=['high','low','abnormal'].includes(cur.status);
+    if(prevAb&&!curAb&&cur.status==='normal')parts.push('จากผิดปกติ → เข้าสู่ค่าปกติ');
+    else if(prevAb&&curAb)parts.push('ยังผิดปกติ');
+    else if(!prevAb&&curAb)parts.push('เกิดค่าผิดปกติใหม่');
+  }
+  return parts.join(' · ');
 }
 function abnormalFollowupAdvice(results){
   const m=new Map(results.map(x=>[x.key,x])), adv=[];
@@ -1989,19 +2130,52 @@ function abnormalFollowupAdvice(results){
   return adv;
 }
 function buildManualLabAnalysis(results,previous,date){
-  const normal=results.filter(x=>x.status==='normal'),abnormal=results.filter(x=>['high','low','abnormal'].includes(x.status)),unknown=results.filter(x=>x.status==='unknown');
+  const normal=results.filter(x=>x.status==='normal'),
+        abnormal=results.filter(x=>['high','low','abnormal'].includes(x.status)),
+        unknown=results.filter(x=>x.status==='unknown');
+  const targetItems=results.filter(x=>x.treatmentTargetNote);
   let t=`สรุปผล Lab วันที่ ${thaiDate(date)}\n\n`;
+
+  const rec=diseaseLabRecommendations();
+  if(rec.matched.length){
+    t+=`Lab สำคัญตามโรค: ${rec.matched.map(x=>x.label).join(', ')}\n`;
+    t+=`รายการแนะนำ: ${rec.keys.map(k=>LAB_REFERENCE[k]?.label||k).join(', ')}\n\n`;
+  }
+
   t+='✅ อยู่ในเกณฑ์ปกติ\n'+(normal.length?normal.map(x=>`- ${x.label}: ${resultDisplay(x)}${x.refText?` (ค่าปกติ ${x.refText})`:''}`).join('\n'):'- ไม่มีรายการ');
+
   t+='\n\n⚠️ ผิดปกติ / ควรติดตาม\n'+(abnormal.length?abnormal.map(x=>`- ${x.label}: ${resultDisplay(x)} — ${labStatusThai(x.status)}${x.refText?` (ค่าปกติ ${x.refText})`:''}`).join('\n'):'- ไม่พบค่าผิดปกติ');
+
+  if(targetItems.length){
+    t+='\n\n🎯 เป้าหมายการรักษาที่ทีมรักษาระบุ\n';
+    t+=targetItems.map(x=>`- ${x.label}: ${x.treatmentTargetNote} → ${targetStatusThai(x.treatmentTargetStatus)||'บันทึกไว้เป็นหมายเหตุ'}`).join('\n');
+  }
+
   if(previous){
     const pm=new Map((previous.results||[]).map(x=>[x.key,x]));
     const cmp=results.filter(x=>pm.has(x.key));
-    if(cmp.length)t+='\n\n📈 เปรียบเทียบกับ Lab ครั้งก่อน\n'+cmp.map(x=>`- ${x.label}: เดิม ${resultDisplay(pm.get(x.key))} → ครั้งนี้ ${resultDisplay(x)} (${compareLabValue(x,pm.get(x.key))}) · ${labStatusThai(x.status)}`).join('\n');
+    if(cmp.length){
+      t+='\n\n📈 วิเคราะห์แนวโน้มเทียบครั้งก่อน\n';
+      t+=cmp.map(x=>{
+        const p=pm.get(x.key);
+        return `- ${x.label}: ${resultDisplay(p)} → ${resultDisplay(x)} (${labTrendInterpretation(x,p)})`;
+      }).join('\n');
+    }
+
+    const newKeys=results.filter(x=>!pm.has(x.key)&&['high','low','abnormal'].includes(x.status));
+    if(newKeys.length)t+='\n\n🔴 ค่าผิดปกติที่เพิ่มขึ้นมาใหม่\n'+newKeys.map(x=>`- ${x.label}: ${resultDisplay(x)} · ${labStatusThai(x.status)}`).join('\n');
+
+    const curMap=new Map(results.map(x=>[x.key,x]));
+    const improved=(previous.results||[]).filter(p=>['high','low','abnormal'].includes(p.status)&&curMap.get(p.key)?.status==='normal');
+    if(improved.length)t+='\n\n🟢 ค่าที่ดีขึ้นจนกลับเข้าสู่ช่วงปกติ\n'+improved.map(p=>`- ${p.label}: ${resultDisplay(p)} → ${resultDisplay(curMap.get(p.key))}`).join('\n');
   }
-  if(unknown.length)t+='\n\n🔎 ยังประเมินไม่ได้จากช่วงอ้างอิง\n'+unknown.map(x=>`- ${x.label}: ${resultDisplay(x)}${x.refText?` (กรอกค่าปกติ ${x.refText})`:' — ยังไม่ได้กรอกค่าปกติ'}`).join('\n');
+
+  if(unknown.length)t+='\n\n🔎 ยังประเมินจากช่วงอ้างอิงไม่ได้\n'+unknown.map(x=>`- ${x.label}: ${resultDisplay(x)}${x.refText?` (${x.refText})`:' — ช่วงอ้างอิงขึ้นกับห้องปฏิบัติการ'}`).join('\n');
+
   const adv=abnormalFollowupAdvice(results);
   if(adv.length)t+='\n\nคำแนะนำเพิ่มเติม\n'+adv.map((x,i)=>`${i+1}. ${x}`).join('\n');
-  t+='\n\nหมายเหตุ: ระบบประเมินจากค่าปกติที่ผู้ใช้คีย์ตามใบ Lab กรุณาตรวจสอบกับใบต้นฉบับก่อนบันทึก';
+
+  t+='\n\nหมายเหตุ: “ค่าปกติ” ใช้ประเมินตามช่วงอ้างอิงของระบบ/ห้องปฏิบัติการ ส่วน “เป้าหมายการรักษา” เป็นเป้าหมายเฉพาะรายที่ทีมรักษาระบุ ทั้งสองอย่างอาจไม่ใช่ค่าเดียวกัน';
   return t;
 }
 function structuredLabTableHtml(results,previous=null){
@@ -2035,7 +2209,7 @@ function analyzeManualLab(){
   e('lab-ocr-status').textContent='ประเมินผลแล้ว — พร้อมบันทึก';
 }
 function clearManualLabForm(){
-  document.querySelectorAll('#lab-entry-groups .lab-value').forEach(x=>x.value='');document.querySelectorAll('.lab-advice-row').forEach(x=>x.style.display='none');
+  document.querySelectorAll('#lab-entry-groups .lab-value,#lab-entry-groups .lab-target-note').forEach(x=>x.value='');document.querySelectorAll('.lab-advice-row').forEach(x=>x.style.display='none');
   e('lab-extra-rows').innerHTML='';
   e('f-lab').value='';e('f-lab-analysis').value='';e('lab-structured-preview').innerHTML='';
   window.__pendingLabSnapshot=null;e('lab-ocr-status').textContent='';
