@@ -372,15 +372,153 @@
   .visitor-sign-name{font-size:12.5px;font-weight:600;margin-top:3px;}
   .visitor-sign-role{font-size:11.5px;color:#6F808A;margin-top:2px;}
   @media print{
-    body *{visibility:hidden!important;}
-    #print-area,#print-area *{visibility:visible!important;}
-    #print-area{position:absolute;left:0;top:0;width:100%;padding:0;margin:0;box-shadow:none;border:0;}
-    #print-area .print-photo-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:16px;}
-    #print-area .print-photo-grid img{width:100%;max-height:320px;object-fit:contain;border:1px solid #ddd;}
-    #print-area .visitor-signatures{margin-top:24px;padding-top:14px;border-top:1px solid #999;}
-    #print-area .visitor-signature-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:28px 34px;}
-    #print-area .visitor-sign-line{height:34px;border-bottom:1px solid #222;}
-    @page{size:A4;margin:12mm;}
+    html,body{
+      background:#fff!important;
+      margin:0!important;
+      padding:0!important;
+    }
+
+    /* ซ่อน UI ทั้งหมดก่อน */
+    body *{
+      visibility:hidden!important;
+    }
+
+    /* รองรับทั้ง Print A4 แบบเดิม และ Print A4 แยกตามครั้งที่เยี่ยม */
+    #print-area,
+    #print-area *,
+    .visit-a4,
+    .visit-a4 *{
+      visibility:visible!important;
+    }
+
+    /* พิมพ์เฉพาะเอกสารของครั้งที่ผู้ใช้กำลังเปิดอยู่ */
+    .visit-a4{
+      position:absolute!important;
+      left:0!important;
+      top:0!important;
+      width:100%!important;
+      max-width:none!important;
+      margin:0!important;
+      padding:0!important;
+      border:0!important;
+      box-shadow:none!important;
+      background:#fff!important;
+      color:#111!important;
+    }
+
+    #print-area{
+      position:absolute!important;
+      left:0!important;
+      top:0!important;
+      width:100%!important;
+      max-width:none!important;
+      margin:0!important;
+      padding:0!important;
+      box-shadow:none!important;
+      border:0!important;
+      background:#fff!important;
+    }
+
+    /* ถ้ามีหลาย visit-a4 ใน DOM ให้พิมพ์เฉพาะอันที่อยู่ใน tab panel ที่ active */
+    .tab-panel:not(.active) .visit-a4,
+    .tab-panel:not(.active) .visit-a4 *{
+      visibility:hidden!important;
+    }
+
+    .tab-panel.active .visit-a4,
+    .tab-panel.active .visit-a4 *{
+      visibility:visible!important;
+    }
+
+    /* ปุ่มไม่ควรติดออกไปในเอกสาร */
+    .print-btn,
+    button,
+    .tab-strip,
+    .sidebar,
+    .topbar,
+    .pd-actions,
+    .visit-subtabs{
+      display:none!important;
+    }
+
+    /* รูปภาพของครั้งนั้น */
+    .visit-a4 .print-photo-grid,
+    #print-area .print-photo-grid{
+      display:grid!important;
+      grid-template-columns:repeat(2,minmax(0,1fr))!important;
+      gap:10px!important;
+      margin-top:12px!important;
+      break-inside:auto;
+    }
+
+    .visit-a4 .print-photo-grid img,
+    #print-area .print-photo-grid img{
+      display:block!important;
+      width:100%!important;
+      max-width:100%!important;
+      height:auto!important;
+      max-height:95mm!important;
+      object-fit:contain!important;
+      border:1px solid #bbb!important;
+      break-inside:avoid!important;
+    }
+
+    .visit-a4 .visitor-signatures,
+    #print-area .visitor-signatures{
+      margin-top:18px!important;
+      padding-top:12px!important;
+      border-top:1px solid #999!important;
+      break-inside:avoid!important;
+    }
+
+    .visit-a4 .visitor-signature-grid,
+    #print-area .visitor-signature-grid{
+      display:grid!important;
+      grid-template-columns:repeat(2,minmax(0,1fr))!important;
+      gap:24px 28px!important;
+    }
+
+    .visit-a4 .visitor-sign-line,
+    #print-area .visitor-sign-line{
+      height:30px!important;
+      border-bottom:1px solid #222!important;
+    }
+
+    .visit-a4 .a4-visit-section{
+      display:grid!important;
+      grid-template-columns:135px 1fr!important;
+      padding:7px 0!important;
+      border-bottom:1px solid #d8e1e5!important;
+      break-inside:avoid!important;
+    }
+
+    .visit-a4 .a4-visit-label{
+      font-size:10.5pt!important;
+      font-weight:700!important;
+      color:#111!important;
+    }
+
+    .visit-a4 .a4-visit-value{
+      font-size:10.5pt!important;
+      color:#111!important;
+    }
+
+    .visit-a4 table{
+      width:100%!important;
+      border-collapse:collapse!important;
+      font-size:9.5pt!important;
+    }
+
+    .visit-a4 th,
+    .visit-a4 td{
+      color:#111!important;
+      border-color:#bbb!important;
+    }
+
+    @page{
+      size:A4;
+      margin:12mm;
+    }
   }
 
   .option-box{border:1px solid #DDE5EB;border-radius:12px;padding:12px;background:#FCFDFE;display:flex;flex-wrap:wrap;gap:8px}
@@ -442,7 +580,7 @@
   .visit-tab-delete{border:0;border-left:1px solid #E3EAED;background:#fff;color:#9A6970;padding:0 8px;font-size:16px;cursor:pointer;}
   .visit-tab-delete:hover{background:#FFF0F1;color:#B73343;}
 
-/* ===== v14.0 Bright Medical Theme ===== */
+/* ===== v14.1 Bright Medical Theme ===== */
 :root{
   --navy:#123B5D;
   --teal:#12A6B5;
@@ -566,7 +704,7 @@ body{
   box-shadow:0 0 0 3px rgba(66,191,199,.12);
 }
 
-/* ===== v14.0 Formal Teal Pastel Theme (matched to selected reference) ===== */
+/* ===== v14.1 Formal Teal Pastel Theme (matched to selected reference) ===== */
 :root{
   --navy:#123F59;
   --teal:#0786A0;
@@ -748,11 +886,7 @@ body{
   .a4-visit-label{font-weight:700;color:#173F59;padding-right:12px;}
   .a4-visit-value{color:#263F4D;white-space:pre-wrap;min-width:0;}
   .visit-a4 .print-photo-grid{margin-top:10px;}
-  @media print{
-    .visit-a4 .a4-visit-section{grid-template-columns:135px 1fr;padding:7px 0;}
-    .visit-a4 .a4-visit-label{font-size:11pt;}
-    .visit-a4 .a4-visit-value{font-size:10.5pt;}
-  }
+  
 </style>
 </head>
 <body>
