@@ -442,7 +442,7 @@
   .visit-tab-delete{border:0;border-left:1px solid #E3EAED;background:#fff;color:#9A6970;padding:0 8px;font-size:16px;cursor:pointer;}
   .visit-tab-delete:hover{background:#FFF0F1;color:#B73343;}
 
-/* ===== v13.7 Bright Medical Theme ===== */
+/* ===== v13.8 Bright Medical Theme ===== */
 :root{
   --navy:#123B5D;
   --teal:#12A6B5;
@@ -565,6 +565,184 @@ body{
   border-color:#42BFC7;
   box-shadow:0 0 0 3px rgba(66,191,199,.12);
 }
+
+/* ===== v13.8 Formal Teal Pastel Theme (matched to selected reference) ===== */
+:root{
+  --navy:#123F59;
+  --teal:#0786A0;
+  --teal-dark:#066E86;
+  --teal-soft:#DDEEF3;
+  --red:#C51F2D;
+  --red-soft:#FADFE2;
+  --amber:#936000;
+  --amber-soft:#FCECC7;
+  --green:#087A54;
+  --green-soft:#D9F1E6;
+  --bluegray:#174F6A;
+  --bluegray-soft:#DDE9F3;
+  --line:#D5E0E5;
+  --page:#F5F9FB;
+}
+body{
+  background:#F5F9FB;
+  color:#123F59;
+}
+.sidebar{
+  background:#FFFFFF;
+  border-right:1px solid #D7E3E8;
+}
+.brand-mark,.login-mark{
+  background:#0786A0;
+  box-shadow:none;
+}
+.nav-item{color:#476575}
+.nav-item.active{
+  background:#DDEEF3;
+  color:#075F75;
+  font-weight:600;
+}
+.nav-item.active:before{background:#0786A0}
+.main{background:#F5F9FB}
+.card,.panel,.modal-card,.a4-preview{
+  background:#FFFFFF;
+  border-color:#D6E1E6;
+  box-shadow:0 4px 14px rgba(31,73,93,.055);
+}
+.section-title:before,.dash-title:before{background:#0786A0}
+.btn-primary{
+  background:#0786A0;
+  color:#fff;
+  box-shadow:none;
+}
+.btn-primary:hover{
+  background:#066E86;
+  filter:none;
+  transform:none;
+}
+.btn-secondary{
+  background:#FFFFFF;
+  border-color:#C9D9E0;
+  color:#315B70;
+}
+.tab-strip{
+  background:#FFFFFF;
+  border-bottom:1px solid #D5E1E6;
+}
+.tab-btn{
+  color:#4C6978;
+  background:#FFFFFF;
+}
+.tab-btn.active{
+  color:#075F75;
+  background:#DDEEF3;
+  border-bottom-color:#0786A0;
+}
+.visit-tab-wrap{
+  background:#FFFFFF;
+  border:1px solid #D5E1E6;
+  border-radius:7px 7px 0 0;
+}
+.visit-tab-wrap:nth-of-type(n) .visit-main-tab{background:#FFFFFF}
+.visit-tab-wrap .visit-main-tab:hover{background:#EDF6F8}
+.visit-tab-wrap .visit-main-tab.active{background:#DDEEF3}
+.tab-btn.add-visit-tab{
+  color:#075F75;
+  background:#E7F3F6;
+  border:1px dashed #86B8C5;
+  border-radius:7px;
+}
+.tab-btn.add-visit-tab:hover{background:#DCEEF2}
+.visit-tab-delete{
+  background:#FFFFFF;
+  color:#A8505B;
+}
+.visit-tab-delete:hover{
+  background:#FBE8EA;
+  color:#B72335;
+}
+.visit-subtabs{
+  background:#FFFFFF;
+  border-color:#D5E1E6;
+  border-radius:7px;
+}
+.visit-subtab:nth-child(n){background:#FFFFFF}
+.visit-subtab{
+  color:#536F7D;
+  border-color:#D9E4E8;
+}
+.visit-subtab:hover{background:#EDF6F8}
+.visit-subtab.active{
+  background:#DDEEF3;
+  color:#075F75;
+}
+.visit-count-badge{
+  background:#DDEEF3;
+  color:#075F75;
+  border:0;
+  font-weight:600;
+}
+.rank-row:nth-child(5n+1) .rank-no,
+.rank-row:nth-child(5n+2) .rank-no,
+.rank-row:nth-child(5n+3) .rank-no,
+.rank-row:nth-child(5n+4) .rank-no,
+.rank-row:nth-child(5n+5) .rank-no{
+  background:#E8F3F6;
+  color:#0786A0;
+}
+.warning-banner{
+  background:#FCECC7!important;
+  border-color:#EBCF91!important;
+  color:#77510A!important;
+}
+.empty-state{
+  background:#FAFCFD;
+  border-color:#D5E2E7;
+}
+.kv{
+  background:#FAFCFD;
+  border-color:#D9E5E9;
+}
+.kv .k{color:#67808C}
+.form-control,input,select,textarea{
+  background:#FFFFFF;
+  border-color:#C9DAE1;
+}
+.form-control:focus,input:focus,select:focus,textarea:focus{
+  border-color:#0786A0;
+  box-shadow:0 0 0 3px rgba(7,134,160,.10);
+}
+
+/* Dashboard status cards: same palette as reference */
+.stat-card:nth-child(4n+1),.dash-card:nth-child(4n+1){
+  background:#FADFE2;
+  color:#B71F2D;
+}
+.stat-card:nth-child(4n+2),.dash-card:nth-child(4n+2){
+  background:#FCECC7;
+  color:#875900;
+}
+.stat-card:nth-child(4n+3),.dash-card:nth-child(4n+3){
+  background:#D9F1E6;
+  color:#087451;
+}
+.stat-card:nth-child(4n+4),.dash-card:nth-child(4n+4){
+  background:#DDE9F3;
+  color:#174F6A;
+}
+
+/* Common dashboard status classes, if present */
+.urgent,.status-urgent,.stat-urgent{background:#FADFE2!important;color:#B71F2D!important}
+.overdue,.status-overdue,.stat-overdue{background:#FCECC7!important;color:#875900!important}
+.normal,.status-normal,.stat-normal{background:#D9F1E6!important;color:#087451!important}
+.incomplete,.status-incomplete,.stat-incomplete{background:#DDE9F3!important;color:#174F6A!important}
+
+.table-wrap,.list-card,.rank-card{
+  background:#FFFFFF;
+  border-color:#D6E1E6;
+}
+.rank-row{border-color:#DCE5E9}
+.rank-body .name,.p-name{color:#123F59}
+.rank-body .note,.p-sub,.meta{color:#66808D}
 </style>
 </head>
 <body>
