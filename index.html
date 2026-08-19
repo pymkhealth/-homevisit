@@ -1057,8 +1057,32 @@ function openPatient(id){
   renderCompletenessBadge(p,e('pd-completeness'));
   if(!document.getElementById('edit-patient-btn')){const btn=document.createElement('button');btn.id='edit-patient-btn';btn.className='btn-ghost detail-edit-btn';btn.textContent='แก้ไขข้อมูล';btn.onclick=()=>openPatientForm(currentPatient);e('pd-actions').insertBefore(btn,e('pd-actions').lastElementChild);}
   if(!document.getElementById('quick-visit-btn')){const btn2=document.createElement('button');btn2.id='quick-visit-btn';btn2.className='btn-ghost detail-edit-btn';btn2.textContent='＋ บันทึกเยี่ยมด่วน';btn2.onclick=()=>openQuickUpdate(currentPatient.id);e('pd-actions').insertBefore(btn2,e('pd-actions').lastElementChild);}
+  if(!document.getElementById('delete-patient-btn')){const btn3=document.createElement('button');btn3.id='delete-patient-btn';btn3.className='btn-ghost detail-edit-btn';btn3.style.color='#B73E4B';btn3.style.borderColor='#E8B8BE';btn3.textContent='ลบผู้ป่วย';btn3.onclick=()=>deletePatient(currentPatient);e('pd-actions').insertBefore(btn3,e('pd-actions').lastElementChild);}
   e('tab-strip').innerHTML=tabs.map((t,i)=>`<button class="tab-btn ${i===0?'active':''}" data-tab="${t[0]}" onclick="showTab('${t[0]}')">${t[1]}</button>`).join('');
   renderAllTabPanels(p);showScreen('detail');showTab('history');
+}
+async function deletePatient(p){
+  if(!p?.id)return;
+  const first=confirm(`ต้องการลบข้อมูลผู้ป่วยนี้หรือไม่?\n\nHN: ${p.hn||'-'}\nชื่อ: ${p.name||'-'}\n\nใช้สำหรับกรณีลงข้อมูลซ้ำเท่านั้น`);
+  if(!first)return;
+  const typed=prompt(`เพื่อป้องกันการลบผิด กรุณาพิมพ์ HN "${p.hn}" เพื่อยืนยัน`);
+  if(String(typed||'').trim()!==String(p.hn||'').trim()){alert('HN ไม่ตรงกัน ยกเลิกการลบ');return;}
+  try{
+    // Delete attached objects first when possible.
+    const photoPaths=(p.photos||[]).map(x=>typeof x==='string'?x:x.path).filter(Boolean);
+    const labPaths=(p.labFiles||[]).map(x=>typeof x==='string'?x:x.path).filter(Boolean);
+    if(photoPaths.length){const r=await supabaseClient.storage.from(PHOTOS_BUCKET).remove(photoPaths);if(r.error)console.warn('photo cleanup',r.error);}
+    if(labPaths.length){const r=await supabaseClient.storage.from(LAB_BUCKET).remove(labPaths);if(r.error)console.warn('lab cleanup',r.error);}
+    const {error}=await supabaseClient.from(PATIENTS_TABLE).delete().eq('id',p.id);
+    if(error)throw error;
+    currentPatient=null;
+    alert('ลบข้อมูลผู้ป่วยเรียบร้อยแล้ว');
+    await loadPatients();
+    showScreen('list');
+  }catch(err){
+    console.error(err);
+    alert(`ลบข้อมูลไม่สำเร็จ\n${err.message||err}\n${err.code?'code: '+err.code:''}`);
+  }
 }
 function showTab(id){document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id==='panel-'+id));}
 function textBlock(v){return safe(v||'—').replace(/\n/g,'<br>');}
@@ -1087,8 +1111,10 @@ function homeVisitTimelineHtml(p){
   }).join('');
 }
 function visitorSignatureHtml(p){
-  const team=Array.isArray(p.home_visit_team)?p.home_visit_team.filter(x=>x&&(x.name||x.role)):[];
-  if(!team.length)return '';
+  let raw=p.home_visit_team;
+  if(typeof raw==='string'){try{raw=JSON.parse(raw);}catch(_){raw=[];}}
+  const team=Array.isArray(raw)?raw.filter(x=>x&&(x.name||x.role)):[];
+  if(!team.length)return '<div class="visitor-signatures"><h4>ผู้เยี่ยมบ้าน / ลงลายมือชื่อ</h4><div class="form-help">ยังไม่มีรายชื่อผู้เยี่ยมบ้านที่บันทึกไว้</div></div>';
   return `<div class="visitor-signatures">
     <h4>ผู้เยี่ยมบ้าน / ลงลายมือชื่อ</h4>
     <div class="visitor-signature-grid">
@@ -1169,6 +1195,7 @@ async function savePatient(ev){
       address:e('f-address').value.trim(),phone:e('f-phone').value.trim(),diagnosis:e('f-diagnosis').value.trim(),
       icd10:e('f-icd10').value.trim(),allergy:e('f-allergy').value.trim(),history:e('f-history').value.trim(),
       lab:e('f-lab').value.trim(),lab_analysis:e('f-lab-analysis').value.trim(),medication:e('f-medication').value.trim(),homevisit:homevisitFinal,
+      home_visit_team:team,
       inhomesss:e('f-inhomesss').value.trim(),problems:e('f-problems').value.trim(),care_plan:e('f-careplan').value.trim(),
       workflow_stage:e('f-stage').value||'new', next_visit_date:nextVisitDate
     };
