@@ -442,7 +442,7 @@
   .visit-tab-delete{border:0;border-left:1px solid #E3EAED;background:#fff;color:#9A6970;padding:0 8px;font-size:16px;cursor:pointer;}
   .visit-tab-delete:hover{background:#FFF0F1;color:#B73343;}
 
-/* ===== v13.8 Bright Medical Theme ===== */
+/* ===== v13.9 Bright Medical Theme ===== */
 :root{
   --navy:#123B5D;
   --teal:#12A6B5;
@@ -566,7 +566,7 @@ body{
   box-shadow:0 0 0 3px rgba(66,191,199,.12);
 }
 
-/* ===== v13.8 Formal Teal Pastel Theme (matched to selected reference) ===== */
+/* ===== v13.9 Formal Teal Pastel Theme (matched to selected reference) ===== */
 :root{
   --navy:#123F59;
   --teal:#0786A0;
@@ -1869,6 +1869,28 @@ async function hydratePhotoUrls(){
       items.push({...((typeof photo==='object')?photo:{}),path,url:error?'':data?.signedUrl||''});
     }
     p.photos=items;
+
+    // สร้าง signed URL ให้ภาพที่ผูกกับการเยี่ยมแต่ละครั้ง
+    if(Array.isArray(p.visit_history)){
+      for(const visit of p.visit_history){
+        const visitPhotoItems=[];
+        for(const photo of (Array.isArray(visit.photos)?visit.photos:[])){
+          const path=typeof photo==='string'?photo:photo.path;
+          if(!path)continue;
+          const {data,error}=await supabaseClient.storage.from(PHOTOS_BUCKET).createSignedUrl(path,3600);
+          visitPhotoItems.push({...((typeof photo==='object')?photo:{}),path,url:error?'':data?.signedUrl||''});
+        }
+        visit.photos=visitPhotoItems;
+      }
+    }
+
+    // ข้อมูลเก่าที่มีเพียง 1 ครั้งและยังไม่เคยผูกรูป: ใช้รูปผู้ป่วยเดิมเป็นรูปครั้งที่ 1
+    if(Array.isArray(p.visit_history) && p.visit_history.length===1 &&
+       (!Array.isArray(p.visit_history[0].photos)||!p.visit_history[0].photos.length) &&
+       p.photos.length){
+      p.visit_history[0].photos=p.photos.map(x=>({...x}));
+    }
+
     const labItems=[];
     for(const f of (p.labFiles||[])){
       const path=typeof f==='string'?f:f.path; if(!path) continue;
@@ -2139,6 +2161,7 @@ async function deleteVisitRecord(patientId,index){
   if(!visit)return;
 
   const no=index+1;
+  const visitPhotoPaths=(Array.isArray(visit.photos)?visit.photos:[]).map(x=>typeof x==='string'?x:x.path).filter(Boolean);
   const dateLabel=visit.date?thaiDate(visit.date):(visit.dateText||'ไม่ระบุวันที่');
   const ok=confirm(
     `ยืนยันลบการเยี่ยมครั้งที่ ${no} หรือไม่?\n\n`+
@@ -2157,8 +2180,22 @@ async function deleteVisitRecord(patientId,index){
     const latestVisit=newHistory.length?newHistory[newHistory.length-1]:null;
     const latestLab=newLabs.length?newLabs[newLabs.length-1]:null;
 
+    const remainingVisitPhotoPaths=new Set(newHistory.flatMap(v=>(Array.isArray(v.photos)?v.photos:[]).map(x=>typeof x==='string'?x:x.path).filter(Boolean)));
+    const patientPhotos=(Array.isArray(p.photos)?p.photos:[]).filter(x=>{
+      const path=typeof x==='string'?x:x.path;
+      return !visitPhotoPaths.includes(path) || remainingVisitPhotoPaths.has(path);
+    });
+    if(visitPhotoPaths.length){
+      const removePaths=visitPhotoPaths.filter(path=>!remainingVisitPhotoPaths.has(path));
+      if(removePaths.length){
+        const rem=await supabaseClient.storage.from(PHOTOS_BUCKET).remove(removePaths);
+        if(rem.error)console.warn('visit photo cleanup',rem.error);
+      }
+    }
+
     const updates={
       visit_history:newHistory,
+      photos:patientPhotos.map(x=>({path:typeof x==='string'?x:x.path,name:typeof x==='object'?x.name||'':'',type:typeof x==='object'?x.type||'':''})),
       homevisit:rebuildLegacyHomevisitFromHistory(newHistory),
       lab_history:newLabs,
       last_visit:latestVisit?.date||null,
@@ -2221,6 +2258,21 @@ function showVisitSubtab(index,type,btn){
   btn?.classList.add('active');
   const box=e(`visit-subcontent-${index}`); if(box)box.innerHTML=visitSubContentHtml(currentPatient,index,type);
 }
+function photosForVisit(p,index){
+  const h=patientVisitHistory(p),v=h[index]||{};
+  if(Array.isArray(v.photos)&&v.photos.length)return v.photos;
+  // backward compatibility only when there is exactly one visit
+  if(h.length===1 && index===0 && Array.isArray(p.photos))return p.photos;
+  return [];
+}
+function visitPrintPhotosHtml(p,index){
+  const photos=photosForVisit(p,index);
+  if(!photos.length)return '';
+  return `<h4 style="text-align:left;margin-top:20px">ภาพเยี่ยมบ้าน ครั้งที่ ${index+1}</h4>
+    <div class="print-photo-grid">
+      ${photos.map((x,i)=>`<div><img src="${safe(x.url||x)}" alt="ภาพเยี่ยมบ้านครั้งที่ ${index+1} ภาพที่ ${i+1}"><div style="font-size:10px;text-align:center;margin-top:4px">ภาพที่ ${i+1}</div></div>`).join('')}
+    </div>`;
+}
 function visitSubContentHtml(p,index,type){
   const h=patientVisitHistory(p),v=h[index]||{},lab=labForVisitIndex(p,index),prev=index>0?labForVisitIndex(p,index-1):null;
   if(type==='diagnosis')return `<div class="kv-grid"><div class="kv"><div class="k">Diagnosis</div><div class="v">${safe(v.diagnosis||p.diagnosis||'—')}</div></div><div class="kv"><div class="k">ICD-10</div><div class="v">${safe(v.icd10||p.icd10||'—')}</div></div></div>`;
@@ -2231,10 +2283,19 @@ function visitSubContentHtml(p,index,type){
   if(type==='problems')return `<div class="visit-note">${textBlock(v.problems||'—')}</div>`;
   if(type==='careplan')return `<div class="visit-note">${textBlock(v.care_plan||'—')}</div>`;
   if(type==='photos'){
-    const photos=Array.isArray(v.photos)&&v.photos.length?v.photos:(index===h.length-1?p.photos:[]);
-    return `<div class="photo-grid">${photos.length?photos.map((x,i)=>`<div class="photo-tile photo-real"><img src="${safe(x.url||x)}"><div class="photo-caption">ภาพที่ ${i+1}</div></div>`).join(''):'<div class="empty-state" style="grid-column:1/-1">ยังไม่มีภาพของครั้งนี้</div>'}</div>`;
+    const photos=photosForVisit(p,index);
+    return `<div class="photo-grid">${photos.length?photos.map((x,i)=>`<div class="photo-tile photo-real"><img src="${safe(x.url||x)}"><div class="photo-caption">ภาพเยี่ยมครั้งที่ ${index+1} · ภาพที่ ${i+1}</div></div>`).join(''):'<div class="empty-state" style="grid-column:1/-1">ยังไม่มีภาพของการเยี่ยมครั้งนี้</div>'}</div>`;
   }
-  if(type==='print')return `<div class="a4-preview" style="max-width:760px"><h4>ข้อมูลผู้ป่วยเยี่ยมบ้าน — ครั้งที่ ${index+1}</h4><div class="a4-sub">${safe(p.name)} · ${safe(p.hn)}</div><div class="visit-note">${textBlock(v.note||'—')}</div>${visitorSignatureHtml(p)}</div><button class="btn-primary print-btn" style="max-width:220px;margin:12px auto" onclick="window.print()">🖨 พิมพ์ครั้งที่ ${index+1}</button>`;
+  if(type==='print')return `<div class="a4-preview" style="max-width:760px"><h4>ข้อมูลผู้ป่วยเยี่ยมบ้าน — ครั้งที่ ${index+1}</h4><div class="a4-sub">${safe(p.name)} · ${safe(p.hn)}</div>
+    <div class="kv-grid" style="margin-top:14px">
+      <div class="kv form-span-2"><div class="k">ผลการเยี่ยมบ้าน</div><div class="v">${textBlock(v.note||'—')}</div></div>
+      ${v.problems?`<div class="kv form-span-2"><div class="k">Problems</div><div class="v">${textBlock(v.problems)}</div></div>`:''}
+      ${v.inhomesss?`<div class="kv form-span-2"><div class="k">INHOMESSS</div><div class="v">${textBlock(v.inhomesss)}</div></div>`:''}
+      ${v.care_plan?`<div class="kv form-span-2"><div class="k">Care Plan</div><div class="v">${textBlock(v.care_plan)}</div></div>`:''}
+    </div>
+    ${visitPrintPhotosHtml(p,index)}
+    ${visitorSignatureHtml(p)}
+    </div><button class="btn-primary print-btn" style="max-width:220px;margin:12px auto" onclick="window.print()">🖨 พิมพ์ครั้งที่ ${index+1}</button>`;
   return '';
 }
 function renderAllTabPanels(p){
@@ -2472,9 +2533,13 @@ async function savePatient(ev){
         number:priorVisitHistory.length+1,
         date:getISOFromBuddhistDate()||todayISO(),
         note:newVisitEntry,
+        diagnosis:e('f-diagnosis').value.trim(),
+        icd10:e('f-icd10').value.trim(),
+        medication:e('f-medication').value.trim(),
         problems:e('f-problems').value.trim(),
         care_plan:e('f-careplan').value.trim(),
-        inhomesss:e('f-inhomesss')?.value?.trim?.()||''
+        inhomesss:e('f-inhomesss')?.value?.trim?.()||'',
+        photos:[]
       });
     }
 
@@ -2504,15 +2569,34 @@ async function savePatient(ev){
     const files=[...e('f-photos').files];
     if(files.length){
       const photoObjects=Array.isArray(row.photos)?[...row.photos]:[];
+      const uploadedThisVisit=[];
       for(const file of files){
         try{
           const clean=file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
           const path=`${row.id}/${Date.now()}-${Math.random().toString(36).slice(2,7)}-${clean}`;
           const up=await supabaseClient.storage.from(PHOTOS_BUCKET).upload(path,file,{upsert:false,contentType:file.type||undefined});
-          if(up.error)throw up.error;photoObjects.push({path,name:file.name,type:file.type||''});
+          if(up.error)throw up.error;
+          const obj={path,name:file.name,type:file.type||''};
+          photoObjects.push(obj);
+          uploadedThisVisit.push(obj);
         }catch(ex){attachmentErrors.push(`ภาพ ${file.name}: ${ex.message||ex}`);}
       }
-      const u=await supabaseClient.from(PATIENTS_TABLE).update({photos:photoObjects}).eq('id',row.id);
+
+      // ผูกรูปกับ "การเยี่ยมครั้งที่กำลังบันทึก" โดยตรง
+      let visitHistoryWithPhotos=Array.isArray(row.visit_history)?row.visit_history.map(v=>({...v})):[...visitHistoryFinal];
+      if(uploadedThisVisit.length && newVisitEntry && visitHistoryWithPhotos.length){
+        const lastIndex=visitHistoryWithPhotos.length-1;
+        const oldVisitPhotos=Array.isArray(visitHistoryWithPhotos[lastIndex]?.photos)?visitHistoryWithPhotos[lastIndex].photos:[];
+        visitHistoryWithPhotos[lastIndex]={
+          ...visitHistoryWithPhotos[lastIndex],
+          photos:[...oldVisitPhotos,...uploadedThisVisit]
+        };
+      }
+
+      const updatePayload={photos:photoObjects};
+      if(uploadedThisVisit.length && newVisitEntry)updatePayload.visit_history=visitHistoryWithPhotos;
+
+      const u=await supabaseClient.from(PATIENTS_TABLE).update(updatePayload).eq('id',row.id);
       if(u.error)attachmentErrors.push(`บันทึกรายการภาพ: ${u.error.message}`);
     }
 
