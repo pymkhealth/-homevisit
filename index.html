@@ -442,7 +442,7 @@
   .visit-tab-delete{border:0;border-left:1px solid #E3EAED;background:#fff;color:#9A6970;padding:0 8px;font-size:16px;cursor:pointer;}
   .visit-tab-delete:hover{background:#FFF0F1;color:#B73343;}
 
-/* ===== v13.9 Bright Medical Theme ===== */
+/* ===== v14.0 Bright Medical Theme ===== */
 :root{
   --navy:#123B5D;
   --teal:#12A6B5;
@@ -566,7 +566,7 @@ body{
   box-shadow:0 0 0 3px rgba(66,191,199,.12);
 }
 
-/* ===== v13.9 Formal Teal Pastel Theme (matched to selected reference) ===== */
+/* ===== v14.0 Formal Teal Pastel Theme (matched to selected reference) ===== */
 :root{
   --navy:#123F59;
   --teal:#0786A0;
@@ -743,6 +743,16 @@ body{
 .rank-row{border-color:#DCE5E9}
 .rank-body .name,.p-name{color:#123F59}
 .rank-body .note,.p-sub,.meta{color:#66808D}
+
+  .a4-visit-section{display:grid;grid-template-columns:155px 1fr;border-bottom:1px solid #D8E1E5;padding:9px 0;break-inside:avoid;}
+  .a4-visit-label{font-weight:700;color:#173F59;padding-right:12px;}
+  .a4-visit-value{color:#263F4D;white-space:pre-wrap;min-width:0;}
+  .visit-a4 .print-photo-grid{margin-top:10px;}
+  @media print{
+    .visit-a4 .a4-visit-section{grid-template-columns:135px 1fr;padding:7px 0;}
+    .visit-a4 .a4-visit-label{font-size:11pt;}
+    .visit-a4 .a4-visit-value{font-size:10.5pt;}
+  }
 </style>
 </head>
 <body>
@@ -2273,6 +2283,62 @@ function visitPrintPhotosHtml(p,index){
       ${photos.map((x,i)=>`<div><img src="${safe(x.url||x)}" alt="ภาพเยี่ยมบ้านครั้งที่ ${index+1} ภาพที่ ${i+1}"><div style="font-size:10px;text-align:center;margin-top:4px">ภาพที่ ${i+1}</div></div>`).join('')}
     </div>`;
 }
+function newProblemsForVisit(p,index){
+  if(index<=0)return [];
+  const h=patientVisitHistory(p);
+  const prev=splitProblemItems(h[index-1]?.problems||'');
+  const cur=splitProblemItems(h[index]?.problems||'');
+  const prevSet=new Set(prev.map(normProblem));
+  return cur.filter(x=>!prevSet.has(normProblem(x)));
+}
+function visitTeamForIndex(p,index){
+  const h=patientVisitHistory(p),v=h[index]||{};
+  const own=Array.isArray(v.home_visit_team)?v.home_visit_team:[];
+  if(own.length)return own;
+  // compatibility for old records: global team is used only as fallback
+  return Array.isArray(p.home_visit_team)?p.home_visit_team:[];
+}
+function printSection(title,content){
+  if(content==null||String(content).trim()===''||String(content).trim()==='—')return '';
+  return `<div class="a4-visit-section">
+    <div class="a4-visit-label">${safe(title)}</div>
+    <div class="a4-visit-value">${textBlock(content)}</div>
+  </div>`;
+}
+function printLabSection(p,index){
+  const lab=labForVisitIndex(p,index);
+  if(!lab)return '<div class="a4-visit-section"><div class="a4-visit-label">Lab</div><div class="a4-visit-value">—</div></div>';
+  const prev=index>0?labForVisitIndex(p,index-1):null;
+  return `<div class="a4-visit-section">
+    <div class="a4-visit-label">Lab</div>
+    <div class="a4-visit-value">${structuredLabTableHtml(lab.results||[],prev)}</div>
+  </div>`;
+}
+function visitPrintA4Html(p,index){
+  const h=patientVisitHistory(p),v=h[index]||{};
+  const newProblems=index>0?newProblemsForVisit(p,index):[];
+  const team=visitTeamForIndex(p,index);
+
+  return `<div class="a4-preview visit-a4" style="max-width:760px">
+    <h4>ข้อมูลผู้ป่วยเยี่ยมบ้าน — ครั้งที่ ${index+1}</h4>
+    <div class="a4-sub">${safe(p.name)} · HN ${safe(p.hn)}${v.date?` · ${safe(thaiDate(v.date))}`:''}</div>
+
+    ${printSection('ประวัติเดิม',p.history||'—')}
+    ${index>0?printSection('ปัญหาใหม่',newProblems.length?newProblems.join('\n'):'ไม่พบปัญหาใหม่เมื่อเทียบกับครั้งก่อน'):''}
+    ${printSection('Diagnosis',v.diagnosis||p.diagnosis||'—')}
+    ${v.icd10?printSection('ICD-10',v.icd10):''}
+    ${printLabSection(p,index)}
+    ${printSection('Medication',v.medication||p.medication||'—')}
+    ${printSection('Home Visit',v.note||'—')}
+    ${printSection('INHOMESSS',v.inhomesss||'—')}
+    ${printSection('Problems',v.problems||'—')}
+    ${printSection('Care Plan',v.care_plan||'—')}
+
+    ${visitPrintPhotosHtml(p,index)}
+    ${visitorSignatureHtml(p,team)}
+  </div>
+  <button class="btn-primary print-btn" style="max-width:220px;margin:12px auto" onclick="window.print()">🖨 พิมพ์ครั้งที่ ${index+1}</button>`;
+}
 function visitSubContentHtml(p,index,type){
   const h=patientVisitHistory(p),v=h[index]||{},lab=labForVisitIndex(p,index),prev=index>0?labForVisitIndex(p,index-1):null;
   if(type==='diagnosis')return `<div class="kv-grid"><div class="kv"><div class="k">Diagnosis</div><div class="v">${safe(v.diagnosis||p.diagnosis||'—')}</div></div><div class="kv"><div class="k">ICD-10</div><div class="v">${safe(v.icd10||p.icd10||'—')}</div></div></div>`;
@@ -2286,16 +2352,7 @@ function visitSubContentHtml(p,index,type){
     const photos=photosForVisit(p,index);
     return `<div class="photo-grid">${photos.length?photos.map((x,i)=>`<div class="photo-tile photo-real"><img src="${safe(x.url||x)}"><div class="photo-caption">ภาพเยี่ยมครั้งที่ ${index+1} · ภาพที่ ${i+1}</div></div>`).join(''):'<div class="empty-state" style="grid-column:1/-1">ยังไม่มีภาพของการเยี่ยมครั้งนี้</div>'}</div>`;
   }
-  if(type==='print')return `<div class="a4-preview" style="max-width:760px"><h4>ข้อมูลผู้ป่วยเยี่ยมบ้าน — ครั้งที่ ${index+1}</h4><div class="a4-sub">${safe(p.name)} · ${safe(p.hn)}</div>
-    <div class="kv-grid" style="margin-top:14px">
-      <div class="kv form-span-2"><div class="k">ผลการเยี่ยมบ้าน</div><div class="v">${textBlock(v.note||'—')}</div></div>
-      ${v.problems?`<div class="kv form-span-2"><div class="k">Problems</div><div class="v">${textBlock(v.problems)}</div></div>`:''}
-      ${v.inhomesss?`<div class="kv form-span-2"><div class="k">INHOMESSS</div><div class="v">${textBlock(v.inhomesss)}</div></div>`:''}
-      ${v.care_plan?`<div class="kv form-span-2"><div class="k">Care Plan</div><div class="v">${textBlock(v.care_plan)}</div></div>`:''}
-    </div>
-    ${visitPrintPhotosHtml(p,index)}
-    ${visitorSignatureHtml(p)}
-    </div><button class="btn-primary print-btn" style="max-width:220px;margin:12px auto" onclick="window.print()">🖨 พิมพ์ครั้งที่ ${index+1}</button>`;
+  if(type==='print')return visitPrintA4Html(p,index);
   return '';
 }
 function renderAllTabPanels(p){
@@ -2430,8 +2487,8 @@ function homeVisitTimelineHtml(p){
     return `<div class="visit-item"><div class="visit-dot"></div><div><div class="visit-date"><b>เยี่ยมครั้งที่ ${n}</b>${date?` · ${safe(date)}`:''}</div><div class="visit-note">${textBlock(note)}</div>${v.problems?`<div style="margin-top:6px"><b>Problems:</b> ${textBlock(v.problems)}</div>`:''}</div></div>`;
   }).join('');
 }
-function visitorSignatureHtml(p){
-  let raw=p.home_visit_team;
+function visitorSignatureHtml(p,teamOverride=null){
+  let raw=teamOverride!=null?teamOverride:p.home_visit_team;
   if(typeof raw==='string'){try{raw=JSON.parse(raw);}catch(_){raw=[];}}
   const team=Array.isArray(raw)?raw.filter(x=>x&&(x.name||x.role)):[];
   if(!team.length)return '<div class="visitor-signatures"><h4>ผู้เยี่ยมบ้าน / ลงลายมือชื่อ</h4><div class="form-help">ยังไม่มีรายชื่อผู้เยี่ยมบ้านที่บันทึกไว้</div></div>';
@@ -2539,6 +2596,7 @@ async function savePatient(ev){
         problems:e('f-problems').value.trim(),
         care_plan:e('f-careplan').value.trim(),
         inhomesss:e('f-inhomesss')?.value?.trim?.()||'',
+        home_visit_team:team.map(x=>({...x})),
         photos:[]
       });
     }
