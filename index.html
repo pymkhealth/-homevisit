@@ -615,7 +615,7 @@
         <div class="field"><label>ICD-10</label><input id="f-icd10"></div>
         <div class="field"><label>ประวัติแพ้ยา</label><input id="f-allergy"></div>
         <div class="field form-span-2"><label>ประวัติเดิม</label><textarea id="f-history" rows="3"></textarea></div>
-        <div class="field form-span-2"><label>Lab / ผลตรวจจากภาพหรือ PDF</label><div class="lab-upload-box"><input id="f-lab-files" type="file" accept="image/*,application/pdf" multiple><div class="form-help">ระบบอ่านแบบฟอร์ม Lab 2 คอลัมน์โดยแยกซ้าย–ขวาและตัดหัว/ท้ายกระดาษก่อนอ่าน เพื่อจับเฉพาะรายการตรวจ ผล ค่าปกติ และหน่วย</div><div class="lab-tools"><button type="button" class="btn-ghost" onclick="analyzeLabFiles()">อ่านและวิเคราะห์ผล Lab</button><span id="lab-ocr-status" class="lab-status"></span></div></div><textarea id="f-lab" rows="7" placeholder="ค่าที่อ่านจากผล Lab — กรุณาตรวจสอบกับต้นฉบับ"></textarea>
+        <div class="field form-span-2"><label>Lab / ผลตรวจจากภาพหรือ PDF</label><div class="lab-upload-box"><input id="f-lab-files" type="file" accept="image/*,application/pdf" multiple><div class="form-help">ระบบจะขยายภาพก่อนอ่าน แยกตารางซ้าย–ขวา และใช้ “ค่าปกติ” ที่พิมพ์ในใบ Lab เป็นเกณฑ์ หากผลต่ำ/สูงกว่าช่วงอ้างอิง ระบบจะแสดงสิ่งที่ควรติดตาม</div><div class="lab-tools"><button type="button" class="btn-ghost" onclick="analyzeLabFiles()">อ่านและวิเคราะห์ผล Lab</button><span id="lab-ocr-status" class="lab-status"></span></div></div><textarea id="f-lab" rows="7" placeholder="ค่าที่อ่านจากผล Lab — กรุณาตรวจสอบกับต้นฉบับ"></textarea>
 <div id="existing-lab-files" style="margin-top:10px"></div>
 <div class="lab-tools" style="margin-top:8px">
   <button type="button" class="btn-ghost" onclick="clearLabReadResult()">ล้างข้อความ/ผลวิเคราะห์ Lab</button>
@@ -1149,7 +1149,8 @@ function cropLabCanvas(source, x0, y0, x1, y1){
   return c;
 }
 function enhanceLabCanvas(source){
-  const scale=Math.min(2.4,2600/source.width);
+  // ขยายภาพมากขึ้นสำหรับแบบฟอร์ม Lab ตัวอักษรขนาดเล็ก
+  const scale=Math.max(2.8,Math.min(4.0,3400/source.width));
   const c=document.createElement('canvas');
   c.width=Math.max(1,Math.round(source.width*scale));
   c.height=Math.max(1,Math.round(source.height*scale));
@@ -1158,10 +1159,10 @@ function enhanceLabCanvas(source){
   const im=ctx.getImageData(0,0,c.width,c.height),d=im.data;
   for(let i=0;i<d.length;i+=4){
     let g=.299*d[i]+.587*d[i+1]+.114*d[i+2];
-    // contrast + near-white cleanup
-    g=(g-128)*1.75+128;
-    if(g>228)g=255;
-    if(g<40)g=0;
+    // contrast + near-white cleanup: เก็บจุดทศนิยมและขีดช่วงอ้างอิงไว้
+    g=(g-128)*1.95+128;
+    if(g>238)g=255;
+    if(g<34)g=0;
     g=Math.max(0,Math.min(255,g));
     d[i]=d[i+1]=d[i+2]=g;
   }
@@ -1390,6 +1391,98 @@ async function recognizeLabRegion(worker,canvas){
   }
   return attempts.flat();
 }
+
+function abnormalFollowupAdvice(results){
+  const byKey=new Map((results||[]).map(x=>[x.key,x]));
+  const abnormal=(results||[]).filter(x=>['high','low','abnormal'].includes(x.status));
+  if(!abnormal.length)return 'ไม่พบค่าที่อยู่นอกช่วงอ้างอิงจากรายการที่ระบบอ่านได้';
+
+  const advice=[];
+  const has=k=>byKey.has(k);
+  const st=k=>byKey.get(k)?.status;
+  const val=k=>byKey.get(k)?.value;
+
+  // CBC / anemia pattern
+  const anemiaLow=['hb','hct'].some(k=>st(k)==='low');
+  const microcytic=['mcv','mch','mchc'].filter(k=>st(k)==='low');
+  if(anemiaLow){
+    advice.push('CBC: Hb/Hct ต่ำกว่าช่วงอ้างอิง ควรประเมินภาวะซีดร่วมกับอาการ ประวัติเลือดออก โภชนาการ โรคเรื้อรัง และผลเดิม');
+    if(microcytic.length>=2){
+      advice.push('ดัชนีเม็ดเลือดแดงต่ำหลายค่า (เช่น MCV/MCH/MCHC): ลักษณะเข้ากับเม็ดเลือดแดงขนาดเล็ก/ซีด ควรพิจารณาติดตาม CBC และประเมิน iron studies เช่น ferritin/serum iron/TIBC ตามดุลยพินิจผู้รักษา');
+    }
+  }
+  if(st('wbc')==='high')advice.push('WBC สูง: ควรประเมินร่วมกับไข้ อาการติดเชื้อ/อักเสบ ยา และ differential count');
+  if(st('wbc')==='low')advice.push('WBC ต่ำ: ควรทบทวนยา การติดเชื้อ โรคประจำตัว และพิจารณาตรวจ CBC ซ้ำตามอาการ');
+  if(st('platelet')==='low')advice.push('Platelet ต่ำ: ควรประเมินอาการเลือดออก/จ้ำเลือด ทบทวนยา และติดตามค่าซ้ำตามความรุนแรง');
+  if(st('platelet')==='high')advice.push('Platelet สูง: ควรประเมินภาวะอักเสบ/ติดเชื้อ ภาวะขาดธาตุเหล็ก และแนวโน้มจากผลครั้งก่อน');
+
+  // Renal
+  if(st('egfr')==='low'){
+    advice.push('eGFR ต่ำกว่าค่าอ้างอิง: ควรเปรียบเทียบผลเดิม ตรวจแนวโน้ม Creatinine/eGFR และพิจารณาปัจจัยร่วม เช่น ภาวะขาดน้ำ ยา และ urine albumin/creatinine ratio ตามแผนแพทย์; ไม่ควรสรุป CKD จากผลครั้งเดียว');
+  }
+  if(st('creatinine')==='high')advice.push('Creatinine สูง: ควรเทียบ baseline, eGFR, ภาวะน้ำในร่างกาย และยาที่มีผลต่อไต พร้อมติดตามซ้ำตามบริบททางคลินิก');
+
+  // Electrolytes
+  if(st('k')==='high')advice.push('Potassium สูง: ควรยืนยันผลและประเมินความเร่งด่วนตามระดับ K, อาการ, ECG และยาที่เพิ่มโพแทสเซียม');
+  if(st('k')==='low')advice.push('Potassium ต่ำ: ควรประเมินอาการ การสูญเสียทาง GI/ไต ยาขับปัสสาวะ และพิจารณาติดตาม ECG/เกลือแร่ตามระดับความผิดปกติ');
+  if(st('na')==='high'||st('na')==='low')advice.push('Sodium ผิดปกติ: ควรประเมินภาวะน้ำ อาการทางระบบประสาท ยา และติดตามระดับซ้ำตามความรุนแรง');
+  if(st('co2')==='low')advice.push('CO₂/Bicarbonate ต่ำ: ควรประเมินภาวะกรด-ด่างร่วมกับอาการและ electrolyte/renal function; หากผิดปกติชัดเจนควรพิจารณาตรวจซ้ำหรือ blood gas ตามดุลยพินิจผู้รักษา');
+
+  // Diabetes/lipid/liver
+  if(st('fbs')==='high')advice.push('Glucose/FBS สูง: ควรพิจารณาความสัมพันธ์กับการงดอาหาร อาการ และ HbA1c พร้อมติดตามตามแผนควบคุมระดับน้ำตาล');
+  if(st('hba1c')==='high')advice.push('HbA1c สูงกว่าช่วงอ้างอิง: ควรประเมินแนวโน้มเทียบครั้งก่อน การใช้ยา อาหาร และ adherence ตามเป้าหมายรายบุคคล');
+  if(st('ast')==='high'||st('alt')==='high'||st('alp')==='high')advice.push('Liver enzymes สูง: ควรทบทวนยา แอลกอฮอล์ อาการ และผล LFT อื่นร่วมกัน รวมถึงพิจารณาตรวจซ้ำตามแผนแพทย์');
+
+  // UA
+  if(st('ua_glucose')==='abnormal')advice.push('Urine glucose เป็นบวก: ควรเทียบกับ blood glucose/HbA1c และยาที่มีผลต่อ glucose ในปัสสาวะ');
+  if(st('ua_protein')==='abnormal')advice.push('Urine protein เป็นบวก: ควรพิจารณาตรวจยืนยัน/quantify เช่น urine ACR ตามบริบท');
+  if(st('ua_blood')==='abnormal'||st('ua_leukocytes')==='abnormal'||st('ua_nitrite')==='abnormal')advice.push('Urinalysis มี blood/leukocyte/nitrite ผิดปกติ: ควรประเมินอาการทางเดินปัสสาวะและพิจารณาตรวจซ้ำ/เพาะเชื้อตามอาการ');
+
+  if(!advice.length){
+    advice.push('พบค่าที่อยู่นอกช่วงอ้างอิง ควรตรวจสอบกับใบ Lab ต้นฉบับ เปรียบเทียบผลเดิม และให้ผู้ประกอบวิชาชีพประเมินตามอาการและโรคประจำตัว');
+  }
+  return advice.map((x,i)=>`${i+1}. ${x}`).join('\n');
+}
+function buildTemplateLabAnalysis(results,previous){
+  if(!results?.length)return 'ระบบยังอ่านรายการ Lab จากภาพนี้ไม่ได้อย่างมั่นใจ กรุณาใช้ภาพที่คมชัด เห็นตารางเต็มหน้า และตรวจสอบตัวเลขกับต้นฉบับ';
+
+  const normal=results.filter(x=>x.status==='normal');
+  const abnormal=results.filter(x=>['high','low','abnormal'].includes(x.status));
+  const unknown=results.filter(x=>x.status==='unknown');
+
+  let out='สรุปผล Lab จากช่วงอ้างอิงในใบรายงาน\n';
+  out+='\n✅ อยู่ในเกณฑ์ปกติ\n';
+  out+=normal.length?normal.map(x=>`- ${x.label}: ${resultDisplay(x)}${x.refText?` (ค่าปกติ ${x.refText})`:''}`).join('\n'):'- ไม่มีรายการที่ระบบยืนยันได้';
+
+  out+='\n\n⚠️ ผิดปกติ / ควรติดตาม\n';
+  out+=abnormal.length?abnormal.map(x=>`- ${x.label}: ${resultDisplay(x)} — ${labStatusThai(x.status)}${x.refText?` (ค่าปกติ ${x.refText})`:''}`).join('\n'):'- ไม่พบค่าที่อยู่นอกช่วงอ้างอิง';
+
+  if(previous){
+    const pm=new Map((previous.results||[]).map(x=>[x.key,x]));
+    const comparable=results.filter(x=>pm.has(x.key));
+    if(comparable.length){
+      out+='\n\n📈 เปรียบเทียบกับ Lab ครั้งก่อน\n';
+      out+=comparable.map(x=>{
+        const p=pm.get(x.key);
+        const trend=compareLabValue(x,p);
+        let interpretation='';
+        if(x.status==='normal' && ['high','low','abnormal'].includes(p.status))interpretation=' → เข้าสู่เกณฑ์ปกติ';
+        else if(x.status===p.status && x.status==='normal')interpretation=' → ยังอยู่ในเกณฑ์ปกติ';
+        else if(['high','low'].includes(x.status))interpretation=' → ยังอยู่นอกช่วงอ้างอิง';
+        return `- ${x.label}: เดิม ${resultDisplay(p)} → ครั้งนี้ ${resultDisplay(x)} (${trend})${interpretation}`;
+      }).join('\n');
+    }
+  }
+
+  if(unknown.length){
+    out+='\n\n🔎 ยังสรุปไม่ได้จากภาพ\n';
+    out+=unknown.map(x=>`- ${x.label}: ${resultDisplay(x)} — ไม่พบช่วงอ้างอิงที่อ่านได้ชัดเจน`).join('\n');
+  }
+
+  out+='\n\nคำแนะนำเพิ่มเติม\n'+abnormalFollowupAdvice(results);
+  out+='\n\nหมายเหตุ: ใช้ช่วงอ้างอิงที่พิมพ์ในใบ Lab เป็นหลัก ผลจากการอ่านภาพต้องตรวจสอบตัวเลขกับเอกสารต้นฉบับก่อนบันทึก และไม่ใช้แทนการวินิจฉัยของแพทย์';
+  return out;
+}
 async function analyzeLabFiles(){
  const files=[...e('f-lab-files').files],status=e('lab-ocr-status');
  if(!files.length){alert('กรุณาเลือกภาพหรือ PDF ผล Lab ก่อน');return;}
@@ -1426,7 +1519,7 @@ async function analyzeLabFiles(){
      ?results.map(x=>`${x.label}: ${resultDisplay(x)}${x.refText?` | เกณฑ์ ${x.refText}`:''} | ${labStatusThai(x.status)}`).join('\n')
      :'';
    e('f-lab-analysis').value=results.length
-     ?buildLabAnalysis(results,previous)
+     ?buildTemplateLabAnalysis(results,previous)
      :'ระบบยังอ่านรายการ Lab จากภาพนี้ไม่ได้อย่างมั่นใจ กรุณาใช้ภาพที่เห็นตารางเต็มหน้า ตัวอักษรไม่เบลอ และไม่เอียง';
    renderLabStructuredPreview(results,previous);
    status.textContent=results.length
