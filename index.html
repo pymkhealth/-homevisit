@@ -441,6 +441,130 @@
   .visit-tab-wrap .tab-btn{margin:0;border-bottom:0;}
   .visit-tab-delete{border:0;border-left:1px solid #E3EAED;background:#fff;color:#9A6970;padding:0 8px;font-size:16px;cursor:pointer;}
   .visit-tab-delete:hover{background:#FFF0F1;color:#B73343;}
+
+/* ===== v13.7 Bright Medical Theme ===== */
+:root{
+  --navy:#123B5D;
+  --teal:#12A6B5;
+  --teal2:#39C5C9;
+  --sky:#EAF9FF;
+  --mint:#E9FBF6;
+  --pink:#FFF0F4;
+  --rose:#F0647A;
+  --yellow:#FFF7D6;
+  --gold:#F5B83D;
+  --lav:#F3EEFF;
+  --violet:#8A73D6;
+  --line:#D9EAF0;
+  --soft:#F7FBFD;
+}
+body{
+  background:linear-gradient(135deg,#F7FCFF 0%,#F2FBFC 48%,#FFF8FB 100%);
+  color:var(--navy);
+}
+.sidebar{
+  background:linear-gradient(180deg,#FFFFFF 0%,#F1FBFD 58%,#FFF7FA 100%);
+  border-right:1px solid #D8EDF1;
+}
+.brand-mark,.login-mark{
+  background:linear-gradient(135deg,#12A6B5,#43CDD0);
+  box-shadow:0 8px 22px rgba(18,166,181,.20);
+}
+.nav-item.active{
+  background:linear-gradient(90deg,#DFF8FA,#EAFBFF);
+  color:#087D8B;
+}
+.nav-item.active:before{background:#18B1B7}
+.main{background:transparent}
+.card,.panel,.modal-card,.a4-preview{
+  border-color:#DDECF1;
+  box-shadow:0 10px 28px rgba(39,92,118,.07);
+}
+.stat-card:nth-child(4n+1),.dash-card:nth-child(4n+1){background:linear-gradient(145deg,#FFFFFF,#EAFBFF)}
+.stat-card:nth-child(4n+2),.dash-card:nth-child(4n+2){background:linear-gradient(145deg,#FFFFFF,#FFF0F5)}
+.stat-card:nth-child(4n+3),.dash-card:nth-child(4n+3){background:linear-gradient(145deg,#FFFFFF,#FFF8DE)}
+.stat-card:nth-child(4n+4),.dash-card:nth-child(4n+4){background:linear-gradient(145deg,#FFFFFF,#ECFBF4)}
+.btn-primary{
+  background:linear-gradient(135deg,#0FA3B1,#35C6C9);
+  box-shadow:0 7px 16px rgba(15,163,177,.18);
+}
+.btn-primary:hover{filter:brightness(1.03);transform:translateY(-1px)}
+.btn-secondary{background:#fff;border-color:#CFE5EA;color:#315A70}
+.tab-strip{
+  background:linear-gradient(90deg,#F4FCFD,#FFF8FB);
+  border-bottom-color:#DCECF0;
+}
+.tab-btn{
+  color:#547184;
+  background:rgba(255,255,255,.82);
+}
+.tab-btn.active{
+  color:#087F8D;
+  background:#E3F9FA;
+  border-bottom-color:#18AEB7;
+}
+.visit-tab-wrap{
+  border:1px solid #D7EBEF;
+  border-radius:10px 10px 0 0;
+  overflow:hidden;
+  background:#fff;
+}
+.visit-tab-wrap:nth-of-type(4n+1) .visit-main-tab{background:#E9FAFD}
+.visit-tab-wrap:nth-of-type(4n+2) .visit-main-tab{background:#FFF0F5}
+.visit-tab-wrap:nth-of-type(4n+3) .visit-main-tab{background:#FFF8DD}
+.visit-tab-wrap:nth-of-type(4n+4) .visit-main-tab{background:#ECFBF4}
+.tab-btn.add-visit-tab{
+  color:#087F8D;
+  background:linear-gradient(135deg,#E5FAFA,#EAFBFF);
+  border:1px dashed #62C8CE;
+  border-radius:9px;
+}
+.tab-btn.add-visit-tab:hover{background:#D9F6F7}
+.visit-tab-delete{background:rgba(255,255,255,.92);color:#D45C70}
+.visit-tab-delete:hover{background:#FFE9EE;color:#B93650}
+.visit-subtabs{
+  background:linear-gradient(90deg,#F4FCFD,#FFF8F9);
+  border-color:#D9EAEE;
+  border-radius:10px;
+  overflow:hidden;
+}
+.visit-subtab{color:#587487;border-color:#DDECEF}
+.visit-subtab:nth-child(3n+1){background:#F0FBFD}
+.visit-subtab:nth-child(3n+2){background:#FFF5F8}
+.visit-subtab:nth-child(3n+3){background:#FFF9E8}
+.visit-subtab.active{
+  background:linear-gradient(135deg,#DDF8FA,#E8F9FF);
+  color:#087C8A;
+}
+.visit-count-badge{
+  background:linear-gradient(135deg,#DDF8FA,#EAFBFF);
+  color:#087C8A;
+  border:1px solid #BCE6EA;
+}
+.rank-row:nth-child(5n+1) .rank-no{background:#FFE8EE;color:#D94E68}
+.rank-row:nth-child(5n+2) .rank-no{background:#E5F9FB;color:#1093A0}
+.rank-row:nth-child(5n+3) .rank-no{background:#FFF3CD;color:#C48713}
+.rank-row:nth-child(5n+4) .rank-no{background:#E8F8F0;color:#2D9474}
+.rank-row:nth-child(5n+5) .rank-no{background:#F0EAFF;color:#765AC4}
+.warning-banner{
+  background:linear-gradient(135deg,#FFF6D8,#FFF0E3)!important;
+  border-color:#F4D58A!important;
+  color:#6E5624!important;
+}
+.empty-state{
+  background:linear-gradient(135deg,#FBFEFF,#F5FBFD);
+  border-color:#D4E8EE;
+}
+.kv{background:#FBFEFF;border-color:#DCECF0}
+.kv .k{color:#6C8795}
+.form-control,input,select,textarea{
+  border-color:#CFE4E9;
+  background:#FFFFFF;
+}
+.form-control:focus,input:focus,select:focus,textarea:focus{
+  border-color:#42BFC7;
+  box-shadow:0 0 0 3px rgba(66,191,199,.12);
+}
 </style>
 </head>
 <body>
