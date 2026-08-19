@@ -1549,7 +1549,7 @@ async function loadPatients(){
 function renderAllScreens(){ renderToday(); renderDashboard(); renderList(); }
 
 function normalizePatient(p){
-  return {...p,id:p.id,hn:p.hn||'',name:p.name||'',birthDate:p.birth_date||'',age:calculateAge(p.birth_date),sex:p.sex||'',group:p.disease_group||'',lastVisit:thaiDate(p.last_visit),startVisitDate:p.home_visit_start_date||'',startVisit:thaiDate(p.home_visit_start_date),dischargeDate:p.home_visit_discharge_date||'',dischargeVisit:thaiDate(p.home_visit_discharge_date),status:p.status||'ok',overdueDays:p.overdue_days||0,reason:p.reason||'',address:p.address||'',phone:p.phone||'',photos:Array.isArray(p.photos)?p.photos:[],labFiles:Array.isArray(p.lab_files)?p.lab_files:[],lab_analysis:p.lab_analysis||'',lab_history:Array.isArray(p.lab_history)?p.lab_history:[],home_visit_team:Array.isArray(p.home_visit_team)?p.home_visit_team:[],stage:p.workflow_stage||'new',nextVisitDate:p.next_visit_date||''};
+  return {...p,id:p.id,hn:p.hn||'',name:p.name||'',birthDate:p.birth_date||'',age:calculateAge(p.birth_date),sex:p.sex||'',group:p.disease_group||'',lastVisit:thaiDate(p.last_visit),startVisitDate:p.home_visit_start_date||'',startVisit:thaiDate(p.home_visit_start_date),dischargeDate:p.home_visit_discharge_date||'',dischargeVisit:thaiDate(p.home_visit_discharge_date),status:p.status||'ok',overdueDays:p.overdue_days||0,reason:p.reason||'',address:p.address||'',phone:p.phone||'',photos:Array.isArray(p.photos)?p.photos:[],labFiles:Array.isArray(p.lab_files)?p.lab_files:[],lab_analysis:p.lab_analysis||'',lab_history:Array.isArray(p.lab_history)?p.lab_history:[],visit_history:Array.isArray(p.visit_history)?p.visit_history:[],home_visit_team:Array.isArray(p.home_visit_team)?p.home_visit_team:[],stage:p.workflow_stage||'new',nextVisitDate:p.next_visit_date||''};
 }
 async function hydratePhotoUrls(){
   for(const p of patients){
@@ -1722,7 +1722,7 @@ function closeDiseaseModal(){e('disease-modal').classList.add('hidden');}
 const tabs=[['history','ประวัติเดิม'],['diagnosis','Diagnosis'],['lab','Lab'],['medication','Medication'],['homevisit','Home Visit'],['inhomesss','INHOMESSS'],['problems','Problems'],['careplan','Care Plan'],['photos','รูปภาพ'],['print','Print A4']];
 function openPatient(id){
   currentPatient=patients.find(p=>String(p.id)===String(id)); if(!currentPatient)return; const p=currentPatient;
-  e('pd-initials').textContent=(p.name||'ผู้ป่วย').replace(/\s/g,'').slice(0,2);e('pd-name').textContent=p.name;e('pd-hn').textContent=p.hn;e('pd-age').textContent=`${p.age==null?'—':p.age+' ปี'} · ${p.sex||'—'} · เกิด ${p.birthDate?thaiDate(p.birthDate):'—'}`;e('pd-address').textContent=`📍 ${p.address||'—'}`;e('pd-phone').textContent=`📞 ${p.phone||'—'}`;e('pd-start').textContent=`เริ่มเยี่ยมบ้าน ${p.startVisit||'—'}`;e('pd-discharge').textContent=p.dischargeDate?`จำหน่าย ${p.dischargeVisit}`:'ยังอยู่ในระบบเยี่ยมบ้าน';
+  e('pd-initials').textContent=(p.name||'ผู้ป่วย').replace(/\s/g,'').slice(0,2);e('pd-name').textContent=`${p.name} · เยี่ยมครั้งที่ ${visitCount(p)||0}`;e('pd-hn').textContent=p.hn;e('pd-age').textContent=`${p.age==null?'—':p.age+' ปี'} · ${p.sex||'—'} · เกิด ${p.birthDate?thaiDate(p.birthDate):'—'}`;e('pd-address').textContent=`📍 ${p.address||'—'}`;e('pd-phone').textContent=`📞 ${p.phone||'—'}`;e('pd-start').textContent=`เริ่มเยี่ยมบ้าน ${p.startVisit||'—'}`;e('pd-discharge').textContent=p.dischargeDate?`จำหน่าย ${p.dischargeVisit}`:'ยังอยู่ในระบบเยี่ยมบ้าน';
   const b=e('pd-badge');b.className='badge '+(p.status==='urgent'?'urgent':p.status==='overdue'?'overdue':'ok');b.textContent=p.status==='urgent'?'เร่งด่วน':p.status==='overdue'?`เกินกำหนด ${p.overdueDays||0} วัน`:'ปกติ';
   const stg=stageInfo(p.stage); const stageEl=e('pd-stage'); stageEl.style.background=stg.bg; stageEl.style.color=stg.color; stageEl.innerHTML=`<span class="stage-dot"></span>${safe(stg.label)}`;
   renderCompletenessBadge(p,e('pd-completeness'));
@@ -1767,21 +1767,74 @@ function renderAllTabPanels(p){
   <div class="lab-tools" style="margin-top:12px"><button type="button" class="btn-ghost" onclick="openPatientForm(currentPatient)">＋ เพิ่มผล Lab ครั้งใหม่</button></div>
   </div>
   <div class="tab-panel" id="panel-medication"><h3>Medication</h3>${lines(p.medication).map(x=>`<div class="med-row"><div class="med-name">${safe(x)}</div></div>`).join('')||'<div class="empty-state">ยังไม่มีข้อมูล</div>'}</div>
-  <div class="tab-panel" id="panel-homevisit"><h3>Home Visit — ไทม์ไลน์</h3><div class="form-help" style="margin-bottom:14px">แต่ละครั้งจะถูกบันทึกแยกกันตามวันที่แก้ไข ไม่ทับของเดิม</div>${homeVisitTimelineHtml(p)}</div>
+  <div class="tab-panel" id="panel-homevisit"><h3>Home Visit — ไทม์ไลน์</h3><div class="form-help" style="margin-bottom:14px">แต่ละครั้งจะถูกบันทึกแยกกันตามวันที่แก้ไข ไม่ทับของเดิม</div>${homeVisitTimelineHtml(p)}<h3 style="margin-top:24px">วิเคราะห์พัฒนาการจากการเยี่ยมบ้าน</h3>${visitAnalysisHtml(p)}</div>
   <div class="tab-panel" id="panel-inhomesss"><h3>INHOMESSS Assessment</h3><div class="visit-note">${textBlock(p.inhomesss)}</div></div>
   <div class="tab-panel" id="panel-problems"><h3>Problem List</h3><div class="visit-note">${textBlock(p.problems)}</div></div>
   <div class="tab-panel" id="panel-careplan"><h3>Care Plan</h3><div class="visit-note">${textBlock(p.care_plan)}</div></div>
   <div class="tab-panel" id="panel-photos"><h3>รูปภาพที่แนบ</h3><div class="photo-grid">${photoHtml||'<div class="empty-state" style="grid-column:1/-1">ยังไม่มีภาพแนบ</div>'}</div></div>
   <div class="tab-panel" id="panel-print"><h3>พิมพ์ข้อมูลผู้ป่วย</h3><div id="print-area" class="a4-preview" style="max-width:760px"><h4>ข้อมูลผู้ป่วยเยี่ยมบ้าน</h4><div class="a4-sub">${safe(p.name)} · ${safe(p.hn)}</div>${printRows(p)}${p.photos?.length?`<h4 style="text-align:left;margin-top:20px">ภาพถ่ายที่แนบ</h4><div class="print-photo-grid">${p.photos.map(x=>`<img src="${safe(x.url||x)}">`).join('')}</div>`:''}${visitorSignatureHtml(p)}</div><button class="btn-primary print-btn" style="max-width:220px;margin:0 auto" onclick="window.print()">🖨 พิมพ์ข้อมูลผู้ป่วย</button></div>`;
 }
+
+function legacyVisitBlocks(p){
+  return String(p?.homevisit||'').split('\n===VISIT===\n').map(x=>x.trim()).filter(Boolean).map((b,i)=>{
+    const dm=b.match(/^\[(.+?)\]/), body=dm?b.slice(dm[0].length).trim():b;
+    return {number:i+1,dateText:dm?dm[1]:'',note:body,problems:'',care_plan:'',inhomesss:''};
+  });
+}
+function patientVisitHistory(p){
+  const h=Array.isArray(p?.visit_history)?p.visit_history.filter(Boolean):[];
+  if(h.length)return h.map((x,i)=>({...x,number:x.number||i+1}));
+  return legacyVisitBlocks(p);
+}
+function visitCount(p){return patientVisitHistory(p).length;}
+function splitProblemItems(text){
+  return String(text||'').split(/\n|,|;|•/).map(x=>x.replace(/^\s*[-–—]\s*/,'').trim()).filter(x=>x.length>1);
+}
+function normProblem(x){
+  return String(x||'').toLowerCase().replace(/[()\[\]{}:：]/g,' ').replace(/\s+/g,' ').trim();
+}
+function visitAnalysisHtml(p){
+  const h=patientVisitHistory(p);
+  if(!h.length)return '<div class="empty-state">ยังไม่มีข้อมูลการเยี่ยมสำหรับวิเคราะห์</div>';
+  const cards=h.map((v,i)=>{
+    const probs=splitProblemItems(v.problems||'');
+    return `<div style="border:1px solid #dfe9ed;border-radius:10px;padding:12px;margin:8px 0;background:#fff">
+      <div style="font-weight:700;color:#173d55">เยี่ยมครั้งที่ ${i+1}${v.date?` · ${safe(thaiDate(v.date))}`:v.dateText?` · ${safe(v.dateText)}`:''}</div>
+      <div style="margin-top:6px"><b>ปัญหาที่บันทึก:</b> ${probs.length?safe(probs.join(' · ')):'ยังไม่ได้ระบุปัญหาแยกในครั้งนี้'}</div>
+      ${v.note?`<div style="margin-top:5px"><b>ผลการเยี่ยม:</b> ${textBlock(v.note)}</div>`:''}
+      ${v.care_plan?`<div style="margin-top:5px"><b>แผนดูแล:</b> ${textBlock(v.care_plan)}</div>`:''}
+    </div>`;
+  }).join('');
+
+  let comparisons='';
+  for(let i=1;i<h.length;i++){
+    const prev=splitProblemItems(h[i-1].problems),cur=splitProblemItems(h[i].problems);
+    const pm=new Map(prev.map(x=>[normProblem(x),x])),cm=new Map(cur.map(x=>[normProblem(x),x]));
+    const persistent=[...cm.keys()].filter(k=>pm.has(k)).map(k=>cm.get(k));
+    const added=[...cm.keys()].filter(k=>!pm.has(k)).map(k=>cm.get(k));
+    const resolved=[...pm.keys()].filter(k=>!cm.has(k)).map(k=>pm.get(k));
+    comparisons+=`<div style="margin:10px 0;padding:12px;border-radius:10px;background:#f5f9fa">
+      <div style="font-weight:700;color:#173d55">ครั้งที่ ${i} → ครั้งที่ ${i+1}</div>
+      <div style="margin-top:6px">🟠 <b>ปัญหาที่ยังคงอยู่:</b> ${persistent.length?safe(persistent.join(' · ')):'ไม่พบจากรายการปัญหาที่คีย์ไว้'}</div>
+      <div style="margin-top:5px">🔴 <b>ปัญหาใหม่:</b> ${added.length?safe(added.join(' · ')):'ไม่พบ'}</div>
+      <div style="margin-top:5px">🟢 <b>ปัญหาที่ไม่พบในครั้งล่าสุด:</b> ${resolved.length?safe(resolved.join(' · ')):'ไม่พบ'}</div>
+    </div>`;
+  }
+  const latest=h[h.length-1], first=h[0];
+  const latestP=splitProblemItems(latest.problems),firstP=splitProblemItems(first.problems);
+  const summary=h.length===1
+    ?'มีข้อมูลการเยี่ยม 1 ครั้ง จึงยังไม่สามารถประเมินการเปลี่ยนแปลงระหว่างครั้งได้'
+    :`มีข้อมูล ${h.length} ครั้ง ปัจจุบันบันทึกปัญหา ${latestP.length} รายการ เทียบกับครั้งแรก ${firstP.length} รายการ ระบบแยกปัญหาใหม่/คงอยู่/ไม่พบในครั้งล่าสุดไว้ด้านล่าง`;
+  return `<div class="warning-banner" style="background:#eef7f8;color:#24485c;border-color:#c9e1e5"><b>สรุปพัฒนาการ</b><br>${safe(summary)}</div>${cards}${h.length>1?`<h3 style="margin-top:18px">เปรียบเทียบระหว่างครั้ง</h3>${comparisons}`:''}<div class="form-help" style="margin-top:10px">การเปรียบเทียบอาศัยข้อความ “Problems” ที่บันทึกในแต่ละครั้ง หากใช้คำต่างกันสำหรับปัญหาเดียวกันควรแก้ให้ใช้คำเดียวกันเพื่อให้ระบบจับคู่ได้แม่นยำ</div>`;
+}
 function homeVisitTimelineHtml(p){
-  // v9: homevisit is stored as dated blocks separated by a marker so multiple visits don't overwrite each other.
-  const blocks=String(p.homevisit||'').split('\n===VISIT===\n').map(x=>x.trim()).filter(Boolean);
-  if(!blocks.length) return '<div class="empty-state">ยังไม่มีบันทึกการเยี่ยม</div>';
-  return blocks.slice().reverse().map(b=>{
-    const dateMatch=b.match(/^\[(.+?)\]/); const date=dateMatch?dateMatch[1]:'';
-    const rest=dateMatch?b.slice(dateMatch[0].length).trim():b;
-    return `<div class="visit-item"><div class="visit-dot"></div><div><div class="visit-date">${safe(date)}</div><div class="visit-note">${textBlock(rest)}</div></div></div>`;
+  const visits=patientVisitHistory(p);
+  if(!visits.length)return '<div class="empty-state">ยังไม่มีบันทึกการเยี่ยม</div>';
+  return visits.slice().reverse().map((v,ri)=>{
+    const n=v.number||visits.length-ri;
+    const date=v.date?thaiDate(v.date):(v.dateText||'');
+    const note=v.note||'';
+    return `<div class="visit-item"><div class="visit-dot"></div><div><div class="visit-date"><b>เยี่ยมครั้งที่ ${n}</b>${date?` · ${safe(date)}`:''}</div><div class="visit-note">${textBlock(note)}</div>${v.problems?`<div style="margin-top:6px"><b>Problems:</b> ${textBlock(v.problems)}</div>`:''}</div></div>`;
   }).join('');
 }
 function visitorSignatureHtml(p){
@@ -1801,7 +1854,7 @@ function visitorSignatureHtml(p){
     </div>
   </div>`;
 }
-function printRows(p){const rows=[['วันเดือนปีเกิด',p.birthDate?thaiDate(p.birthDate):''],['อายุ / เพศ',`${p.age==null?'—':p.age+' ปี'} / ${p.sex||'—'}`],['วันที่เริ่มส่งเยี่ยมบ้าน',p.startVisit],['วันที่จำหน่ายจากผู้ป่วยเยี่ยมบ้าน',p.dischargeVisit],['กลุ่มโรค',p.group],['Diagnosis',p.diagnosis],['ICD-10',p.icd10],['ประวัติแพ้ยา',p.allergy],['ที่อยู่',p.address],['โทรศัพท์',p.phone],['เยี่ยมล่าสุด',p.lastVisit],['นัดครั้งถัดไป',p.nextVisitDate?thaiDate(p.nextVisitDate):''],['สถานะ Workflow',stageInfo(p.stage).label],['สถานะ',p.status==='urgent'?'เร่งด่วน':p.status==='overdue'?`เกินกำหนด ${p.overdueDays||0} วัน`:'ปกติ'],['เหตุผล/ข้อควรติดตาม',p.reason],['ประวัติเดิม',p.history],['Lab / ผลตรวจ',p.lab],['Medication',p.medication],['Home Visit',p.homevisit],['INHOMESSS',p.inhomesss],['Problems',p.problems],['Care Plan',p.care_plan]];return rows.filter(r=>r[1]&&r[1]!=='—').map(r=>`<div class="a4-line"><span>${safe(r[0])}</span><span style="max-width:65%;text-align:right;white-space:pre-wrap">${safe(r[1])}</span></div>`).join('');}
+function printRows(p){const rows=[['วันเดือนปีเกิด',p.birthDate?thaiDate(p.birthDate):''],['อายุ / เพศ',`${p.age==null?'—':p.age+' ปี'} / ${p.sex||'—'}`],['จำนวนครั้งที่เยี่ยมบ้าน',`${visitCount(p)} ครั้ง`],['วันที่เริ่มส่งเยี่ยมบ้าน',p.startVisit],['วันที่จำหน่ายจากผู้ป่วยเยี่ยมบ้าน',p.dischargeVisit],['กลุ่มโรค',p.group],['Diagnosis',p.diagnosis],['ICD-10',p.icd10],['ประวัติแพ้ยา',p.allergy],['ที่อยู่',p.address],['โทรศัพท์',p.phone],['เยี่ยมล่าสุด',p.lastVisit],['นัดครั้งถัดไป',p.nextVisitDate?thaiDate(p.nextVisitDate):''],['สถานะ Workflow',stageInfo(p.stage).label],['สถานะ',p.status==='urgent'?'เร่งด่วน':p.status==='overdue'?`เกินกำหนด ${p.overdueDays||0} วัน`:'ปกติ'],['เหตุผล/ข้อควรติดตาม',p.reason],['ประวัติเดิม',p.history],['Lab / ผลตรวจ',p.lab],['Medication',p.medication],['Home Visit',p.homevisit],['INHOMESSS',p.inhomesss],['Problems',p.problems],['Care Plan',p.care_plan]];return rows.filter(r=>r[1]&&r[1]!=='—').map(r=>`<div class="a4-line"><span>${safe(r[0])}</span><span style="max-width:65%;text-align:right;white-space:pre-wrap">${safe(r[1])}</span></div>`).join('');}
 
 function populateStageSelect(current){
   e('f-stage').innerHTML=STAGES.map(s=>`<option value="${s.id}" ${s.id===current?'selected':''}>${safe(s.label)}</option>`).join('');
@@ -1880,6 +1933,18 @@ async function savePatient(ev){
     const existingPatient=id?patients.find(x=>String(x.id)===String(id)):null;
     const newVisitEntry=e('f-homevisit').value.trim();
     const homevisitFinal=appendHomeVisitEntry(existingPatient?.homevisit,newVisitEntry);
+    const priorVisitHistory=Array.isArray(existingPatient?.visit_history)?[...existingPatient.visit_history]:[];
+    const visitHistoryFinal=[...priorVisitHistory];
+    if(newVisitEntry){
+      visitHistoryFinal.push({
+        number:priorVisitHistory.length+1,
+        date:getISOFromBuddhistDate()||todayISO(),
+        note:newVisitEntry,
+        problems:e('f-problems').value.trim(),
+        care_plan:e('f-careplan').value.trim(),
+        inhomesss:e('f-inhomesss')?.value?.trim?.()||''
+      });
+    }
 
     const payload={
       hn:hnValue,name:nameValue,
@@ -1889,7 +1954,7 @@ async function savePatient(ev){
       overdue_days:Number(e('f-overdue-days').value||0),reason:e('f-reason').value.trim(),
       address:e('f-address').value.trim(),phone:e('f-phone').value.trim(),diagnosis:e('f-diagnosis').value.trim(),
       icd10:e('f-icd10').value.trim(),allergy:e('f-allergy').value.trim(),history:e('f-history').value.trim(),
-      lab:e('f-lab').value.trim(),lab_analysis:e('f-lab-analysis').value.trim(),lab_history:(()=>{const h=Array.isArray(existingPatient?.lab_history)?[...existingPatient.lab_history]:[];if(window.__pendingLabSnapshot)h.push(window.__pendingLabSnapshot);return h;})(),medication:e('f-medication').value.trim(),homevisit:homevisitFinal,
+      lab:e('f-lab').value.trim(),lab_analysis:e('f-lab-analysis').value.trim(),lab_history:(()=>{const h=Array.isArray(existingPatient?.lab_history)?[...existingPatient.lab_history]:[];if(window.__pendingLabSnapshot)h.push(window.__pendingLabSnapshot);return h;})(),medication:e('f-medication').value.trim(),homevisit:homevisitFinal,visit_history:visitHistoryFinal,
       home_visit_team:team,
       inhomesss:e('f-inhomesss').value.trim(),problems:e('f-problems').value.trim(),care_plan:e('f-careplan').value.trim(),
       workflow_stage:e('f-stage').value||'new', next_visit_date:nextVisitDate
