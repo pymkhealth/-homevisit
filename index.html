@@ -620,7 +620,9 @@
 <div class="lab-tools" style="margin-top:8px">
   <button type="button" class="btn-ghost" onclick="clearLabReadResult()">ล้างข้อความ/ผลวิเคราะห์ Lab</button>
 </div>
-<label style="margin-top:12px">สรุปผล Lab / สิ่งที่ควรติดตาม</label><textarea id="f-lab-analysis" rows="7"></textarea><div class="form-help">ใช้ช่วยคัดกรองเท่านั้น ต้องยืนยันค่ากับเอกสารต้นฉบับ</div></div>
+<label style="margin-top:12px">สรุปผล Lab / สิ่งที่ควรติดตาม</label><textarea id="f-lab-analysis" rows="7"></textarea>
+<div id="lab-structured-preview" style="margin-top:12px"></div>
+<div class="form-help">ระบบจะใช้ค่าตัวเลข หน่วย และช่วงอ้างอิงเป็นหลัก ไม่ใช้ข้อความ OCR ภาษาไทยที่เพี้ยนในการตัดสินผล</div><div class="form-help">ใช้ช่วยคัดกรองเท่านั้น ต้องยืนยันค่ากับเอกสารต้นฉบับ</div></div>
         <div class="field form-span-2"><label>Medication</label><textarea id="f-medication" rows="3" placeholder="1 รายการต่อ 1 บรรทัด"></textarea></div>
         <div class="field form-span-2"><label>Home Visit — บันทึกครั้งนี้ <span class="form-help">จะถูกเพิ่มเป็นรายการใหม่ในไทม์ไลน์ ไม่ทับของเดิม</span></label><input id="f-homevisit" type="hidden"><div class="structured-box"><div class="structured-row"><label>ประเภทการเยี่ยม</label><select id="hv-type"><option value="">— เลือก —</option><option>เยี่ยมครั้งแรก</option><option>ติดตามต่อเนื่อง</option><option>หลังจำหน่ายจากโรงพยาบาล</option><option>เยี่ยมเร่งด่วน</option><option>เยี่ยมผู้ป่วยติดบ้าน/ติดเตียง</option><option>เยี่ยมประคับประคอง</option></select></div><div class="structured-row"><label>ผลการเยี่ยม</label><select id="hv-result"><option value="">— เลือก —</option><option>อาการคงที่</option><option>ดีขึ้น</option><option>ต้องติดตามต่อ</option><option>พบปัญหาใหม่</option><option>ส่งต่อ/นัดพบแพทย์</option></select></div><div class="structured-row"><label>บันทึกเพิ่มเติม</label><textarea id="hv-note" rows="3"></textarea></div></div></div>
         <div class="field form-span-2"><label>INHOMESSS Assessment</label><input id="f-inhomesss" type="hidden"><div id="inhomesss-structured" class="structured-box"></div></div>
@@ -852,8 +854,329 @@ async function extractPdfTextOrOcr(file,worker,status){
  } return out.join('\n');
 }
 function cleanLabText(raw){return raw.replace(/\r/g,'').replace(/[ \t]+/g,' ').replace(/\n{3,}/g,'\n\n').trim();}
-function interpretLabText(raw){const lines=String(raw||'').split(/\n/).map(x=>x.trim()).filter(Boolean),bad=[];const rr=/(-?\d+(?:\.\d+)?)\s*(?:-|–|—|to)\s*(-?\d+(?:\.\d+)?)/i,nr=/(-?\d+(?:\.\d+)?)/g;for(const line of lines){const r=line.match(rr);if(r){const vals=[...line.slice(0,line.indexOf(r[0])).matchAll(nr)].map(m=>+m[1]);if(vals.length){const v=vals.at(-1),lo=+r[1],hi=+r[2];if(v<lo||v>hi)bad.push(`${line} → ${v<lo?'ต่ำ':'สูง'}กว่าช่วงอ้างอิง`);}}else if(/\b(H|HIGH|L|LOW)\b|[↑↓]/i.test(line))bad.push(line);}return 'สรุปจากผล Lab ที่ระบบอ่านได้\n'+(bad.length?'ค่าที่อาจผิดปกติ:\n- '+[...new Set(bad)].slice(0,30).join('\n- '):'ยังไม่พบค่าที่ระบุสูง/ต่ำได้อย่างมั่นใจ')+'\n\nควรติดตาม:\n- ตรวจสอบชื่อรายการ ค่า หน่วย และช่วงอ้างอิงกับเอกสารต้นฉบับ\n- เปรียบเทียบแนวโน้มกับผลครั้งก่อน โรคประจำตัว และอาการ\n- ค่าที่มี H/L/↑/↓ หรืออยู่นอกช่วงอ้างอิงควรให้ผู้ประกอบวิชาชีพประเมิน\n\nหมายเหตุ: ไม่ใช้ OCR เพียงอย่างเดียวเพื่อวินิจฉัย';}
-async function analyzeLabFiles(){const files=[...e('f-lab-files').files],status=e('lab-ocr-status');if(!files.length){alert('กรุณาเลือกภาพหรือ PDF ผล Lab ก่อน');return;}if(!window.Tesseract||!window.pdfjsLib){alert('ไม่สามารถโหลดโมดูลอ่านไฟล์ได้');return;}let worker,chunks=[];try{worker=await Tesseract.createWorker('eng',1,{logger:m=>{if(m.status&&m.progress!=null)status.textContent=`${m.status} ${Math.round(m.progress*100)}%`;}});for(let i=0;i<files.length;i++){const f=files[i];status.textContent=`กำลังอ่าน ${f.name} (${i+1}/${files.length})...`;let text=(f.type==='application/pdf'||f.name.toLowerCase().endsWith('.pdf'))?await extractPdfTextOrOcr(f,worker,status):await ocrImageSource(f,worker);chunks.push(`===== ${f.name} =====\n${cleanLabText(text)}`);}const result=chunks.join('\n\n');e('f-lab').value=result;e('f-lab-analysis').value=interpretLabText(result);status.textContent='อ่านและวิเคราะห์เสร็จแล้ว — กรุณาตรวจสอบต้นฉบับ';}catch(err){status.textContent='อ่านไฟล์ไม่สำเร็จ';alert('อ่านผล Lab ไม่สำเร็จ: '+(err.message||err));}finally{if(worker)await worker.terminate();}}
+const LAB_DEFS=[
+ {key:'bun',label:'BUN',re:/\bBUN\b/i,type:'numeric'},
+ {key:'creatinine',label:'Creatinine',re:/\b(?:Creatinine|Creat)\b/i,type:'numeric'},
+ {key:'egfr',label:'eGFR',re:/\be\s*GFR\b|\beGFR\b/i,type:'numeric'},
+ {key:'ckd_stage',label:'CKD Stage',re:/\bCKD\s*Stage\b/i,type:'text'},
+ {key:'na',label:'Sodium (Na)',re:/^\s*Na\b|\bSodium\b/i,type:'numeric'},
+ {key:'k',label:'Potassium (K)',re:/^\s*K\b|\bPotassium\b/i,type:'numeric'},
+ {key:'cl',label:'Chloride (Cl)',re:/^\s*Cl\b|\bChloride\b/i,type:'numeric'},
+ {key:'co2',label:'CO₂',re:/\bCO2\b|\bHCO3\b|\bBicarbonate\b/i,type:'numeric'},
+
+ {key:'hb',label:'Hemoglobin (Hb)',re:/^\s*Hb\b|\bHemoglobin\b/i,type:'numeric'},
+ {key:'hct',label:'Hematocrit (Hct)',re:/^\s*Hct\b|\bHematocrit\b/i,type:'numeric'},
+ {key:'rbc',label:'RBC count',re:/\bRBC\s*count\b|\bRBC\b/i,type:'numeric'},
+ {key:'mcv',label:'MCV',re:/\bMCV\b/i,type:'numeric'},
+ {key:'mch',label:'MCH',re:/\bMCH\b/i,type:'numeric'},
+ {key:'mchc',label:'MCHC',re:/\bMCHC\b/i,type:'numeric'},
+ {key:'platelet',label:'Platelet Count',re:/\bPlatelet(?:\s*Count)?\b|\bPLT\b/i,type:'numeric'},
+ {key:'wbc',label:'WBC count',re:/\bWBC(?:\s*count)?\b/i,type:'numeric'},
+ {key:'neutrophil',label:'Neutrophil',re:/\bNeutrophil\b/i,type:'numeric'},
+ {key:'lymphocyte',label:'Lymphocyte',re:/\bLymphocyte\b/i,type:'numeric'},
+ {key:'monocyte',label:'Monocyte',re:/\bMonocyte\b/i,type:'numeric'},
+ {key:'eosinophil',label:'Eosinophil',re:/\bEosinophil\b/i,type:'numeric'},
+ {key:'basophil',label:'Basophil',re:/\bBasophil\b/i,type:'numeric'},
+
+ {key:'fbs',label:'Glucose (FBS)',re:/\bGlucose\s*\(FBS\)\b|\bFBS\b|\bFasting\s*Blood\s*Sugar\b/i,type:'numeric'},
+ {key:'hba1c',label:'HbA1c',re:/\bHbA1c\b|\bA1C\b/i,type:'numeric'},
+ {key:'uric_acid',label:'Uric acid',re:/\bUric\s*acid\b/i,type:'numeric'},
+ {key:'vitamin_d',label:'Vitamin D total',re:/\bVitamin\s*D(?:\s*total)?\b/i,type:'numeric'},
+ {key:'ft4',label:'FT4',re:/\bFT4\b/i,type:'numeric'},
+ {key:'tsh',label:'TSH',re:/\bTSH\b/i,type:'numeric'},
+ {key:'ft3',label:'FT3',re:/\bFT3\b/i,type:'numeric'},
+ {key:'pth',label:'PTH',re:/\bPTH\b/i,type:'numeric'},
+ {key:'microalbumin',label:'Microalbumin',re:/\bMicroalbumin\b/i,type:'qualitative'},
+
+ {key:'cholesterol',label:'Cholesterol',re:/\b(?:Total\s*)?Cholesterol\b/i,type:'numeric'},
+ {key:'triglyceride',label:'Triglyceride',re:/\bTriglyceride\b|\bTG\b/i,type:'numeric'},
+ {key:'hdl',label:'HDL-C',re:/\bHDL(?:-C)?\b/i,type:'numeric'},
+ {key:'ldl',label:'LDL-C',re:/\bLDL(?:\s*calculate)?(?:-C)?\b/i,type:'numeric'},
+
+ {key:'total_protein',label:'Total Protein',re:/\bTotal\s*Protein\b/i,type:'numeric'},
+ {key:'albumin',label:'Albumin',re:/^\s*Albumin\b/i,type:'numeric'},
+ {key:'globulin',label:'Globulin',re:/^\s*Globulin\b/i,type:'numeric'},
+ {key:'total_bilirubin',label:'Total Bilirubin',re:/\bTotal\s*Bilirubin\b/i,type:'numeric'},
+ {key:'direct_bilirubin',label:'Direct Bilirubin',re:/\bDirect\s*Bilirubin\b/i,type:'numeric'},
+ {key:'ast',label:'AST (SGOT)',re:/\bSGOT\b|\bAST\b/i,type:'numeric'},
+ {key:'alt',label:'ALT (SGPT)',re:/\bSGPT\b|\bALT\b/i,type:'numeric'},
+ {key:'alp',label:'ALP',re:/\bALP\b|Alkaline\s*Phosphatase/i,type:'numeric'},
+ {key:'calcium',label:'Calcium',re:/\bCalcium\b/i,type:'numeric'},
+ {key:'phosphorus',label:'Phosphorus',re:/\bPhosphorus\b/i,type:'numeric'},
+ {key:'magnesium',label:'Magnesium',re:/\bMagnesium\b/i,type:'numeric'},
+
+ {key:'ua_color',label:'Urine Color',re:/^\s*Color\b/i,type:'qualitative'},
+ {key:'ua_appearance',label:'Urine Appearance',re:/^\s*Appearance\b/i,type:'qualitative'},
+ {key:'ua_spgr',label:'Urine Specific Gravity',re:/\bSp\.?\s*gr\b|Specific\s*Gravity/i,type:'numeric'},
+ {key:'ua_ph',label:'Urine pH',re:/^\s*pH\b/i,type:'numeric'},
+ {key:'ua_protein',label:'Urine Protein',re:/^\s*Protein\b/i,type:'qualitative'},
+ {key:'ua_glucose',label:'Urine Glucose',re:/^\s*Glucose\b/i,type:'qualitative'},
+ {key:'ua_ketones',label:'Urine Ketones',re:/^\s*Ketones?\b/i,type:'qualitative'},
+ {key:'ua_urobilinogen',label:'Urine Urobilinogen',re:/\bUrobilinogen\b/i,type:'qualitative'},
+ {key:'ua_nitrite',label:'Urine Nitrite',re:/^\s*Nitrite\b/i,type:'qualitative'},
+ {key:'ua_bilirubin',label:'Urine Bilirubin',re:/^\s*Bilirubin\b/i,type:'qualitative'},
+ {key:'ua_blood',label:'Urine Blood',re:/^\s*Blood\b/i,type:'qualitative'},
+ {key:'ua_leukocytes',label:'Urine Leukocytes',re:/^\s*Leukocytes?\b/i,type:'qualitative'},
+ {key:'ua_rbc',label:'Urine RBC',re:/^\s*RBC\b/i,type:'numeric_or_range'},
+ {key:'ua_wbc',label:'Urine WBC',re:/^\s*WBC\b/i,type:'numeric_or_range'},
+ {key:'ua_epi',label:'Urine Epithelial cells',re:/\bEpi\.?\s*Sq\b|Epithelial/i,type:'numeric_or_range'},
+ {key:'ua_bacteria',label:'Urine Bacteria',re:/^\s*Bacteria\b/i,type:'qualitative'},
+];
+
+function parseNum(v){
+  const n=Number(String(v??'').replace(',','.'));
+  return Number.isFinite(n)?n:null;
+}
+function cleanLabLine(x){
+  return String(x||'')
+    .replace(/[^\x09\x0A\x0D\x20-\x7Eก-๙]/g,' ')
+    .replace(/\s+/g,' ')
+    .trim();
+}
+function normalizeQual(v){
+  const t=String(v||'').trim();
+  const u=t.toUpperCase();
+  if(/NEGATIVE|NEG\b/.test(u))return 'Negative';
+  if(/NORMAL/.test(u))return 'Normal';
+  if(/FEW/.test(u))return 'Few';
+  const plus=t.match(/[1-4]\s*\+/);
+  if(plus)return plus[0].replace(/\s/g,'');
+  if(/TRACE/.test(u))return 'Trace';
+  if(/YELLOW/.test(u))return 'Yellow';
+  if(/CLEAR/.test(u))return 'Clear';
+  return t;
+}
+function qualitativeStatus(value, ref){
+  const v=String(value||'').toLowerCase();
+  const r=String(ref||'').toLowerCase();
+  if(!v)return 'unknown';
+  if(['negative','normal','few','yellow','clear'].includes(v)) {
+    if(r && r.includes(v)) return 'normal';
+    if(v==='negative'||v==='normal'||v==='yellow'||v==='clear')return 'normal';
+    return 'unknown';
+  }
+  if(/[1-4]\+|positive|trace/.test(v)){
+    if(r.includes('negative'))return 'high';
+    return 'abnormal';
+  }
+  return 'unknown';
+}
+function parseReference(tail){
+  let low=null,high=null,refText='';
+  let cmp=null,cmpValue=null;
+
+  const sexRange=tail.match(/(?:ชาย|M)\s*([0-9.]+)\s*[-–]\s*([0-9.]+).*?(?:หญิง|F)\s*([0-9.]+)\s*[-–]\s*([0-9.]+)/i);
+  if(sexRange){
+    refText=`ชาย ${sexRange[1]}-${sexRange[2]}, หญิง ${sexRange[3]}-${sexRange[4]}`;
+  }
+
+  const rm=[...tail.matchAll(/([0-9]+(?:\.[0-9]+)?)\s*[-–]\s*([0-9]+(?:\.[0-9]+)?)/g)];
+  if(rm.length){
+    const r=rm.at(-1); low=parseNum(r[1]); high=parseNum(r[2]); refText=refText||`${r[1]}-${r[2]}`;
+  }
+  const cm=tail.match(/([<>]=?)\s*([0-9]+(?:\.[0-9]+)?)/);
+  if(cm){cmp=cm[1];cmpValue=parseNum(cm[2]);refText=refText||`${cmp}${cm[2]}`;}
+  const q=tail.match(/\b(Negative|Normal|Few|Yellow|Clear)\b/i);
+  if(q&&!refText)refText=q[1];
+
+  return {low,high,cmp,cmpValue,refText};
+}
+function statusFromNumeric(value,ref,tail=''){
+  if(value==null)return 'unknown';
+  if(ref.low!=null&&ref.high!=null){
+    if(value<ref.low)return 'low';
+    if(value>ref.high)return 'high';
+    return 'normal';
+  }
+  if(ref.cmp&&ref.cmpValue!=null){
+    if(ref.cmp==='>'||ref.cmp==='>=')return value>=ref.cmpValue?'normal':'low';
+    if(ref.cmp==='<'||ref.cmp==='<=')return value<=ref.cmpValue?'normal':'high';
+  }
+  if(/\bH(?:IGH)?\b|↑/i.test(tail))return 'high';
+  if(/\bL(?:OW)?\b|↓/i.test(tail))return 'low';
+  return 'unknown';
+}
+function extractUnit(tail){
+  const m=tail.match(/\b(mg%|mg\/dL|mg\/L|g\/dL|g\/L|mmol\/L|mEq\/L|U\/L|IU\/L|mL\/min(?:\/1\.73\s*m2)?|ng\/mL|ng\/dL|uIU\/mL|µIU\/mL|pg|fl|%|10\^6\/mm3|10\^3\/mm3|Cells\/HPF)\b/i);
+  return m?m[1]:'';
+}
+function findCandidateLines(raw){
+  const normalized=String(raw||'').replace(/\r/g,'\n');
+  const lines=normalized.split(/\n/).map(cleanLabLine).filter(Boolean);
+  const split=[];
+  for(const line of lines){
+    let cursor=0, cuts=[];
+    for(const d of LAB_DEFS){
+      const m=line.slice(cursor).match(d.re);
+      if(m&&m.index!=null)cuts.push(cursor+m.index);
+    }
+    cuts=[...new Set(cuts)].sort((a,b)=>a-b);
+    if(cuts.length>1){
+      cuts.forEach((c,i)=>split.push(line.slice(c,cuts[i+1]??line.length).trim()));
+    }else split.push(line);
+  }
+  return split.filter(Boolean);
+}
+function extractStructuredLabs(raw){
+  const lines=findCandidateLines(raw),out=[],used=new Set();
+
+  for(const def of LAB_DEFS){
+    for(const line of lines){
+      const m=line.match(def.re);
+      if(!m)continue;
+      const tail=line.slice((m.index||0)+m[0].length).trim();
+
+      if(def.type==='text'){
+        let txt=(tail.match(/(?:Stage\s*)?[0-9]+[a-z]?/i)||[])[0]||tail.split(/\s{2,}/)[0]||'';
+        txt=cleanLabLine(txt);
+        if(txt){out.push({key:def.key,label:def.label,valueText:txt,status:'unknown',unit:'',refText:''});used.add(def.key);break;}
+        continue;
+      }
+
+      if(def.type==='qualitative'){
+        const qm=tail.match(/[:=]?\s*(Negative|Normal|Few|Yellow|Clear|Trace|[1-4]\+|Positive)/i);
+        if(qm){
+          const valueText=normalizeQual(qm[1]);
+          const ref=parseReference(tail.slice(qm.index+qm[0].length));
+          out.push({key:def.key,label:def.label,valueText,status:qualitativeStatus(valueText,ref.refText),unit:extractUnit(tail),refText:ref.refText});
+          used.add(def.key);break;
+        }
+        continue;
+      }
+
+      if(def.type==='numeric_or_range'){
+        const rg=tail.match(/^\s*[:=]?\s*([0-9]+(?:\.[0-9]+)?\s*[-–]\s*[0-9]+(?:\.[0-9]+)?)/);
+        if(rg){
+          const valueText=rg[1].replace(/\s/g,'');
+          const ref=parseReference(tail.slice(rg.index+rg[0].length));
+          out.push({key:def.key,label:def.label,valueText,status:'normal',unit:extractUnit(tail),refText:ref.refText});
+          used.add(def.key);break;
+        }
+      }
+
+      const vm=tail.match(/^\s*[:=]?\s*([<>]=?)?\s*(-?[0-9]+(?:[.,][0-9]+)?)/);
+      if(!vm)continue;
+      const comparator=vm[1]||'',value=parseNum(vm[2]);
+      const rest=tail.slice(vm.index+vm[0].length);
+      const ref=parseReference(rest);
+      const status=statusFromNumeric(value,ref,rest);
+      out.push({key:def.key,label:def.label,value,comparator,unit:extractUnit(rest),low:ref.low,high:ref.high,refText:ref.refText,status});
+      used.add(def.key);break;
+    }
+  }
+
+  return out;
+}
+function labStatusThai(x){
+  return x==='normal'?'ปกติ':
+         x==='high'?'สูง — ควรติดตาม':
+         x==='low'?'ต่ำ — ควรติดตาม':
+         x==='abnormal'?'ผิดปกติ — ควรติดตาม':'ยังประเมินไม่ได้';
+}
+function compareLabValue(cur,prev){
+  if(cur.value!=null&&prev?.value!=null){
+    const d=cur.value-prev.value;
+    if(Math.abs(d)<1e-12)return 'เท่าเดิม';
+    const pct=prev.value!==0?Math.abs(d/prev.value*100):null;
+    return `${d>0?'↑ มากขึ้น':'↓ น้อยลง'} ${Math.abs(d).toLocaleString()}${pct!=null?` (${pct.toFixed(1)}%)`:''}`;
+  }
+  if(cur.valueText&&prev?.valueText){
+    return cur.valueText===prev.valueText?'เท่าเดิม':`${prev.valueText} → ${cur.valueText}`;
+  }
+  return '—';
+}
+function makeLabSnapshot(results,raw){
+  return {id:`lab-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,date:todayISO(),created_at:new Date().toISOString(),results,raw:String(raw||'')};
+}
+function resultDisplay(x){
+  return x.value!=null?`${x.comparator||''}${x.value}${x.unit?' '+x.unit:''}`:(x.valueText||'—');
+}
+function buildLabAnalysis(results,previous){
+  if(!results.length)return 'ระบบยังแยกรายการ Lab จากไฟล์นี้ไม่ได้อย่างมั่นใจ กรุณาตรวจสอบไฟล์ต้นฉบับ';
+  const prevMap=new Map((previous?.results||[]).map(x=>[x.key,x]));
+  const normal=results.filter(x=>x.status==='normal');
+  const abnormal=results.filter(x=>['high','low','abnormal'].includes(x.status));
+  const unknown=results.filter(x=>x.status==='unknown');
+
+  let out=`ผล Lab ครั้งนี้ (${thaiDate(todayISO())})\n`;
+  out+=`\nค่าที่อยู่ในเกณฑ์ (${normal.length} รายการ):\n`+(normal.length?normal.map(x=>`- ${x.label}: ${resultDisplay(x)} — ปกติ${x.refText?` (เกณฑ์ ${x.refText})`:''}`).join('\n'):'- ไม่มีค่าที่ระบบยืนยันได้');
+
+  out+=`\n\nค่าผิดปกติ/ควรติดตาม (${abnormal.length} รายการ):\n`+(abnormal.length?abnormal.map(x=>`- ${x.label}: ${resultDisplay(x)} — ${labStatusThai(x.status)}${x.refText?` (เกณฑ์ ${x.refText})`:''}`).join('\n'):'- ไม่พบค่าผิดปกติจากรายการที่ระบบประเมินได้');
+
+  if(previous){
+    const comparable=results.filter(x=>prevMap.has(x.key));
+    out+=`\n\nเปรียบเทียบกับ Lab ครั้งก่อน (${thaiDate(previous.date||previous.created_at?.slice(0,10)||'')}):\n`;
+    out+=comparable.length?comparable.map(x=>{
+      const p=prevMap.get(x.key);
+      return `- ${x.label}: เดิม ${resultDisplay(p)} → ครั้งนี้ ${resultDisplay(x)} (${compareLabValue(x,p)}) · ครั้งนี้ ${labStatusThai(x.status)}`;
+    }).join('\n'):'- ไม่มีรายการเดียวกันที่เปรียบเทียบได้';
+  }
+
+  if(unknown.length)out+=`\n\nยังประเมินไม่ได้ (${unknown.length} รายการ): `+unknown.map(x=>x.label).join(', ')+' — ไม่พบช่วงอ้างอิง/สถานะที่ชัดเจน';
+  out+='\n\nหมายเหตุ: ระบบนี้ช่วยอ่านและจัดหมวดผล Lab จากแบบฟอร์มที่กำหนด ต้องตรวจสอบค่ากับใบ Lab ต้นฉบับก่อนใช้ตัดสินใจทางคลินิก';
+  return out;
+}
+function structuredLabTableHtml(results,previous=null){
+  if(!results?.length)return '<div class="empty-state">ยังไม่มีค่าที่ระบบแยกได้</div>';
+  const pm=new Map((previous?.results||[]).map(x=>[x.key,x]));
+  return `<div style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">
+  <thead><tr>
+    <th style="text-align:left;padding:8px;border-bottom:1px solid #d8e1e7">รายการ</th>
+    <th>ผลครั้งนี้</th><th>เกณฑ์</th><th>สถานะ</th>
+    ${previous?'<th>ครั้งก่อน</th><th>เปลี่ยนแปลง</th>':''}
+  </tr></thead><tbody>
+  ${results.map(x=>{const p=pm.get(x.key);return `<tr>
+    <td style="padding:8px;border-bottom:1px solid #edf1f3;font-weight:600">${safe(x.label)}</td>
+    <td style="padding:8px;text-align:center">${safe(resultDisplay(x))}</td>
+    <td style="padding:8px;text-align:center">${safe(x.refText||'—')}</td>
+    <td style="padding:8px;text-align:center"><b>${safe(labStatusThai(x.status))}</b></td>
+    ${previous?`<td style="padding:8px;text-align:center">${p?safe(resultDisplay(p)):'—'}</td>
+    <td style="padding:8px;text-align:center">${p?safe(compareLabValue(x,p)):'—'}</td>`:''}
+  </tr>`}).join('')}
+  </tbody></table></div>`;
+}
+function renderLabStructuredPreview(results,previous){
+  const box=e('lab-structured-preview');if(!box)return;
+  box.innerHTML=results?.length?`<div class="form-help" style="margin-bottom:6px"><b>ผลที่ระบบแยกได้</b> — ตรวจสอบตัวเลขกับใบ Lab ต้นฉบับก่อนบันทึก</div>${structuredLabTableHtml(results,previous)}`:'';
+}
+async function analyzeLabFiles(){
+ const files=[...e('f-lab-files').files],status=e('lab-ocr-status');
+ if(!files.length){alert('กรุณาเลือกภาพหรือ PDF ผล Lab ก่อน');return;}
+ if(!window.Tesseract||!window.pdfjsLib){alert('ไม่สามารถโหลดโมดูลอ่านไฟล์ได้');return;}
+ let worker,chunks=[];
+ try{
+  worker=await Tesseract.createWorker('eng',1,{logger:m=>{if(m.status&&m.progress!=null)status.textContent=`กำลังอ่านผล Lab ${Math.round(m.progress*100)}%`;}});
+  for(let i=0;i<files.length;i++){
+    const f=files[i];
+    status.textContent=`กำลังอ่าน ${f.name} (${i+1}/${files.length})...`;
+    let text=(f.type==='application/pdf'||f.name.toLowerCase().endsWith('.pdf'))
+      ? await extractPdfTextOrOcr(f,worker,status)
+      : await ocrImageSource(f,worker);
+    chunks.push(cleanLabText(text));
+  }
+  const raw=chunks.join('\n');
+  const results=extractStructuredLabs(raw);
+  const patientId=e('patient-id').value||null;
+  const existing=patientId?patients.find(x=>String(x.id)===String(patientId)):null;
+  const history=Array.isArray(existing?.lab_history)?existing.lab_history:[];
+  const previous=history.length?history[history.length-1]:null;
+
+  window.__pendingLabSnapshot=makeLabSnapshot(results,raw);
+
+  e('f-lab').value=results.length
+    ? results.map(x=>`${x.label}: ${resultDisplay(x)}${x.refText?` | Ref ${x.refText}`:''} | ${labStatusThai(x.status)}`).join('\n')
+    : raw.replace(/[^\x20-\x7E\n]/g,' ').replace(/\s{2,}/g,' ');
+
+  e('f-lab-analysis').value=buildLabAnalysis(results,previous);
+  renderLabStructuredPreview(results,previous);
+  status.textContent=results.length?`อ่านสำเร็จ ${results.length} รายการ — กรุณาตรวจสอบตัวเลขกับต้นฉบับ`:'ยังแยกรายการไม่ได้ กรุณาตรวจสอบไฟล์';
+ }catch(err){
+  console.error(err);status.textContent='อ่านไฟล์ไม่สำเร็จ';
+  alert('อ่านผล Lab ไม่สำเร็จ: '+(err.message||err));
+ }finally{
+  if(worker)await worker.terminate();
+ }
+}
 function renderVisitTeam(team=[],forceEdit=false){
   const box=e('visit-team-box');if(!box)return;
   let a=Array.isArray(team)?team.filter(x=>x&&(x.name||x.role)):[];
@@ -913,7 +1236,7 @@ async function loadPatients(){
 function renderAllScreens(){ renderToday(); renderDashboard(); renderList(); }
 
 function normalizePatient(p){
-  return {...p,id:p.id,hn:p.hn||'',name:p.name||'',birthDate:p.birth_date||'',age:calculateAge(p.birth_date),sex:p.sex||'',group:p.disease_group||'',lastVisit:thaiDate(p.last_visit),startVisitDate:p.home_visit_start_date||'',startVisit:thaiDate(p.home_visit_start_date),dischargeDate:p.home_visit_discharge_date||'',dischargeVisit:thaiDate(p.home_visit_discharge_date),status:p.status||'ok',overdueDays:p.overdue_days||0,reason:p.reason||'',address:p.address||'',phone:p.phone||'',photos:Array.isArray(p.photos)?p.photos:[],labFiles:Array.isArray(p.lab_files)?p.lab_files:[],lab_analysis:p.lab_analysis||'',home_visit_team:Array.isArray(p.home_visit_team)?p.home_visit_team:[],stage:p.workflow_stage||'new',nextVisitDate:p.next_visit_date||''};
+  return {...p,id:p.id,hn:p.hn||'',name:p.name||'',birthDate:p.birth_date||'',age:calculateAge(p.birth_date),sex:p.sex||'',group:p.disease_group||'',lastVisit:thaiDate(p.last_visit),startVisitDate:p.home_visit_start_date||'',startVisit:thaiDate(p.home_visit_start_date),dischargeDate:p.home_visit_discharge_date||'',dischargeVisit:thaiDate(p.home_visit_discharge_date),status:p.status||'ok',overdueDays:p.overdue_days||0,reason:p.reason||'',address:p.address||'',phone:p.phone||'',photos:Array.isArray(p.photos)?p.photos:[],labFiles:Array.isArray(p.lab_files)?p.lab_files:[],lab_analysis:p.lab_analysis||'',lab_history:Array.isArray(p.lab_history)?p.lab_history:[],home_visit_team:Array.isArray(p.home_visit_team)?p.home_visit_team:[],stage:p.workflow_stage||'new',nextVisitDate:p.next_visit_date||''};
 }
 async function hydratePhotoUrls(){
   for(const p of patients){
@@ -1127,12 +1450,10 @@ function renderAllTabPanels(p){
   <div class="tab-panel active" id="panel-history"><h3>ประวัติเดิม</h3><div class="kv-grid"><div class="kv"><div class="k">วันเดือนปีเกิด / อายุปัจจุบัน</div><div class="v">${p.birthDate?safe(thaiDate(p.birthDate)):'—'} · ${p.age==null?'—':safe(p.age)+' ปี'}</div></div><div class="kv"><div class="k">กลุ่มโรค</div><div class="v">${safe(p.group||'—')}</div></div><div class="kv"><div class="k">วันที่เริ่มส่งเยี่ยมบ้าน</div><div class="v">${safe(p.startVisit||'—')}</div></div><div class="kv"><div class="k">วันที่จำหน่ายจากผู้ป่วยเยี่ยมบ้าน</div><div class="v">${safe(p.dischargeVisit||'—')}</div></div><div class="kv"><div class="k">ประวัติแพ้ยา</div><div class="v">${safe(p.allergy||'—')}</div></div><div class="kv"><div class="k">นัดเยี่ยมครั้งถัดไป</div><div class="v">${p.nextVisitDate?safe(thaiDate(p.nextVisitDate)):'—'}</div></div><div class="kv form-span-2"><div class="k">ประวัติเดิม</div><div class="v">${textBlock(p.history)}</div></div></div></div>
   <div class="tab-panel" id="panel-diagnosis"><h3>Diagnosis</h3><div class="kv-grid"><div class="kv"><div class="k">Diagnosis</div><div class="v">${safe(p.diagnosis||'—')}</div></div><div class="kv"><div class="k">ICD-10</div><div class="v">${safe(p.icd10||'—')}</div></div></div></div>
   <div class="tab-panel" id="panel-lab"><h3>Lab / ผลตรวจ</h3>
-  ${labFlagged(p)?'<div class="warning-banner">พบคำที่บ่งชี้ผลผิดปกติในบันทึก Lab นี้ ควรติดตาม</div>':''}
-  <div class="visit-note" style="white-space:pre-wrap">${textBlock(p.lab)}</div>
-  ${p.lab_analysis?`<h3 style="margin-top:24px">สรุปผล Lab / สิ่งที่ควรติดตาม</h3><div class="visit-note" style="white-space:pre-wrap">${textBlock(p.lab_analysis)}</div>`:''}
+  ${(()=>{const h=Array.isArray(p.lab_history)?p.lab_history:[];if(!h.length)return `<div class="visit-note" style="white-space:pre-wrap">${textBlock(p.lab)}</div>${p.lab_analysis?`<h3 style="margin-top:20px">สรุปผล / สิ่งที่ควรติดตาม</h3><div class="visit-note" style="white-space:pre-wrap">${textBlock(p.lab_analysis)}</div>`:''}`;const cur=h[h.length-1],prev=h.length>1?h[h.length-2]:null;return `<div class="warning-banner" style="background:#f4fafb;color:#294e60;border-color:#cde1e7">Lab ครั้งที่ ${h.length} · ${safe(thaiDate(cur.date||cur.created_at?.slice(0,10)||todayISO()))}${prev?' · เปรียบเทียบกับครั้งก่อนแล้ว':''}</div>${structuredLabTableHtml(cur.results||[],prev)}<h3 style="margin-top:22px">สรุปผล / สิ่งที่ควรติดตาม</h3><div class="visit-note" style="white-space:pre-wrap">${textBlock(buildLabAnalysis(cur.results||[],prev))}</div>${h.length>1?`<h3 style="margin-top:22px">ประวัติผล Lab</h3>${h.slice().reverse().map((x,i)=>`<div class="lab-file-link"><span>ครั้งที่ ${h.length-i} · ${safe(thaiDate(x.date||x.created_at?.slice(0,10)||''))}</span><span>${(x.results||[]).filter(v=>v.status==='high'||v.status==='low').length} ค่าที่ควรติดตาม</span></div>`).join('')}`:''}`})()}
   <h3 style="margin-top:24px">ไฟล์ผล Lab ที่บันทึกไว้</h3>
   ${p.labFiles?.length?p.labFiles.map((f,i)=>`<div class="lab-file-link"><span>${safe(f.name||('ไฟล์ '+(i+1)))}</span><a href="${safe(f.url)}" target="_blank" rel="noopener">เปิดไฟล์ต้นฉบับ</a></div>`).join(''):'<div class="empty-state">ยังไม่มีไฟล์ Lab</div>'}
-  <div class="lab-tools" style="margin-top:12px"><button type="button" class="btn-ghost" onclick="openPatientForm(currentPatient)">แก้ไข / เปลี่ยนไฟล์ Lab</button></div>
+  <div class="lab-tools" style="margin-top:12px"><button type="button" class="btn-ghost" onclick="openPatientForm(currentPatient)">เพิ่ม Lab ครั้งใหม่ / แก้ไขไฟล์</button></div>
   </div>
   <div class="tab-panel" id="panel-medication"><h3>Medication</h3>${lines(p.medication).map(x=>`<div class="med-row"><div class="med-name">${safe(x)}</div></div>`).join('')||'<div class="empty-state">ยังไม่มีข้อมูล</div>'}</div>
   <div class="tab-panel" id="panel-homevisit"><h3>Home Visit — ไทม์ไลน์</h3><div class="form-help" style="margin-bottom:14px">แต่ละครั้งจะถูกบันทึกแยกกันตามวันที่แก้ไข ไม่ทับของเดิม</div>${homeVisitTimelineHtml(p)}</div>
@@ -1203,7 +1524,7 @@ function markLabFileForDeletion(path){
 function clearLabReadResult(){
   if(!confirm('ต้องการล้างข้อความ Lab และสรุปผลวิเคราะห์ที่อ่านไว้หรือไม่?'))return;
   e('f-lab').value='';
-  e('f-lab-analysis').value='';
+  e('f-lab-analysis').value='';window.__pendingLabSnapshot=null;renderLabStructuredPreview([],null);
 }
 function openPatientForm(p=null){
   e('patient-form').reset(); e('patient-id').value=p?.id||'';e('patient-form-title').textContent=p?'แก้ไข / เพิ่มเติมข้อมูลผู้ป่วย':'เพิ่มผู้ป่วยใหม่';
@@ -1213,7 +1534,7 @@ function openPatientForm(p=null){
   populateStageSelect(p?.stage||'new');
   renderChoiceGroups();setChoiceValues('group',p?.group||'');setChoiceValues('reason',p?.reason||'');setBEDate('birth',p?.birth_date||p?.birthDate||'');updateBirthAgePreview();setBuddhistDate(p?.last_visit||'');setBEDate('start',p?.home_visit_start_date||p?.startVisitDate||'');setBEDate('discharge',p?.home_visit_discharge_date||p?.dischargeDate||'');setBEDate('nextvisit',p?.nextVisitDate||'');
   e('hv-type').value='';e('hv-result').value='';e('hv-note').value='';syncHomeVisit();
-  setInhomesss(p?.inhomesss||'');renderVisitTeam(p?.home_visit_team||[]);window.__labFilesToDelete=[];renderExistingLabFiles(p?.labFiles||[]);e('lab-ocr-status').textContent='';
+  setInhomesss(p?.inhomesss||'');renderVisitTeam(p?.home_visit_team||[]);window.__labFilesToDelete=[];window.__pendingLabSnapshot=null;renderExistingLabFiles(p?.labFiles||[]);renderLabStructuredPreview([],null);e('lab-ocr-status').textContent='';
   checkWarnings(p);
   e('patient-form-modal').classList.remove('hidden');
 }
@@ -1257,7 +1578,7 @@ async function savePatient(ev){
       overdue_days:Number(e('f-overdue-days').value||0),reason:e('f-reason').value.trim(),
       address:e('f-address').value.trim(),phone:e('f-phone').value.trim(),diagnosis:e('f-diagnosis').value.trim(),
       icd10:e('f-icd10').value.trim(),allergy:e('f-allergy').value.trim(),history:e('f-history').value.trim(),
-      lab:e('f-lab').value.trim(),lab_analysis:e('f-lab-analysis').value.trim(),medication:e('f-medication').value.trim(),homevisit:homevisitFinal,
+      lab:e('f-lab').value.trim(),lab_analysis:e('f-lab-analysis').value.trim(),lab_history:(()=>{const h=Array.isArray(existingPatient?.lab_history)?[...existingPatient.lab_history]:[];if(window.__pendingLabSnapshot)h.push(window.__pendingLabSnapshot);return h;})(),medication:e('f-medication').value.trim(),homevisit:homevisitFinal,
       home_visit_team:team,
       inhomesss:e('f-inhomesss').value.trim(),problems:e('f-problems').value.trim(),care_plan:e('f-careplan').value.trim(),
       workflow_stage:e('f-stage').value||'new', next_visit_date:nextVisitDate
