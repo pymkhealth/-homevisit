@@ -829,6 +829,229 @@ function renderVisitTeam(team=[]){const box=e('visit-team-box');if(!box)return;l
 function getVisitTeam(){return [...document.querySelectorAll('.visit-team-row')].map(r=>({name:r.querySelector('.visit-team-name').value.trim(),role:r.querySelector('.visit-team-role').value.trim()})).filter(x=>x.name||x.role);}
 function addVisitTeamMember(){const a=getVisitTeam();if(a.length>=5){alert('สูงสุด 5 คน');return;}a.push({name:'',role:''});renderVisitTeam(a);}
 function removeVisitTeamMember(i){const a=getVisitTeam();a.splice(i,1);renderVisitTeam(a);}
+const thaiDate = iso => {
+  if(!iso) return '—';
+  const d = new Date(iso+'T00:00:00');
+  if(Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'numeric'});
+};
+function todayISO(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function daysBetween(iso1,iso2){if(!iso1||!iso2)return null;const a=new Date(iso1+'T00:00:00'),b=new Date(iso2+'T00:00:00');return Math.round((b-a)/86400000);}
+
+async function loadPatients(){
+  const {data,error}=await supabaseClient.from(PATIENTS_TABLE).select('*').order('created_at',{ascending:false});
+  if(error){
+    console.error(error);
+    patients=[];
+    renderAllScreens();
+    alert('ยังอ่านข้อมูลผู้ป่วยจาก Supabase ไม่ได้: '+error.message+'\n\nกรุณารันไฟล์ SQL ที่แนบให้หนึ่งครั้งก่อนใช้งาน (รวมถึง supabase_v9_workflow.sql ถ้ายังไม่ได้รัน)');
+    return;
+  }
+  patients=(data||[]).map(normalizePatient);
+  await hydratePhotoUrls();
+  renderAllScreens();
+}
+function renderAllScreens(){ renderToday(); renderDashboard(); renderList(); }
+
+function normalizePatient(p){
+  return {...p,id:p.id,hn:p.hn||'',name:p.name||'',birthDate:p.birth_date||'',age:calculateAge(p.birth_date),sex:p.sex||'',group:p.disease_group||'',lastVisit:thaiDate(p.last_visit),startVisitDate:p.home_visit_start_date||'',startVisit:thaiDate(p.home_visit_start_date),dischargeDate:p.home_visit_discharge_date||'',dischargeVisit:thaiDate(p.home_visit_discharge_date),status:p.status||'ok',overdueDays:p.overdue_days||0,reason:p.reason||'',address:p.address||'',phone:p.phone||'',photos:Array.isArray(p.photos)?p.photos:[],labFiles:Array.isArray(p.lab_files)?p.lab_files:[],stage:p.workflow_stage||'new',nextVisitDate:p.next_visit_date||''};
+}
+async function hydratePhotoUrls(){
+  for(const p of patients){
+    const items=[];
+    for(const photo of (p.photos||[])){
+      const path=typeof photo==='string'?photo:photo.path;
+      if(!path) continue;
+      const {data,error}=await supabaseClient.storage.from(PHOTOS_BUCKET).createSignedUrl(path,3600);
+      items.push({...((typeof photo==='object')?photo:{}),path,url:error?'':data?.signedUrl||''});
+    }
+    p.photos=items;
+    const labItems=[];
+    for(const f of (p.labFiles||[])){
+      const path=typeof f==='string'?f:f.path; if(!path) continue;
+      const {data,error}=await supabaseClient.storage.from(LAB_BUCKET).createSignedUrl(path,3600);
+      labItems.push({...((typeof f==='object')?f:{}),path,url:error?'':data?.signedUrl||''});
+    }
+    p.labFiles=labItems;
+  }
+}
+
+/* ---- Data completeness ---- */
+const COMPLETENESS_FIELDS=[
+ ['birthDate','วันเกิด'],['phone','เบอร์โทร'],['address','ที่อยู่'],['group','กลุ่มโรค'],
+ ['diagnosis','Diagnosis'],['lab','ผล Lab'],['medication','Medication'],['homevisit','Home Visit'],
+ ['inhomesss','INHOMESSS'],['problems','Problems'],['care_plan','Care Plan'],['nextVisitDate','นัดครั้งถัดไป']
+];
+function patientCompleteness(p){
+  let filled=0; const missing=[];
+  COMPLETENESS_FIELDS.forEach(([key,label])=>{
+    const v=p[key]; const has=v!==undefined&&v!==null&&String(v).trim()!=='' && String(v).trim()!=='—';
+    if(has) filled++; else missing.push(label);
+  });
+  const pct=Math.round(filled/COMPLETENESS_FIELDS.length*100);
+  return {pct,missing};
+}
+function labFlagged(p){
+  const t=String(p.lab||'');
+  return /สูง|ต่ำ|ผิดปกติ|↑|↓|abnormal|high|low/i.test(t);
+}
+
+function renderCompletenessBadge(p,target){
+  const c=patientCompleteness(p);
+  const color = c.pct>=80?'#2FA7B5':c.pct>=50?'#E6A23C':'#E35D6A';
+  target.innerHTML=`<div class="completeness-top"><span>ความสมบูรณ์ของข้อมูล</span><span style="font-family:'IBM Plex Mono',monospace;color:${color};font-weight:600">${c.pct}%</span></div>
+    <div class="completeness-track"><div class="completeness-fill" style="width:${c.pct}%;background:${color}"></div></div>
+    ${c.missing.length?`<div class="completeness-missing">ยังขาด: ${c.missing.map(safe).join(', ')}</div>`:''}`;
+}
+
+function stageBadgeHtml(p){
+  const s=stageInfo(p.stage);
+  return `<span class="stage-badge" style="background:${s.bg};color:${s.color}"><span class="stage-dot"></span>${safe(s.label)}</span>`;
+}
+
+/* ---- Today page ---- */
+function renderToday(){
+  const today=todayISO();
+  const dueToday=patients.filter(p=>p.nextVisitDate===today && p.stage!=='discharged');
+  const overdue=patients.filter(p=>p.nextVisitDate && p.nextVisitDate<today && p.stage!=='discharged');
+  const labWatch=patients.filter(p=>labFlagged(p) && p.stage!=='discharged');
+  const incomplete=patients.filter(p=>patientCompleteness(p).pct<70 && p.stage!=='discharged');
+
+  e('today-badge-2').textContent=new Date().toLocaleDateString('th-TH',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const totalToday=dueToday.length+overdue.length;
+  const badgeNav=e('today-nav-badge');
+  if(totalToday>0){badgeNav.textContent=totalToday;badgeNav.classList.remove('hidden');}else{badgeNav.classList.add('hidden');}
+
+  const stats=[
+    {key:'today',cls:'c-today',n:dueToday.length,l:'ต้องเยี่ยมวันนี้',list:dueToday},
+    {key:'overdue',cls:'c-overdue',n:overdue.length,l:'เกินกำหนดเยี่ยม',list:overdue},
+    {key:'lab',cls:'c-lab',n:labWatch.length,l:'ต้องติดตาม Lab',list:labWatch},
+    {key:'incomplete',cls:'c-incomplete',n:incomplete.length,l:'ข้อมูลยังไม่ครบ',list:incomplete},
+  ];
+  e('today-stat-grid').innerHTML=stats.map(s=>`<div class="today-stat ${s.cls} ${window.__todayActive===s.key?'':''}" onclick="setTodayBucket('${s.key}')"><div class="n">${s.n}</div><div class="l">${s.l}</div></div>`).join('');
+  window.__todayBuckets=stats;
+  setTodayBucket(window.__todayActive||'today',true);
+}
+function setTodayBucket(key,silent){
+  window.__todayActive=key;
+  const stats=window.__todayBuckets||[];
+  [...document.querySelectorAll('.today-stat')].forEach((el,i)=>el.classList.toggle('dim',stats[i]&&stats[i].key!==key));
+  const bucket=stats.find(s=>s.key===key)||stats[0];
+  if(!bucket) return;
+  e('today-list-title').textContent=bucket.l;
+  e('today-list-count').textContent=`${bucket.list.length} ราย`;
+  e('today-list').innerHTML=bucket.list.length?bucket.list.map(p=>`
+    <div class="today-list-item">
+      <div class="today-list-main" style="cursor:pointer" onclick="openPatient('${p.id}')">
+        <div class="name">${safe(p.name)}</div>
+        <div class="meta">${safe(p.hn)} · ${safe(p.group||'—')} ${p.nextVisitDate?`· นัด ${safe(thaiDate(p.nextVisitDate))}`:''}</div>
+      </div>
+      <div class="today-list-actions">
+        <button class="quick-btn" onclick="openQuickUpdate('${p.id}')">＋ บันทึกเยี่ยม</button>
+        <button class="quick-btn" onclick="openPatient('${p.id}')">เปิดเวชระเบียน</button>
+      </div>
+    </div>`).join(''):'<div class="empty-state">ไม่มีรายการในหมวดนี้ 🎉</div>';
+}
+
+function renderDashboard(){
+  const urgent=patients.filter(p=>p.status==='urgent');
+  e('urgent-list').innerHTML=urgent.length?urgent.map(p=>`<div class="card urgent-card" onclick="openPatient('${p.id}')"><div class="name">${safe(p.name)}</div><div class="reason">${safe(p.reason||'ควรติดตามเร่งด่วน')}</div><div class="meta">${safe(p.hn)} · เยี่ยมล่าสุด ${safe(p.lastVisit)}</div></div>`).join(''):'<div class="empty-state" style="grid-column:1/-1">ไม่มีเคสเร่งด่วน</div>';
+  const map=new Map();
+  patients.forEach(p=>{ lines((p.group||'').replace(/\//g,'\n')).forEach(g=>map.set(g,(map.get(g)||0)+1)); });
+  const diseaseGroups=[...map.entries()].sort((a,b)=>b[1]-a[1]);
+  e('disease-list').innerHTML=diseaseGroups.length?diseaseGroups.map(([label,num])=>`<div class="card disease-stat" onclick="openDiseaseModal('${encodeURIComponent(label)}')"><div class="top"><span class="label">${safe(label)}</span><span class="num">${num}</span></div><div class="bar-track"><div class="bar-fill" style="width:${patients.length?Math.max(5,num/patients.length*100):0}%;background:var(--teal-600)"></div></div></div>`).join(''):'<div class="empty-state" style="grid-column:1/-1">ยังไม่มีข้อมูลกลุ่มโรค</div>';
+  const headCounts=document.querySelectorAll('#screen-dashboard .sec-head .count');
+  if(headCounts[0]) headCounts[0].textContent=`${urgent.length} ราย`;
+  if(headCounts[1]){ headCounts[1].textContent=`ผู้ป่วยทั้งหมด ${patients.length} ราย`; headCounts[1].style.cursor='pointer'; headCounts[1].onclick=()=>{setPatientFilter('all',null);showScreen('list');}; }
+  const ranked=[...patients].sort((a,b)=>scorePatient(b)-scorePatient(a)).slice(0,5);
+  e('top5-list').innerHTML=ranked.length?ranked.map((p,i)=>`<div class="rank-row" onclick="openPatient('${p.id}')"><div class="rank-num">${i+1}</div><div class="rank-body"><div class="name">${safe(p.name)}</div><div class="note">${safe(p.group||'—')}</div></div><div class="risk-score">${safe(p.hn)}</div></div>`).join(''):'<div class="empty-state">ยังไม่มีข้อมูลผู้ป่วย</div>';
+  const overdue=patients.filter(p=>p.status==='overdue');
+  e('overdue-list').innerHTML=overdue.length?overdue.map(p=>`<div class="card overdue-card" onclick="openPatient('${p.id}')"><div><div class="name">${safe(p.name)}</div><div class="meta">${safe(p.group)} · เยี่ยมล่าสุด ${safe(p.lastVisit)}</div></div><div class="days">${p.overdueDays}<span>วันเกินกำหนด</span></div></div>`).join(''):'<div class="empty-state">ไม่มีเคสเกินกำหนด</div>';
+  if(headCounts[2]){ headCounts[2].textContent=`${overdue.length} ราย`; headCounts[2].style.cursor='pointer'; headCounts[2].onclick=()=>{setPatientFilter('overdue',null);showScreen('list');}; }
+}
+function scorePatient(p){return p.status==='urgent'?1000:p.status==='overdue'?500+(p.overdueDays||0):0;}
+
+function statusBadge(p){if(p.status==='urgent')return '<span class="badge urgent">เร่งด่วน</span>';if(p.status==='overdue')return `<span class="badge overdue">เกินกำหนด ${p.overdueDays||0} วัน</span>`;return '<span class="badge ok">ปกติ</span>';}
+function setPatientFilter(filter,btn){
+  activePatientFilter=filter;
+  document.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));
+  const target=btn||document.querySelector(`.chip[data-filter="${filter}"]`);
+  target?.classList.add('active');
+  renderList();
+}
+function renderList(){
+  const q=(e('patient-search')?.value||'').trim().toLowerCase();
+  const today=todayISO();
+  let arr=patients.filter(p=>!q||[p.name,p.hn,p.group,p.phone].some(v=>String(v||'').toLowerCase().includes(q)));
+  if(activePatientFilter==='overdue') arr=arr.filter(p=>p.nextVisitDate&&p.nextVisitDate<today&&p.stage!=='discharged');
+  else if(activePatientFilter==='today') arr=arr.filter(p=>p.nextVisitDate===today&&p.stage!=='discharged');
+  else if(activePatientFilter==='incomplete') arr=arr.filter(p=>patientCompleteness(p).pct<70);
+  else if(activePatientFilter==='discharged') arr=arr.filter(p=>p.stage==='discharged');
+  e('patient-table-body').innerHTML=arr.length?arr.map(p=>`<tr><td class="hn" onclick="openPatient('${p.id}')">${safe(p.hn)}</td><td onclick="openPatient('${p.id}')"><div class="p-name">${safe(p.name)}</div><div class="p-sub">${p.age==null?'—':safe(p.age)+' ปี'} · ${safe(p.sex||'—')}</div></td><td onclick="openPatient('${p.id}')">${safe(p.group||'—')}</td><td onclick="openPatient('${p.id}')">${stageBadgeHtml(p)}</td><td onclick="openPatient('${p.id}')">${safe(p.lastVisit)}</td><td onclick="openPatient('${p.id}')">${p.nextVisitDate?safe(thaiDate(p.nextVisitDate)):'—'}</td><td><button class="quick-btn" onclick="event.stopPropagation();openQuickUpdate('${p.id}')">＋ บันทึกเยี่ยม</button></td></tr>`).join(''):'<tr><td colspan="7"><div class="empty-state">ไม่พบข้อมูลผู้ป่วย</div></td></tr>';
+  document.querySelector('#screen-list .topline .sub').textContent=`ทั้งหมด ${patients.length} ราย ในความดูแล`;
+}
+
+function openDiseaseModal(encoded){
+  const label=decodeURIComponent(encoded); e('disease-modal-title').textContent=`กลุ่มโรค: ${label}`;
+  const arr=patients.filter(p=>lines((p.group||'').replace(/\//g,'\n')).includes(label));
+  e('disease-modal-list').innerHTML=arr.map(p=>`<div class="disease-member" onclick="closeDiseaseModal();openPatient('${p.id}')"><div><b>${safe(p.name)}</b><div class="p-sub">${safe(p.hn)} · ${safe(p.group)}</div></div><span>›</span></div>`).join('')||'<div class="empty-state">ไม่พบรายชื่อ</div>';
+  e('disease-modal').classList.remove('hidden');
+}
+function closeDiseaseModal(){e('disease-modal').classList.add('hidden');}
+
+const tabs=[['history','ประวัติเดิม'],['diagnosis','Diagnosis'],['lab','Lab'],['medication','Medication'],['homevisit','Home Visit'],['inhomesss','INHOMESSS'],['problems','Problems'],['careplan','Care Plan'],['photos','รูปภาพ'],['print','Print A4']];
+function openPatient(id){
+  currentPatient=patients.find(p=>String(p.id)===String(id)); if(!currentPatient)return; const p=currentPatient;
+  e('pd-initials').textContent=(p.name||'ผู้ป่วย').replace(/\s/g,'').slice(0,2);e('pd-name').textContent=p.name;e('pd-hn').textContent=p.hn;e('pd-age').textContent=`${p.age==null?'—':p.age+' ปี'} · ${p.sex||'—'} · เกิด ${p.birthDate?thaiDate(p.birthDate):'—'}`;e('pd-address').textContent=`📍 ${p.address||'—'}`;e('pd-phone').textContent=`📞 ${p.phone||'—'}`;e('pd-start').textContent=`เริ่มเยี่ยมบ้าน ${p.startVisit||'—'}`;e('pd-discharge').textContent=p.dischargeDate?`จำหน่าย ${p.dischargeVisit}`:'ยังอยู่ในระบบเยี่ยมบ้าน';
+  const b=e('pd-badge');b.className='badge '+(p.status==='urgent'?'urgent':p.status==='overdue'?'overdue':'ok');b.textContent=p.status==='urgent'?'เร่งด่วน':p.status==='overdue'?`เกินกำหนด ${p.overdueDays||0} วัน`:'ปกติ';
+  const stg=stageInfo(p.stage); const stageEl=e('pd-stage'); stageEl.style.background=stg.bg; stageEl.style.color=stg.color; stageEl.innerHTML=`<span class="stage-dot"></span>${safe(stg.label)}`;
+  renderCompletenessBadge(p,e('pd-completeness'));
+  if(!document.getElementById('edit-patient-btn')){const btn=document.createElement('button');btn.id='edit-patient-btn';btn.className='btn-ghost detail-edit-btn';btn.textContent='แก้ไขข้อมูล';btn.onclick=()=>openPatientForm(currentPatient);e('pd-actions').insertBefore(btn,e('pd-actions').lastElementChild);}
+  if(!document.getElementById('quick-visit-btn')){const btn2=document.createElement('button');btn2.id='quick-visit-btn';btn2.className='btn-ghost detail-edit-btn';btn2.textContent='＋ บันทึกเยี่ยมด่วน';btn2.onclick=()=>openQuickUpdate(currentPatient.id);e('pd-actions').insertBefore(btn2,e('pd-actions').lastElementChild);}
+  e('tab-strip').innerHTML=tabs.map((t,i)=>`<button class="tab-btn ${i===0?'active':''}" data-tab="${t[0]}" onclick="showTab('${t[0]}')">${t[1]}</button>`).join('');
+  renderAllTabPanels(p);showScreen('detail');showTab('history');
+}
+function showTab(id){document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id==='panel-'+id));}
+function textBlock(v){return safe(v||'—').replace(/\n/g,'<br>');}
+function renderAllTabPanels(p){
+  const photoHtml=(p.photos||[]).map((x,i)=>`<div class="photo-tile photo-real"><img src="${safe(x.url||x)}" alt="ภาพผู้ป่วย ${i+1}"><div class="photo-caption">ภาพที่ ${i+1}</div></div>`).join('');
+  e('tab-panel-wrap').innerHTML=`
+  <div class="tab-panel active" id="panel-history"><h3>ประวัติเดิม</h3><div class="kv-grid"><div class="kv"><div class="k">วันเดือนปีเกิด / อายุปัจจุบัน</div><div class="v">${p.birthDate?safe(thaiDate(p.birthDate)):'—'} · ${p.age==null?'—':safe(p.age)+' ปี'}</div></div><div class="kv"><div class="k">กลุ่มโรค</div><div class="v">${safe(p.group||'—')}</div></div><div class="kv"><div class="k">วันที่เริ่มส่งเยี่ยมบ้าน</div><div class="v">${safe(p.startVisit||'—')}</div></div><div class="kv"><div class="k">วันที่จำหน่ายจากผู้ป่วยเยี่ยมบ้าน</div><div class="v">${safe(p.dischargeVisit||'—')}</div></div><div class="kv"><div class="k">ประวัติแพ้ยา</div><div class="v">${safe(p.allergy||'—')}</div></div><div class="kv"><div class="k">นัดเยี่ยมครั้งถัดไป</div><div class="v">${p.nextVisitDate?safe(thaiDate(p.nextVisitDate)):'—'}</div></div><div class="kv form-span-2"><div class="k">ประวัติเดิม</div><div class="v">${textBlock(p.history)}</div></div></div></div>
+  <div class="tab-panel" id="panel-diagnosis"><h3>Diagnosis</h3><div class="kv-grid"><div class="kv"><div class="k">Diagnosis</div><div class="v">${safe(p.diagnosis||'—')}</div></div><div class="kv"><div class="k">ICD-10</div><div class="v">${safe(p.icd10||'—')}</div></div></div></div>
+  <div class="tab-panel" id="panel-lab"><h3>Lab / ผลตรวจ</h3>${labFlagged(p)?'<div class="warning-banner">พบคำที่บ่งชี้ผลผิดปกติในบันทึก Lab นี้ ควรติดตาม</div>':''}<div class="visit-note" style="white-space:pre-wrap">${textBlock(p.lab)}</div>${p.labFiles?.length?`<h3 style="margin-top:24px">ไฟล์ Lab ที่แนบ</h3>${p.labFiles.map((f,i)=>`<div class="lab-file-link"><span>${safe(f.name||('ไฟล์ '+(i+1)))}</span><a href="${safe(f.url)}" target="_blank" rel="noopener">เปิดไฟล์</a></div>`).join('')}`:''}</div>
+  <div class="tab-panel" id="panel-medication"><h3>Medication</h3>${lines(p.medication).map(x=>`<div class="med-row"><div class="med-name">${safe(x)}</div></div>`).join('')||'<div class="empty-state">ยังไม่มีข้อมูล</div>'}</div>
+  <div class="tab-panel" id="panel-homevisit"><h3>Home Visit — ไทม์ไลน์</h3><div class="form-help" style="margin-bottom:14px">แต่ละครั้งจะถูกบันทึกแยกกันตามวันที่แก้ไข ไม่ทับของเดิม</div>${homeVisitTimelineHtml(p)}</div>
+  <div class="tab-panel" id="panel-inhomesss"><h3>INHOMESSS Assessment</h3><div class="visit-note">${textBlock(p.inhomesss)}</div></div>
+  <div class="tab-panel" id="panel-problems"><h3>Problem List</h3><div class="visit-note">${textBlock(p.problems)}</div></div>
+  <div class="tab-panel" id="panel-careplan"><h3>Care Plan</h3><div class="visit-note">${textBlock(p.care_plan)}</div></div>
+  <div class="tab-panel" id="panel-photos"><h3>รูปภาพที่แนบ</h3><div class="photo-grid">${photoHtml||'<div class="empty-state" style="grid-column:1/-1">ยังไม่มีภาพแนบ</div>'}</div></div>
+  <div class="tab-panel" id="panel-print"><h3>พิมพ์ข้อมูลผู้ป่วย</h3><div id="print-area" class="a4-preview" style="max-width:760px"><h4>ข้อมูลผู้ป่วยเยี่ยมบ้าน</h4><div class="a4-sub">${safe(p.name)} · ${safe(p.hn)}</div>${printRows(p)}${p.photos?.length?`<h4 style="text-align:left;margin-top:20px">ภาพถ่ายที่แนบ</h4><div class="print-photo-grid">${p.photos.map(x=>`<img src="${safe(x.url||x)}">`).join('')}</div>`:''}</div><button class="btn-primary print-btn" style="max-width:220px;margin:0 auto" onclick="window.print()">🖨 พิมพ์ข้อมูลผู้ป่วย</button></div>`;
+}
+function homeVisitTimelineHtml(p){
+  // v9: homevisit is stored as dated blocks separated by a marker so multiple visits don't overwrite each other.
+  const blocks=String(p.homevisit||'').split('\n===VISIT===\n').map(x=>x.trim()).filter(Boolean);
+  if(!blocks.length) return '<div class="empty-state">ยังไม่มีบันทึกการเยี่ยม</div>';
+  return blocks.slice().reverse().map(b=>{
+    const dateMatch=b.match(/^\[(.+?)\]/); const date=dateMatch?dateMatch[1]:'';
+    const rest=dateMatch?b.slice(dateMatch[0].length).trim():b;
+    return `<div class="visit-item"><div class="visit-dot"></div><div><div class="visit-date">${safe(date)}</div><div class="visit-note">${textBlock(rest)}</div></div></div>`;
+  }).join('');
+}
+function printRows(p){const rows=[['วันเดือนปีเกิด',p.birthDate?thaiDate(p.birthDate):''],['อายุ / เพศ',`${p.age==null?'—':p.age+' ปี'} / ${p.sex||'—'}`],['วันที่เริ่มส่งเยี่ยมบ้าน',p.startVisit],['วันที่จำหน่ายจากผู้ป่วยเยี่ยมบ้าน',p.dischargeVisit],['กลุ่มโรค',p.group],['Diagnosis',p.diagnosis],['ICD-10',p.icd10],['ประวัติแพ้ยา',p.allergy],['ที่อยู่',p.address],['โทรศัพท์',p.phone],['เยี่ยมล่าสุด',p.lastVisit],['นัดครั้งถัดไป',p.nextVisitDate?thaiDate(p.nextVisitDate):''],['สถานะ Workflow',stageInfo(p.stage).label],['สถานะ',p.status==='urgent'?'เร่งด่วน':p.status==='overdue'?`เกินกำหนด ${p.overdueDays||0} วัน`:'ปกติ'],['เหตุผล/ข้อควรติดตาม',p.reason],['ประวัติเดิม',p.history],['Lab / ผลตรวจ',p.lab],['Medication',p.medication],['Home Visit',p.homevisit],['INHOMESSS',p.inhomesss],['Problems',p.problems],['Care Plan',p.care_plan]];return rows.filter(r=>r[1]&&r[1]!=='—').map(r=>`<div class="a4-line"><span>${safe(r[0])}</span><span style="max-width:65%;text-align:right;white-space:pre-wrap">${safe(r[1])}</span></div>`).join('');}
+
+function populateStageSelect(current){
+  e('f-stage').innerHTML=STAGES.map(s=>`<option value="${s.id}" ${s.id===current?'selected':''}>${safe(s.label)}</option>`).join('');
+}
+function checkWarnings(p){
+  const warn=[];
+  if(!p?.phone) warn.push('ยังไม่มีเบอร์โทรศัพท์');
+  if(!p?.inhomesss) warn.push('ยังไม่ได้ประเมิน INHOMESSS');
+  if(!p?.care_plan) warn.push('ยังไม่มี Care Plan');
+  if(!p?.nextVisitDate) warn.push('ยังไม่ได้กำหนดวันนัดเยี่ยมครั้งถัดไป');
+  const box=e('form-warning-banner');
+  if(warn.length){box.classList.remove('hidden');box.innerHTML='⚠️ ข้อมูลยังไม่สมบูรณ์ (บันทึกได้ตามปกติ): '+warn.join(' · ');}
+  else box.classList.add('hidden');
+}
 function openPatientForm(p=null){
   e('patient-form').reset(); e('patient-id').value=p?.id||'';e('patient-form-title').textContent=p?'แก้ไข / เพิ่มเติมข้อมูลผู้ป่วย':'เพิ่มผู้ป่วยใหม่';
   e('save-patient-btn').textContent=p?'บันทึกข้อมูลเพิ่มเติม':'บันทึกข้อมูล';
