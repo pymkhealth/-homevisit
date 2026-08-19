@@ -615,8 +615,7 @@
         <div class="field"><label>ICD-10</label><input id="f-icd10"></div>
         <div class="field"><label>ประวัติแพ้ยา</label><input id="f-allergy"></div>
         <div class="field form-span-2"><label>ประวัติเดิม</label><textarea id="f-history" rows="3"></textarea></div>
-        <div class="field form-span-2"><label>Lab / ผลตรวจจากภาพหรือ PDF</label><div class="lab-upload-box"><input id="f-lab-files" type="file" accept="image/*,application/pdf" multiple><div class="form-help">ระบบอ่านผล Lab ภายในเบราว์เซอร์โดยไม่ใช้ OpenAI API และไม่เสียค่า API
-จากนั้นแยกชื่อรายการ ผล หน่วย และช่วงอ้างอิงเพื่อสร้างสรุปภาษาไทย</div><div class="lab-tools"><button type="button" class="btn-ghost" onclick="analyzeLabFiles()">อ่านและวิเคราะห์ผล Lab</button><span id="lab-ocr-status" class="lab-status"></span></div></div><textarea id="f-lab" rows="7" placeholder="ค่าที่อ่านจากผล Lab — กรุณาตรวจสอบกับต้นฉบับ"></textarea>
+        <div class="field form-span-2"><label>Lab / ผลตรวจจากภาพหรือ PDF</label><div class="lab-upload-box"><input id="f-lab-files" type="file" accept="image/*,application/pdf" multiple><div class="form-help">ระบบอ่านแบบฟอร์ม Lab 2 คอลัมน์โดยแยกซ้าย–ขวาและตัดหัว/ท้ายกระดาษก่อนอ่าน เพื่อจับเฉพาะรายการตรวจ ผล ค่าปกติ และหน่วย</div><div class="lab-tools"><button type="button" class="btn-ghost" onclick="analyzeLabFiles()">อ่านและวิเคราะห์ผล Lab</button><span id="lab-ocr-status" class="lab-status"></span></div></div><textarea id="f-lab" rows="7" placeholder="ค่าที่อ่านจากผล Lab — กรุณาตรวจสอบกับต้นฉบับ"></textarea>
 <div id="existing-lab-files" style="margin-top:10px"></div>
 <div class="lab-tools" style="margin-top:8px">
   <button type="button" class="btn-ghost" onclick="clearLabReadResult()">ล้างข้อความ/ผลวิเคราะห์ Lab</button>
@@ -1140,45 +1139,303 @@ function renderLabStructuredPreview(results,previous){
   const box=e('lab-structured-preview');if(!box)return;
   box.innerHTML=results?.length?`<div class="form-help" style="margin-bottom:6px"><b>ผลที่ระบบแยกได้</b> — ตรวจสอบตัวเลขกับใบ Lab ต้นฉบับก่อนบันทึก</div>${structuredLabTableHtml(results,previous)}`:'';
 }
+
+function cropLabCanvas(source, x0, y0, x1, y1){
+  const c=document.createElement('canvas');
+  const sx=Math.max(0,Math.floor(source.width*x0)), sy=Math.max(0,Math.floor(source.height*y0));
+  const sw=Math.max(1,Math.floor(source.width*(x1-x0))), sh=Math.max(1,Math.floor(source.height*(y1-y0)));
+  c.width=sw;c.height=sh;
+  c.getContext('2d').drawImage(source,sx,sy,sw,sh,0,0,sw,sh);
+  return c;
+}
+function enhanceLabCanvas(source){
+  const scale=Math.min(2.4,2600/source.width);
+  const c=document.createElement('canvas');
+  c.width=Math.max(1,Math.round(source.width*scale));
+  c.height=Math.max(1,Math.round(source.height*scale));
+  const ctx=c.getContext('2d',{willReadFrequently:true});
+  ctx.drawImage(source,0,0,c.width,c.height);
+  const im=ctx.getImageData(0,0,c.width,c.height),d=im.data;
+  for(let i=0;i<d.length;i+=4){
+    let g=.299*d[i]+.587*d[i+1]+.114*d[i+2];
+    // contrast + near-white cleanup
+    g=(g-128)*1.75+128;
+    if(g>228)g=255;
+    if(g<40)g=0;
+    g=Math.max(0,Math.min(255,g));
+    d[i]=d[i+1]=d[i+2]=g;
+  }
+  ctx.putImageData(im,0,0);
+  return c;
+}
+async function fileToLabCanvases(file){
+  if(file.type==='application/pdf'||file.name.toLowerCase().endsWith('.pdf')){
+    const buf=await file.arrayBuffer();
+    const pdf=await pdfjsLib.getDocument({data:buf}).promise;
+    const pages=[];
+    for(let p=1;p<=pdf.numPages;p++){
+      const page=await pdf.getPage(p);
+      const vp=page.getViewport({scale:2.0});
+      const c=document.createElement('canvas');c.width=vp.width;c.height=vp.height;
+      await page.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;
+      pages.push(c);
+    }
+    return pages;
+  }
+  const url=URL.createObjectURL(file);
+  try{
+    const img=new Image();
+    await new Promise((ok,bad)=>{img.onload=ok;img.onerror=bad;img.src=url;});
+    const c=document.createElement('canvas');c.width=img.naturalWidth;c.height=img.naturalHeight;
+    c.getContext('2d').drawImage(img,0,0);
+    return [c];
+  }finally{URL.revokeObjectURL(url);}
+}
+function labMainRegions(page){
+  // แบบฟอร์มที่ผู้ใช้ส่ง: หัวกระดาษ ~0-17%, ตารางผล ~17-84%, footer หลัง ~84%
+  const body=cropLabCanvas(page,0.02,0.165,0.98,0.84);
+  // แยกสองคอลัมน์ ลดการสลับบรรทัดระหว่างฝั่งซ้าย/ขวา
+  const left=cropLabCanvas(body,0.00,0.00,0.50,1.00);
+  const right=cropLabCanvas(body,0.50,0.00,1.00,1.00);
+  return [enhanceLabCanvas(left),enhanceLabCanvas(right)];
+}
+function tsvRows(tsv){
+  if(!tsv)return [];
+  const lines=tsv.split(/\r?\n/).slice(1);
+  const rows=new Map();
+  for(const ln of lines){
+    const cols=ln.split('\t');
+    if(cols.length<12)continue;
+    const level=+cols[0],block=cols[2],par=cols[3],line=cols[4],left=+cols[6],top=+cols[7],conf=+cols[10],text=(cols[11]||'').trim();
+    if(level!==5||!text||conf<20)continue;
+    const key=`${block}:${par}:${line}`;
+    if(!rows.has(key))rows.set(key,[]);
+    rows.get(key).push({left,top,text,conf});
+  }
+  return [...rows.values()].map(words=>words.sort((a,b)=>a.left-b.left).map(w=>w.text).join(' ').replace(/\s+/g,' ').trim()).filter(Boolean);
+}
+function fixCommonLabOcr(t){
+  return String(t||'')
+    .replace(/[|]/g,' ')
+    .replace(/\bO(?=\d)/g,'0')
+    .replace(/(?<=\d)O\b/g,'0')
+    .replace(/\bl(?=\d)/g,'1')
+    .replace(/(?<=\d)l\b/g,'1')
+    .replace(/\s+/g,' ')
+    .trim();
+}
+const LAB_ROW_DEFS=[
+ ['bun','BUN',/\bBUN\b/i],
+ ['creatinine','Creatinine',/\bCreatinine\b/i],
+ ['egfr','eGFR',/\be\s*GFR\b|\beGFR\b/i],
+ ['ckd_stage','CKD Stage',/\bCKD\s*Stage\b/i],
+ ['hb','Hb',/(?:^|\s)Hb(?:\s|$)/i],
+ ['hct','Hct',/(?:^|\s)Hct(?:\s|$)/i],
+ ['rbc','RBC count',/\bRBC\s*count\b/i],
+ ['mcv','MCV',/\bMCV\b/i],
+ ['mch','MCH',/\bMCH\b/i],
+ ['mchc','MCHC',/\bMCHC\b/i],
+ ['platelet','Platelet Count',/\bPlatelet\b/i],
+ ['wbc','WBC count',/\bWBC\s*count\b|\bWBC\b/i],
+ ['neutrophil','Neutrophil',/\bNeutrophil\b/i],
+ ['lymphocyte','Lymphocyte',/\bLymphocyte\b/i],
+ ['monocyte','Monocyte',/\bMonocyte\b/i],
+ ['eosinophil','Eosinophil',/\bEosinophil\b/i],
+ ['basophil','Basophil',/\bBasophil\b/i],
+ ['na','Na',/(?:^|\s)Na(?:\s|$)/i],
+ ['k','K',/(?:^|\s)K(?:\s|$)/],
+ ['cl','Cl',/(?:^|\s)Cl(?:\s|$)/],
+ ['co2','CO2',/\bCO2\b/i],
+ ['fbs','Glucose (FBS)',/\bGlucose\s*\(FBS\)|\bFBS\b/i],
+ ['hba1c','HbA1c',/\bHbA1c\b|\bA1c\b/i],
+ ['uric_acid','Uric acid',/\bUric\s*acid\b/i],
+ ['vitamin_d','Vitamin D total',/\bVitamin\s*D\b/i],
+ ['microalbumin','Microalbumin',/\bMicroalbumin\b/i],
+ ['pth','PTH',/\bPTH\b/i],
+ ['ft4','FT4',/\bFT4\b/i],
+ ['tsh','TSH',/\bTSH\b/i],
+ ['ft3','FT3',/\bFT3\b/i],
+ ['cholesterol','Cholesterol',/\bCholesterol\b/i],
+ ['triglyceride','Triglyceride',/\bTriglyceride\b/i],
+ ['hdl','HDL',/(?:^|\s)HDL(?:\s|$)/i],
+ ['ldl','LDL calculate',/\bLDL\b/i],
+ ['total_protein','Total Protein',/\bTotal\s*Protein\b/i],
+ ['albumin','Albumin',/(?:^|\s)Albumin(?:\s|$)/i],
+ ['globulin','Globulin',/(?:^|\s)Globulin(?:\s|$)/i],
+ ['total_bilirubin','Total Bilirubin',/\bTotal\s*Bilirubin\b/i],
+ ['direct_bilirubin','Direct Bilirubin',/\bDirect\s*Bilirubin\b/i],
+ ['ast','SGOT(AST)',/\bSGOT\b|\bAST\b/i],
+ ['alt','SGPT(ALT)',/\bSGPT\b|\bALT\b/i],
+ ['alp','ALP',/(?:^|\s)ALP(?:\s|$)/i],
+ ['calcium','Calcium',/\bCalcium\b/i],
+ ['phosphorus','Phosphorus',/\bPhosphorus\b/i],
+ ['magnesium','Magnesium',/\bMagnesium\b/i],
+ ['ua_color','Urine Color',/(?:^|\s)Color(?:\s|$)/i],
+ ['ua_appearance','Urine Appearance',/\bAppearance\b/i],
+ ['ua_spgr','Urine Specific Gravity',/\bSp\.?\s*gr\b|\bSpecific\s*Gravity\b/i],
+ ['ua_ph','Urine pH',/(?:^|\s)pH(?:\s|$)/i],
+ ['ua_protein','Urine Protein',/(?:^|\s)Protein(?:\s|$)/i],
+ ['ua_glucose','Urine Glucose',/(?:^|\s)Glucose(?:\s|$)/i],
+ ['ua_ketones','Urine Ketones',/\bKetones?\b/i],
+ ['ua_urobilinogen','Urine Urobilinogen',/\bUrobilinogen\b/i],
+ ['ua_nitrite','Urine Nitrite',/\bNitrite\b/i],
+ ['ua_bilirubin','Urine Bilirubin',/(?:^|\s)Bilirubin(?:\s|$)/i],
+ ['ua_blood','Urine Blood',/(?:^|\s)Blood(?:\s|$)/i],
+ ['ua_leukocytes','Urine Leukocytes',/\bLeukocytes?\b/i],
+ ['ua_rbc','Urine RBC',/(?:^|\s)RBC(?:\s|$)/i],
+ ['ua_wbc','Urine WBC',/(?:^|\s)WBC(?:\s|$)/i],
+ ['ua_epi','Urine Epithelial cells',/\bEpi\.?\s*Sq\b/i],
+ ['ua_bacteria','Urine Bacteria',/\bBacteria\b/i],
+];
+function labUnitFromRow(row){
+  const m=row.match(/\b(mg%|mg\/dL|mg\/L|g\/dL|g\/L|mmol\/L|mEq\/L|U\/L|IU\/L|ng\/mL|ng\/dL|uIU\/mL|mL\/min(?:\/1\.73\s*m(?:\^?2|2))?|%|pg|fL|fl|10\^?3\/mm3|10\^?6\/mm3|Cells\/HPF)\b/i);
+  return m?m[1]:'';
+}
+function chooseSexRange(row,sex){
+  const ranges=[...row.matchAll(/(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)/g)].map(m=>({low:+m[1],high:+m[2],text:`${m[1]}-${m[2]}`}));
+  if(ranges.length>=2){
+    if(sex==='หญิง')return ranges[1];
+    if(sex==='ชาย')return ranges[0];
+  }
+  return ranges[0]||null;
+}
+function parseQualitativeValue(rest){
+  const m=rest.match(/\b(Negative|Normal|Few|Yellow|Clear|Trace|Positive|[1-4]\+)\b/i);
+  return m?m[1].replace(/\s/g,''):'';
+}
+function parseKnownLabRows(rows,sex=''){
+  const out=[],seen=new Set();
+  for(const raw of rows){
+    const row=fixCommonLabOcr(raw);
+    for(const [key,label,re] of LAB_ROW_DEFS){
+      if(seen.has(key)||!re.test(row))continue;
+      const idx=row.search(re),match=row.match(re),rest=row.slice(idx+(match?.[0]?.length||0)).trim();
+
+      if(key==='ckd_stage'){
+        const st=rest.match(/Stage\s*[1-5](?:[ab])?/i)||rest.match(/[1-5](?:[ab])?/i);
+        if(st){out.push({key,label,valueText:st[0].replace(/^Stage\s*/i,'Stage '),status:'unknown',unit:'',refText:''});seen.add(key);}
+        break;
+      }
+
+      if(key.startsWith('ua_') && !['ua_spgr','ua_ph','ua_rbc','ua_wbc','ua_epi'].includes(key)){
+        const q=parseQualitativeValue(rest);
+        if(q){
+          let ref=parseQualitativeValue(rest.slice(rest.indexOf(q)+q.length));
+          let status='unknown';
+          if(['Negative','Normal','Yellow','Clear'].includes(q))status='normal';
+          else if(/[1-4]\+|Positive|Trace/i.test(q))status=ref==='Negative'?'abnormal':'abnormal';
+          else if(q==='Few')status=ref==='Few'?'normal':'unknown';
+          out.push({key,label,valueText:q,status,unit:labUnitFromRow(row),refText:ref});
+          seen.add(key);
+        }
+        break;
+      }
+
+      if(['ua_rbc','ua_wbc','ua_epi'].includes(key)){
+        const vr=rest.match(/(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)/);
+        if(vr){
+          const valueText=`${vr[1]}-${vr[2]}`;
+          const after=rest.slice(vr.index+vr[0].length);
+          const rr=after.match(/(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)/);
+          out.push({key,label,valueText,status:'normal',unit:labUnitFromRow(row),refText:rr?`${rr[1]}-${rr[2]}`:''});
+          seen.add(key);
+        }
+        break;
+      }
+
+      const vm=rest.match(/([<>]=?)?\s*(-?\d+(?:\.\d+)?)/);
+      if(!vm)break;
+      const comparator=vm[1]||'',value=Number(vm[2]);
+      const after=rest.slice(vm.index+vm[0].length);
+      let ref=chooseSexRange(after,sex);
+      let refText=ref?.text||'',status='unknown',low=ref?.low??null,high=ref?.high??null;
+
+      const cmp=after.match(/([<>]=?)\s*(\d+(?:\.\d+)?)/);
+      if(cmp&&!ref){
+        const lim=Number(cmp[2]);refText=`${cmp[1]}${cmp[2]}`;
+        if(cmp[1].startsWith('>'))status=value>=lim?'normal':'low';
+        else status=value<=lim?'normal':'high';
+      }else if(ref){
+        status=value<low?'low':value>high?'high':'normal';
+      }else if(/\bH(?:IGH)?\b|↑/.test(after))status='high';
+      else if(/\bL(?:OW)?\b|↓/.test(after))status='low';
+
+      out.push({key,label,value,comparator,unit:labUnitFromRow(row),low,high,refText,status,sourceRow:row});
+      seen.add(key);
+      break;
+    }
+  }
+  return out;
+}
+function mergeLabResults(groups){
+  const m=new Map();
+  for(const arr of groups)for(const x of arr){
+    if(!m.has(x.key))m.set(x.key,x);
+    else{
+      const old=m.get(x.key);
+      // prefer result with reference range and unit
+      const score=o=>(o.refText?2:0)+(o.unit?1:0)+(o.value!=null||o.valueText?1:0);
+      if(score(x)>score(old))m.set(x.key,x);
+    }
+  }
+  return [...m.values()];
+}
+async function recognizeLabRegion(worker,canvas){
+  const attempts=[];
+  for(const psm of ['6','11']){
+    await worker.setParameters({tessedit_pageseg_mode:psm,preserve_interword_spaces:'1'});
+    const {data}=await worker.recognize(canvas);
+    const rows=tsvRows(data.tsv);
+    attempts.push(rows);
+  }
+  return attempts.flat();
+}
 async function analyzeLabFiles(){
  const files=[...e('f-lab-files').files],status=e('lab-ocr-status');
  if(!files.length){alert('กรุณาเลือกภาพหรือ PDF ผล Lab ก่อน');return;}
- if(!window.Tesseract||!window.pdfjsLib){alert('ไม่สามารถโหลดโมดูลอ่านไฟล์ได้');return;}
- let worker,chunks=[];
+ if(!window.Tesseract||!window.pdfjsLib){alert('โมดูลอ่านไฟล์ยังโหลดไม่สำเร็จ กรุณารีเฟรชหน้าเว็บ');return;}
+ let worker;
  try{
-  worker=await Tesseract.createWorker('eng',1,{logger:m=>{if(m.status&&m.progress!=null)status.textContent=`กำลังอ่านผล Lab ${Math.round(m.progress*100)}%`;}});
-  for(let i=0;i<files.length;i++){
-    const f=files[i];
-    status.textContent=`กำลังอ่าน ${f.name} (${i+1}/${files.length})...`;
-    let text=(f.type==='application/pdf'||f.name.toLowerCase().endsWith('.pdf'))
-      ? await extractPdfTextOrOcr(f,worker,status)
-      : await ocrImageSource(f,worker);
-    chunks.push(cleanLabText(text));
-  }
-  const raw=chunks.join('\n');
-  const results=extractStructuredLabs(raw);
-  const patientId=e('patient-id').value||null;
-  const existing=patientId?patients.find(x=>String(x.id)===String(patientId)):null;
-  const history=Array.isArray(existing?.lab_history)?existing.lab_history:[];
-  const previous=history.length?history[history.length-1]:null;
+   status.textContent='กำลังเตรียมตัวอ่านตาราง Lab...';
+   worker=await Tesseract.createWorker('eng',1,{logger:m=>{
+     if(m.status&&m.progress!=null)status.textContent=`กำลังอ่านตาราง Lab ${Math.round(m.progress*100)}%`;
+   }});
+   const sex=e('f-sex')?.value||'';
+   const allResults=[];
+   for(let fi=0;fi<files.length;fi++){
+     const pages=await fileToLabCanvases(files[fi]);
+     for(let pi=0;pi<pages.length;pi++){
+       status.textContent=`กำลังอ่าน ${files[fi].name} หน้า ${pi+1}/${pages.length}...`;
+       const regions=labMainRegions(pages[pi]);
+       const pageRows=[];
+       for(const region of regions){
+         const rows=await recognizeLabRegion(worker,region);
+         pageRows.push(...rows);
+       }
+       allResults.push(parseKnownLabRows(pageRows,sex));
+     }
+   }
+   const results=mergeLabResults(allResults);
+   const patientId=e('patient-id').value||null;
+   const existing=patientId?patients.find(x=>String(x.id)===String(patientId)):null;
+   const history=Array.isArray(existing?.lab_history)?existing.lab_history:[];
+   const previous=history.length?history[history.length-1]:null;
 
-  window.__pendingLabSnapshot=makeLabSnapshot(results,raw);
-
-  e('f-lab').value=results.length
-    ? results.map(x=>`${x.label}: ${resultDisplay(x)}${x.refText?` | เกณฑ์ ${x.refText}`:''} | ${labStatusThai(x.status)}`).join('\n')
-    : '';
-
-  e('f-lab-analysis').value=results.length
-    ? buildLabAnalysis(results,previous)
-    : 'ระบบยังอ่านรายการ Lab จากภาพนี้ไม่ได้อย่างมั่นใจ จึงไม่แสดงข้อความ OCR ที่อาจผิดเพี้ยน กรุณาตรวจสอบภาพให้ตรง ชัด และเห็นตารางผลตรวจเต็มหน้า';
-  renderLabStructuredPreview(results,previous);
-  status.textContent=results.length?`อ่านสำเร็จ ${results.length} รายการ — กรุณาตรวจสอบตัวเลขกับต้นฉบับ`:'ยังแยกรายการไม่ได้ กรุณาตรวจสอบไฟล์';
+   window.__pendingLabSnapshot=makeLabSnapshot(results,'อ่านจากแบบฟอร์ม Lab 2 คอลัมน์');
+   e('f-lab').value=results.length
+     ?results.map(x=>`${x.label}: ${resultDisplay(x)}${x.refText?` | เกณฑ์ ${x.refText}`:''} | ${labStatusThai(x.status)}`).join('\n')
+     :'';
+   e('f-lab-analysis').value=results.length
+     ?buildLabAnalysis(results,previous)
+     :'ระบบยังอ่านรายการ Lab จากภาพนี้ไม่ได้อย่างมั่นใจ กรุณาใช้ภาพที่เห็นตารางเต็มหน้า ตัวอักษรไม่เบลอ และไม่เอียง';
+   renderLabStructuredPreview(results,previous);
+   status.textContent=results.length
+     ?`อ่านสำเร็จ ${results.length} รายการ — กรุณาตรวจสอบค่ากับใบ Lab ต้นฉบับ`
+     :'ยังไม่พบรายการ Lab ที่อ่านได้อย่างมั่นใจ';
  }catch(err){
-  console.error(err);status.textContent='อ่านไฟล์ไม่สำเร็จ';
-  alert('อ่านผล Lab ไม่สำเร็จ: '+(err.message||err));
- }finally{
-  if(worker)await worker.terminate();
- }
+   console.error(err);status.textContent='อ่านไฟล์ไม่สำเร็จ';
+   alert('อ่านผล Lab ไม่สำเร็จ: '+(err.message||err));
+ }finally{if(worker)await worker.terminate();}
 }
 function renderVisitTeam(team=[],forceEdit=false){
   const box=e('visit-team-box');if(!box)return;
