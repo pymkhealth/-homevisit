@@ -51,670 +51,11 @@
   #app{min-height:100vh;}
   .hidden{display:none !important;}
 
-  /* IMPORTANT: login and app are two separate views.
-     ID selectors below use !important for layout, so explicitly hide the inactive view. */
   #view-login.hidden,
   #view-app.hidden{
     display:none !important;
   }
 
-  /* ---------- LOGIN ---------- */
-  #view-login{
-    min-height:100vh;
-    display:grid;
-    grid-template-columns:1.1fr 1fr;
-  }
-  @media (max-width:820px){ #view-login{grid-template-columns:1fr;} .login-brand{min-height:220px;} }
-  .login-brand{
-    background:linear-gradient(160deg,#FCE0EA 0%,#FBEAE0 100%);
-    color:var(--ink);
-    display:flex;
-    flex-direction:column;
-    justify-content:space-between;
-    padding:48px 56px;
-    position:relative;
-    overflow:hidden;
-  }
-  .login-brand::after{
-    content:"";
-    position:absolute;
-    right:-60px; bottom:-60px;
-    width:280px;height:280px;
-    border:1px solid rgba(224,90,140,0.18);
-    border-radius:50%;
-  }
-  .login-brand::before{
-    content:"";
-    position:absolute;
-    right:20px; bottom:60px;
-    width:180px;height:180px;
-    border:1px solid rgba(224,90,140,0.16);
-    border-radius:50%;
-  }
-  .brand-mark{display:flex;align-items:center;gap:12px;}
-  .brand-mark .glyph{
-    width:38px;height:38px;border:1.5px solid var(--teal-700);border-radius:50%;color:var(--teal-700);
-    display:flex;align-items:center;justify-content:center;font-family:'Kanit',sans-serif;font-size:18px;background:#fff;
-  }
-  .brand-mark .word{font-family:'Kanit',sans-serif;font-size:17px;letter-spacing:0.3px;}
-  .login-brand h1{font-size:38px;font-weight:600;line-height:1.4;margin:0 0 14px;max-width:9.5em;color:var(--clay-800);}
-  .login-brand p{font-size:15px;color:var(--ink-soft);max-width:26em;line-height:1.7;margin:0;}
-  .brand-foot{font-size:12.5px;color:var(--ink-soft);letter-spacing:0.4px;}
-
-  .login-panel{display:flex;align-items:center;justify-content:center;padding:32px;}
-  .login-card{width:100%;max-width:380px;}
-  .login-card .eyebrow{font-size:12.5px;color:var(--ink-soft);letter-spacing:0.6px;margin-bottom:6px;}
-  .login-card h2{font-size:24px;margin:0 0 28px;font-weight:600;}
-  .field{margin-bottom:18px;}
-  .field label{display:block;font-size:13px;color:var(--ink-soft);margin-bottom:6px;}
-  .field input{
-    width:100%;padding:11px 13px;border:1px solid var(--line-strong);border-radius:8px;
-    font-size:14.5px;background:var(--surface);color:var(--ink);
-  }
-  .field input:focus{outline:none;border-color:var(--teal-600);box-shadow:0 0 0 3px var(--teal-100);}
-  .btn-primary{
-    width:100%;padding:12px;border:none;border-radius:24px;background:var(--teal-700);
-    color:#FFFFFF;font-size:15px;font-weight:500;margin-top:6px;box-shadow:var(--shadow-soft);
-  }
-  .btn-primary:hover{background:var(--clay-800);}
-  .login-hint{
-    margin-top:22px;padding:12px 14px;background:var(--teal-100);border-radius:12px;
-    font-size:12.5px;color:var(--clay-800);line-height:1.6;
-  }
-  .login-hint b{font-weight:600;}
-
-  /* ---------- APP SHELL ---------- */
-  #view-app{display:flex;min-height:100vh;}
-  .sidebar{
-    width:220px;flex-shrink:0;background:#FCE0EA;color:var(--ink);
-    display:flex;flex-direction:column;padding:22px 16px;border-right:1px solid var(--line);
-  }
-  .sidebar .brand-mark{color:var(--clay-800);margin-bottom:30px;padding:0 6px;}
-  .sidebar .glyph{border-color:var(--teal-700);color:var(--teal-700);width:30px;height:30px;font-size:14px;background:#fff;}
-  .nav-item{
-    display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:24px;
-    font-size:14px;color:var(--ink-soft);margin-bottom:4px;border:none;background:none;text-align:left;width:100%;
-  }
-  .nav-item .dot{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:0.5;flex-shrink:0;}
-  .nav-item:hover{background:rgba(255,255,255,0.6);}
-  .nav-item.active{background:#FFFFFF;color:var(--clay-800);font-weight:600;box-shadow:var(--shadow-soft);}
-  .sidebar-foot{margin-top:auto;padding-top:16px;border-top:1px solid var(--line-strong);}
-  .user-chip{display:flex;align-items:center;gap:10px;padding:8px 6px;}
-  .user-chip .av{width:32px;height:32px;border-radius:50%;background:var(--teal-700);color:#fff;
-    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0;}
-  .user-chip .u-name{font-size:13.5px;color:var(--ink);font-weight:500;}
-  .user-chip .u-role{font-size:12.5px;color:var(--ink-soft);}
-  .logout-btn{background:none;border:none;color:var(--ink-soft);font-size:12.5px;padding:8px 6px 0;width:100%;text-align:left;}
-  .logout-btn:hover{color:var(--clay-800);}
-
-  .main{flex:1;min-width:0;padding:28px 36px 60px;}
-  .topline{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:26px;}
-  .topline h1{font-size:24px;margin:0 0 4px;font-weight:600;}
-  .topline .sub{font-size:13.5px;color:var(--ink-soft);}
-  .date-badge{font-size:12.5px;color:var(--ink-soft);background:var(--surface);border:1px solid var(--line);
-    padding:6px 12px;border-radius:20px;}
-
-  /* section headers */
-  .sec{margin-bottom:34px;}
-  .sec-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px;}
-  .sec-head h2{font-size:16px;font-weight:600;margin:0;display:flex;align-items:center;gap:8px;}
-  .sec-head .count{font-size:12px;color:var(--ink-soft);font-weight:400;font-family:'IBM Plex Mono',monospace;}
-  .tag-dot{width:9px;height:9px;border-radius:2px;display:inline-block;}
-
-  .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
-  .grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;}
-  @media (max-width:1000px){ .grid-4{grid-template-columns:repeat(2,1fr);} }
-
-  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow-soft);}
-  .card:hover{border-color:var(--line-strong);}
-
-  .urgent-card{border-left:4px solid var(--clay);border-radius:0 var(--radius) var(--radius) 0;cursor:pointer;}
-  .urgent-card .name{font-size:14.5px;font-weight:600;margin:0 0 4px;}
-  .urgent-card .reason{font-size:12.5px;color:var(--clay-800);background:var(--clay-100);display:inline-block;
-    padding:2px 9px;border-radius:20px;margin-bottom:8px;}
-  .urgent-card .meta{font-size:12px;color:var(--ink-soft);}
-
-  .overdue-card{border-left:4px solid var(--amber);border-radius:0 var(--radius) var(--radius) 0;cursor:pointer;
-    display:flex;justify-content:space-between;align-items:center;}
-  .overdue-card .name{font-size:14px;font-weight:600;margin:0 0 3px;}
-  .overdue-card .meta{font-size:12px;color:var(--ink-soft);}
-  .overdue-card .days{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:500;color:var(--amber-800);text-align:right;}
-  .overdue-card .days span{display:block;font-size:12.5px;color:var(--ink-soft);font-family:'IBM Plex Sans Thai';font-weight:400;}
-
-  .disease-stat{display:flex;flex-direction:column;gap:8px;}
-  .disease-stat .top{display:flex;justify-content:space-between;align-items:baseline;}
-  .disease-stat .label{font-size:13.5px;font-weight:500;}
-  .disease-stat .num{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:500;}
-  .bar-track{height:6px;background:var(--paper);border-radius:4px;overflow:hidden;}
-  .bar-fill{height:100%;border-radius:4px;}
-
-  .rank-row{display:flex;align-items:center;gap:14px;padding:12px 4px;border-bottom:1px solid var(--line);cursor:pointer;}
-  .rank-row:last-child{border-bottom:none;}
-  .rank-num{width:26px;height:26px;border-radius:50%;background:var(--teal-100);color:var(--clay-800);
-    display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:13px;flex-shrink:0;}
-  .rank-row:nth-child(1) .rank-num{background:var(--clay-100);color:var(--clay-800);}
-  .rank-body{flex:1;}
-  .rank-body .name{font-size:13.5px;font-weight:500;margin-bottom:2px;}
-  .rank-body .note{font-size:12px;color:var(--ink-soft);}
-  .risk-score{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--ink-soft);}
-
-  /* ---------- PATIENT LIST ---------- */
-  .toolbar{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;}
-  .search-box{flex:1;min-width:220px;display:flex;align-items:center;gap:8px;background:var(--surface);
-    border:1px solid var(--line-strong);border-radius:8px;padding:9px 13px;}
-  .search-box input{border:none;outline:none;font-size:14px;flex:1;font-family:inherit;background:none;color:var(--ink);}
-  .chip{padding:8px 14px;border-radius:20px;border:1px solid var(--line-strong);background:var(--surface);
-    font-size:13px;color:var(--ink-soft);}
-  .chip.active{background:var(--teal-700);border-color:var(--teal-700);color:#F4F1E4;}
-
-  table.plist{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-soft);}
-  table.plist thead th{text-align:left;font-size:12.5px;text-transform:uppercase;letter-spacing:0.5px;
-    color:var(--ink-soft);font-weight:500;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--paper);}
-  table.plist tbody td{padding:13px 16px;border-bottom:1px solid var(--line);font-size:13.5px;vertical-align:middle;}
-  table.plist tbody tr:last-child td{border-bottom:none;}
-  table.plist tbody tr{cursor:pointer;}
-  table.plist tbody tr:hover td{background:var(--teal-100);}
-  .hn{font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--ink-soft);}
-  .p-name{font-weight:500;}
-  .p-sub{font-size:12.5px;color:var(--ink-soft);}
-  .badge{display:inline-block;padding:3px 9px;border-radius:5px;font-size:12.5px;font-weight:500;}
-  .badge.urgent{background:var(--clay-100);color:var(--clay-800);}
-  .badge.overdue{background:var(--amber-100);color:var(--amber-800);}
-  .badge.ok{background:var(--teal-100);color:var(--manila-dark);}
-  .chevron{color:var(--ink-soft);font-size:16px;}
-
-  /* ---------- PATIENT DETAIL ---------- */
-  .pd-header{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow-soft);
-    padding:20px 22px;display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0;
-    border-bottom-left-radius:0;border-bottom-right-radius:0;}
-  .pd-id{display:flex;gap:16px;align-items:center;}
-  .pd-photo{width:56px;height:56px;border-radius:50%;background:var(--teal-100);color:var(--clay-800);
-    display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:600;font-family:'Kanit',sans-serif;flex-shrink:0;}
-  .pd-name{font-size:19px;font-weight:600;margin:0 0 4px;font-family:'Kanit',sans-serif;}
-  .pd-meta{font-size:12.5px;color:var(--ink-soft);display:flex;gap:14px;flex-wrap:wrap;}
-  .pd-actions{display:flex;gap:8px;align-items:center;}
-  .btn-ghost{background:var(--surface);border:1px solid var(--line-strong);border-radius:7px;padding:8px 14px;font-size:13px;color:var(--ink);}
-  .btn-ghost:hover{background:var(--paper);}
-  .back-link{background:none;border:none;color:var(--teal-700);font-size:13px;margin-bottom:14px;padding:0;}
-
-  /* folder tab navigation — signature element */
-  .tab-strip{
-    display:flex;background:var(--surface);border:1px solid var(--line);border-top:none;
-    padding:0 14px;overflow-x:auto;
-  }
-  .tab-btn{
-    font-family:'IBM Plex Sans Thai',sans-serif;
-    border:1px solid var(--line);
-    border-bottom:none;
-    background:var(--manila-light);
-    color:var(--manila-dark);
-    font-size:12.5px;
-    padding:9px 16px 8px;
-    margin:8px 3px 0 0;
-    border-radius:7px 7px 0 0;
-    white-space:nowrap;
-    position:relative;
-    top:1px;
-    transform:translateY(3px);
-    transition:transform .12s ease;
-  }
-  .tab-btn:hover{transform:translateY(0);}
-  .tab-btn.active{
-    background:var(--surface);
-    color:var(--clay-800);
-    font-weight:600;
-    border-color:var(--line);
-    border-bottom:1px solid var(--surface);
-    transform:translateY(0);
-    z-index:2;
-    box-shadow:0 -2px 6px rgba(22,48,44,0.05);
-  }
-  .tab-panel-wrap{background:var(--surface);border:1px solid var(--line);border-top:none;box-shadow:var(--shadow-soft);
-    border-radius:0 0 var(--radius) var(--radius);padding:26px 26px 34px;min-height:340px;}
-  .tab-panel{display:none;}
-  .tab-panel.active{display:block;}
-  .tab-panel h3{font-size:15px;margin:0 0 14px;font-weight:600;}
-
-  .kv-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px 28px;}
-  .kv{border-bottom:1px solid var(--line);padding-bottom:10px;}
-  .kv .k{font-size:12.5px;color:var(--ink-soft);margin-bottom:3px;}
-  .kv .v{font-size:14px;}
-
-  table.data{width:100%;border-collapse:collapse;font-size:13px;}
-  table.data th{text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:0.4px;color:var(--ink-soft);
-    font-weight:500;padding:8px 10px;border-bottom:1px solid var(--line-strong);}
-  table.data td{padding:10px 10px;border-bottom:1px solid var(--line);font-family:'IBM Plex Mono',monospace;font-size:12.5px;}
-  table.data td.label-cell{font-family:'IBM Plex Sans Thai',sans-serif;font-size:13px;}
-  .trend{font-family:'IBM Plex Sans Thai',sans-serif;font-size:12px;padding:2px 7px;border-radius:5px;}
-  .trend.up{background:var(--clay-100);color:var(--clay-800);}
-  .trend.down{background:var(--teal-100);color:var(--manila-dark);}
-  .trend.flat{background:var(--paper);color:var(--ink-soft);}
-
-  .med-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--line);}
-  .med-row:last-child{border-bottom:none;}
-  .med-name{font-size:13.5px;font-weight:500;}
-  .med-dose{font-size:12px;color:var(--ink-soft);}
-  .med-tag{font-size:12px;background:var(--teal-100);color:var(--manila-dark);padding:3px 9px;border-radius:20px;}
-
-  .visit-item{display:flex;gap:14px;padding-bottom:20px;position:relative;}
-  .visit-item::before{content:"";position:absolute;left:5px;top:16px;bottom:0;width:1px;background:var(--line-strong);}
-  .visit-item:last-child::before{display:none;}
-  .visit-dot{width:11px;height:11px;border-radius:50%;background:var(--teal-600);margin-top:3px;flex-shrink:0;}
-  .visit-date{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-soft);margin-bottom:3px;}
-  .visit-note{font-size:13.5px;}
-
-  .inhomesss-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-  .ih-card{border:1px solid var(--line);border-radius:8px;padding:13px 14px;display:flex;gap:12px;}
-  .ih-letter{width:30px;height:30px;border-radius:6px;background:var(--teal-100);color:var(--clay-800);
-    display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-weight:600;flex-shrink:0;font-size:14px;}
-  .ih-title{font-size:13px;font-weight:600;margin:0 0 3px;}
-  .ih-note{font-size:12px;color:var(--ink-soft);line-height:1.5;}
-
-  .prob-row{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line);}
-  .prob-row:last-child{border-bottom:none;}
-  .prob-status{width:8px;height:8px;border-radius:50%;margin-top:6px;flex-shrink:0;}
-  .prob-status.active{background:var(--clay);}
-  .prob-status.watch{background:var(--amber);}
-  .prob-status.stable{background:var(--manila-dark);}
-  .prob-name{font-size:13.5px;font-weight:500;}
-  .prob-meta{font-size:12.5px;color:var(--ink-soft);}
-
-  .plan-goal{border:1px solid var(--line);border-radius:8px;padding:14px 16px;margin-bottom:10px;}
-  .plan-goal .g-title{font-size:13.5px;font-weight:600;margin-bottom:4px;}
-  .plan-goal .g-detail{font-size:12.5px;color:var(--ink-soft);line-height:1.6;}
-  .plan-goal .g-target{display:inline-block;margin-top:8px;font-size:12.5px;background:var(--teal-100);color:var(--manila-dark);padding:3px 9px;border-radius:20px;}
-
-  .photo-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
-  .photo-tile{aspect-ratio:1;border-radius:8px;background:var(--paper);border:1px dashed var(--line-strong);
-    display:flex;align-items:center;justify-content:center;color:var(--ink-soft);font-size:12px;text-align:center;padding:6px;}
-
-  .a4-preview{border:1px solid var(--line-strong);border-radius:6px;padding:30px;background:#fff;
-    box-shadow:0 1px 3px rgba(22,48,44,0.08);max-width:480px;margin:0 auto 18px;}
-  .a4-preview h4{font-family:'Kanit',sans-serif;font-size:15px;text-align:center;margin:0 0 4px;}
-  .a4-preview .a4-sub{text-align:center;font-size:12px;color:var(--ink-soft);margin-bottom:16px;}
-  .a4-preview .a4-line{display:flex;justify-content:space-between;font-size:12.5px;padding:5px 0;border-bottom:1px dotted var(--line-strong);}
-  .print-btn{display:flex;align-items:center;gap:8px;justify-content:center;}
-
-  /* ===== PRIVATE HOSPITAL MODERN THEME ===== */
-  body{
-    background:#F7FAFC;
-    color:var(--ink);
-    font-size:15px;
-  }
-
-  h1,h2,h3,.display{
-    font-family:'Kanit',sans-serif;
-    color:#15324A;
-    letter-spacing:0;
-  }
-
-  /* Login */
-  #view-login{
-    background:#FFFFFF;
-  }
-  .login-brand{
-    background:
-      radial-gradient(circle at 15% 18%, rgba(47,167,181,.10), transparent 28%),
-      linear-gradient(145deg,#F7FCFD 0%,#EEF7F8 100%) !important;
-    border-right:1px solid #E6EEF2;
-  }
-  .login-brand::before,
-  .login-brand::after{
-    border-color:rgba(19,124,139,.10) !important;
-  }
-  .brand-mark .glyph{
-    background:linear-gradient(135deg,#137C8B,#2FA7B5);
-    color:#fff;
-    border:none;
-    box-shadow:0 8px 20px rgba(19,124,139,.16);
-  }
-  .brand-mark .word{
-    color:#15324A;
-    font-weight:600;
-  }
-  .login-brand h1{
-    color:#123E53 !important;
-    font-size:40px;
-    line-height:1.35;
-  }
-  .login-brand p{
-    color:#668091;
-    font-size:15px;
-  }
-  .brand-foot{
-    color:#8A9AA8;
-  }
-  .login-panel{
-    background:#fff;
-  }
-  .login-card{
-    max-width:420px;
-    padding:28px 22px;
-  }
-  .login-card .eyebrow{
-    color:#2B8F9B;
-    font-weight:600;
-    text-transform:uppercase;
-    letter-spacing:.9px;
-  }
-  .login-card h2{
-    color:#17344E;
-    font-size:28px;
-  }
-  .field label{
-    color:#53697A;
-    font-weight:500;
-  }
-  .field input{
-    border:1px solid #D9E2E8;
-    border-radius:12px;
-    padding:13px 14px;
-    background:#FCFDFE;
-    color:#17344E;
-  }
-  .field input:focus{
-    border-color:#2FA7B5;
-    box-shadow:0 0 0 4px rgba(47,167,181,.10);
-    background:#fff;
-  }
-  .btn-primary{
-    background:linear-gradient(135deg,#137C8B,#2FA7B5) !important;
-    border-radius:12px !important;
-    padding:13px 18px !important;
-    font-weight:600 !important;
-    box-shadow:0 10px 22px rgba(19,124,139,.16) !important;
-  }
-  .btn-primary:hover{
-    background:linear-gradient(135deg,#0F6672,#248E9B) !important;
-  }
-  .login-hint{
-    background:#F2FAFB !important;
-    color:#55717D !important;
-    border:1px solid #E1F0F2;
-  }
-
-  /* App shell */
-  #view-app{
-    background:#F7FAFC;
-  }
-  .sidebar{
-    width:232px;
-    background:#FFFFFF !important;
-    border-right:1px solid #E5EBF0 !important;
-    padding:26px 16px;
-    box-shadow:4px 0 18px rgba(22,50,79,.025);
-  }
-  .sidebar .brand-mark{
-    margin-bottom:34px;
-  }
-  .sidebar .glyph{
-    background:linear-gradient(135deg,#137C8B,#2FA7B5) !important;
-    color:#fff !important;
-    border:none !important;
-    box-shadow:none;
-  }
-  .sidebar .word{
-    color:#17344E;
-  }
-  .nav-item{
-    color:#6C7E8D !important;
-    border-radius:10px !important;
-    padding:11px 13px;
-    font-weight:500;
-  }
-  .nav-item:hover{
-    background:#F3F8FA !important;
-    color:#164A59 !important;
-  }
-  .nav-item.active{
-    background:#EAF7F9 !important;
-    color:#116C79 !important;
-    font-weight:600 !important;
-    box-shadow:none !important;
-  }
-  .nav-item.active .dot{
-    background:#137C8B;
-    opacity:1;
-  }
-  .sidebar-foot{
-    border-top:1px solid #E8EDF1;
-  }
-  .user-chip .av{
-    background:#EAF7F9 !important;
-    color:#137C8B !important;
-  }
-  .u-name{
-    color:#17344E !important;
-    font-weight:600 !important;
-  }
-
-  /* Main */
-  .main{
-    padding:30px 38px 64px;
-    background:#F7FAFC;
-  }
-  .topline{
-    margin-bottom:30px;
-  }
-  .topline h1{
-    font-size:28px;
-    font-weight:600;
-    color:#16324F;
-  }
-  .topline .sub{
-    color:#7B8C9B;
-  }
-  .date-badge{
-    background:#fff;
-    border:1px solid #E2E9EF;
-    color:#607485;
-    padding:8px 14px;
-    border-radius:10px;
-    box-shadow:0 4px 14px rgba(22,50,79,.04);
-  }
-
-  /* Cards */
-  .card,
-  .pd-header,
-  .tab-panel-wrap,
-  table.plist,
-  .a4-preview{
-    background:#FFFFFF;
-    border:1px solid #E5EBF0;
-    box-shadow:0 8px 24px rgba(22,50,79,.055);
-  }
-  .card{
-    border-radius:14px;
-    padding:18px;
-  }
-  .card:hover{
-    border-color:#D8E2E8;
-    box-shadow:0 10px 28px rgba(22,50,79,.075);
-  }
-  .sec-head h2{
-    font-size:17px;
-    color:#1D3B53;
-  }
-  .sec-head .count{
-    color:#8998A5;
-  }
-
-  /* Urgency */
-  .urgent-card{
-    border-left:4px solid #E35D6A !important;
-  }
-  .urgent-card .reason{
-    background:#FDEDEF !important;
-    color:#B63A47 !important;
-  }
-  .overdue-card{
-    border-left:4px solid #E6A23C !important;
-  }
-  .badge{
-    border-radius:999px;
-    padding:4px 10px;
-    font-weight:600;
-  }
-  .badge.urgent{background:#FDEDEF;color:#B63A47;}
-  .badge.overdue{background:#FFF5E5;color:#9B650F;}
-  .badge.ok{background:#EAF7F9;color:#137C8B;}
-
-  /* Disease cards */
-  .disease-stat .num{
-    color:#16324F;
-    font-size:24px;
-  }
-  .bar-track{
-    background:#EEF3F6;
-  }
-
-  /* Tables */
-  table.plist{
-    border-radius:14px;
-    overflow:hidden;
-  }
-  table.plist thead th{
-    background:#F8FAFC;
-    color:#6F8190;
-    font-weight:600;
-    border-bottom:1px solid #E4EAF0;
-  }
-  table.plist tbody td{
-    color:#2C4255;
-    font-size:14px;
-  }
-  table.plist tbody tr:hover td{
-    background:#F3F9FA;
-  }
-  .hn{
-    color:#748896;
-  }
-  .p-name{
-    font-weight:600;
-    color:#183850;
-  }
-
-  /* Search / filters */
-  .search-box{
-    background:#fff;
-    border:1px solid #DDE5EB;
-    border-radius:10px;
-  }
-  .chip{
-    border:1px solid #DDE5EB;
-    background:#fff;
-    color:#6D7F8D;
-    border-radius:999px;
-  }
-  .chip.active{
-    background:#137C8B !important;
-    border-color:#137C8B !important;
-    color:#fff !important;
-  }
-
-  /* Patient detail */
-  .pd-header{
-    border-radius:14px 14px 0 0;
-    padding:22px 24px;
-  }
-  .pd-photo{
-    background:#EAF7F9;
-    color:#137C8B;
-  }
-  .pd-name{
-    color:#17344E;
-  }
-  .btn-ghost{
-    border:1px solid #D9E2E8;
-    border-radius:10px;
-    background:#fff;
-    color:#285065;
-  }
-  .btn-ghost:hover{
-    background:#F4F8FA;
-  }
-
-  /* Tabs */
-  .tab-strip{
-    background:#fff;
-    border-color:#E5EBF0;
-    padding:0 16px;
-  }
-  .tab-btn{
-    background:transparent !important;
-    color:#778895 !important;
-    border:none !important;
-    border-bottom:3px solid transparent !important;
-    border-radius:0 !important;
-    padding:13px 14px 10px !important;
-    margin:0 4px 0 0 !important;
-    transform:none !important;
-  }
-  .tab-btn:hover{
-    color:#137C8B !important;
-  }
-  .tab-btn.active{
-    background:transparent !important;
-    color:#137C8B !important;
-    border-bottom-color:#2FA7B5 !important;
-    box-shadow:none !important;
-  }
-  .tab-panel-wrap{
-    border-radius:0 0 14px 14px;
-    padding:28px;
-  }
-
-  /* Inner details */
-  .kv .k,
-  .pd-meta,
-  .visit-date,
-  .ih-note,
-  .prob-meta,
-  .plan-goal .g-detail{
-    color:#788995;
-  }
-  .kv .v,
-  .visit-note,
-  .med-name,
-  .prob-name{
-    color:#263F52;
-  }
-  .ih-card,
-  .plan-goal{
-    border-color:#E3EAF0;
-    border-radius:12px;
-    background:#FCFDFE;
-  }
-  .ih-letter{
-    background:#EAF7F9;
-    color:#137C8B;
-    border-radius:8px;
-  }
-  .trend.up{background:#FDEDEF;color:#B63A47;}
-  .trend.down{background:#EDF9F6;color:#2B8F7A;}
-  .trend.flat{background:#F0F3F5;color:#6D7E8B;}
-
-  /* Photos */
-  .photo-tile{
-    background:#FAFCFD;
-    border-color:#D7E2E8;
-    border-radius:12px;
-  }
-
-  /* Responsive */
-  @media (max-width:1000px){
-    .sidebar{width:200px;}
-    .main{padding:24px 22px 48px;}
-  }
-  @media (max-width:820px){
-    #view-login{grid-template-columns:1fr;}
-    .login-brand{min-height:250px;}
-    .sidebar{width:180px;}
-    .main{padding:20px 14px 40px;}
-  }
-
-
-  /* ===== CENTERED PRIVATE HOSPITAL WELCOME ===== */
   #view-login{
     min-height:100vh !important;
     display:flex !important;
@@ -730,12 +71,12 @@
   .welcome-mark{
     width:52px;height:52px;margin:0 auto 22px;border-radius:16px;
     display:flex;align-items:center;justify-content:center;
-    background:linear-gradient(135deg,#137C8B,#2FA7B5);
-    color:#fff;font-size:24px;box-shadow:0 12px 30px rgba(19,124,139,.16);
+    background:#FFFFFF;color:#168899;border:1px solid #DCECEF;
+    font-size:24px;box-shadow:0 10px 28px rgba(19,124,139,.10);
   }
   .welcome-kicker{color:#6E929D;font-size:11px;font-weight:600;letter-spacing:2.8px;margin-bottom:12px;}
   .welcome-shell h1{
-    margin:0;color:#15364C;font-family:'Kanit',sans-serif;
+    margin:0;color:#123D55;font-family:'Kanit',sans-serif;
     font-size:clamp(48px,7vw,78px);line-height:1;font-weight:600;letter-spacing:-1.8px;
   }
   .welcome-hospital{
@@ -766,166 +107,233 @@
   }
   .admin-cancel:hover{color:#506A78;}
   .welcome-foot{margin-top:28px;color:#A0ADB5;font-size:11px;letter-spacing:.2px;}
-  @media(max-width:600px){
-    #view-login{padding:20px;}
-    .welcome-mark{width:46px;height:46px;border-radius:14px;}
-    .welcome-shell h1{font-size:50px;}
-    .welcome-hospital{font-size:20px;}
+
+  .login-panel{display:flex;align-items:center;justify-content:center;padding:32px;}
+  .login-card{width:100%;max-width:420px;padding:28px 22px;}
+  .login-card .eyebrow{font-size:12px;color:#2B8F9B;font-weight:600;text-transform:uppercase;letter-spacing:.9px;margin-bottom:6px;}
+  .login-card h2{font-size:28px;margin:0 0 28px;font-weight:600;color:#17344E;}
+  .field{margin-bottom:18px;}
+  .field label{display:block;font-size:13px;color:#53697A;font-weight:500;margin-bottom:6px;}
+  .field input{
+    width:100%;padding:13px 14px;border:1px solid #D9E2E8;border-radius:12px;
+    font-size:14.5px;background:#FCFDFE;color:#17344E;
   }
-
-
-  .welcome-mark.heart-mark{
-    background:#FFFFFF !important;
-    color:#168899 !important;
-    border:1px solid #DCECEF;
-    box-shadow:0 10px 28px rgba(19,124,139,.10) !important;
+  .field input:focus{outline:none;border-color:#2FA7B5;box-shadow:0 0 0 4px rgba(47,167,181,.10);background:#fff;}
+  .btn-primary{
+    width:100%;padding:13px 18px;border:none;border-radius:12px;background:linear-gradient(135deg,#137C8B,#2FA7B5);
+    color:#FFFFFF;font-size:15px;font-weight:600;margin-top:6px;box-shadow:0 10px 22px rgba(19,124,139,.16);
+    text-shadow:0 1px 2px rgba(0,65,76,.20);
   }
-  .welcome-mark.heart-mark svg{display:block;}
+  .btn-primary:hover{background:linear-gradient(135deg,#0F6672,#248E9B);}
 
-
-  /* ===== iPhone-like typography + luxury English headings ===== */
-  html{-webkit-text-size-adjust:100%;text-size-adjust:100%;}
-  body,button,input,select,textarea{
-    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display",
-      "Helvetica Neue","Segoe UI",Arial,sans-serif !important;
+  #view-app{display:flex;min-height:100vh;background:#F7FAFC;}
+  .sidebar{
+    width:232px;flex-shrink:0;background:#FFFFFF;color:var(--ink);
+    display:flex;flex-direction:column;padding:26px 16px;border-right:1px solid #E5EBF0;
+    box-shadow:4px 0 18px rgba(22,50,79,.025);
   }
-  body{font-size:15px;line-height:1.55;letter-spacing:-0.01em;}
-  input,button{font-size:16px;}
-  .welcome-shell h1,.display,.luxury-heading{
-    font-family:Didot,"Bodoni 72","Times New Roman",Georgia,serif !important;
-    font-weight:600 !important;
-    letter-spacing:-0.03em !important;
+  .sidebar .brand-mark{color:#17344E;margin-bottom:34px;padding:0 6px;display:flex;align-items:center;gap:12px;}
+  .sidebar .glyph{
+    width:30px;height:30px;font-size:14px;background:linear-gradient(135deg,#137C8B,#2FA7B5);color:#fff;
+    border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Kanit',sans-serif;
   }
-  .welcome-shell h1{font-size:clamp(56px,8vw,88px) !important;}
-  .topline h1,.sec-head h2,.tab-panel h3,.pd-name,.admin-login-title{
-    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",
-      "Helvetica Neue","Segoe UI",Arial,sans-serif !important;
-    font-weight:650 !important;
-    letter-spacing:-0.015em !important;
+  .sidebar .word{font-family:'Kanit',sans-serif;font-size:17px;letter-spacing:0.3px;}
+  .nav-item{
+    display:flex;align-items:center;gap:10px;padding:11px 13px;border-radius:10px;
+    font-size:14px;color:#6C7E8D;margin-bottom:4px;border:none;background:none;text-align:left;width:100%;font-weight:500;
   }
+  .nav-item .dot{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:0.5;flex-shrink:0;}
+  .nav-item:hover{background:#F3F8FA;color:#164A59;}
+  .nav-item.active{background:#EAF7F9;color:#116C79;font-weight:700;}
+  .nav-item.active .dot{background:#137C8B;opacity:1;}
+  .nav-badge{margin-left:auto;background:var(--clay-100);color:var(--clay-800);font-size:11px;font-weight:700;
+    padding:2px 7px;border-radius:999px;font-family:'IBM Plex Mono',monospace;}
+  .sidebar-foot{margin-top:auto;padding-top:16px;border-top:1px solid #E8EDF1;}
+  .user-chip{display:flex;align-items:center;gap:10px;padding:8px 6px;}
+  .user-chip .av{width:32px;height:32px;border-radius:50%;background:#EAF7F9;color:#137C8B;
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0;}
+  .user-chip .u-name{font-size:13.5px;color:#17344E;font-weight:600;}
+  .user-chip .u-role{font-size:12.5px;color:var(--ink-soft);}
+  .logout-btn{background:none;border:none;color:var(--ink-soft);font-size:12.5px;padding:8px 6px 0;width:100%;text-align:left;}
+  .logout-btn:hover{color:var(--clay-800);}
 
-  @media (max-width:1100px){
-    .main{padding:24px 24px 110px !important;}
-    .grid-4{grid-template-columns:repeat(2,minmax(0,1fr)) !important;}
-    .grid-2{grid-template-columns:1fr !important;}
+  .main{flex:1;min-width:0;padding:30px 38px 64px;}
+  .topline{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:30px;gap:12px;}
+  .topline h1{font-size:28px;margin:0 0 4px;font-weight:600;color:#16324F;}
+  .topline .sub{font-size:13.5px;color:var(--ink-soft);}
+  .date-badge{font-size:12.5px;color:#607485;background:var(--surface);border:1px solid #E2E9EF;
+    padding:8px 14px;border-radius:10px;box-shadow:0 4px 14px rgba(22,50,79,.04);}
+  .top-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;}
+  .quick-add-btn{width:auto!important;margin:0!important;padding:10px 16px!important;white-space:nowrap;}
+
+  .sec{margin-bottom:34px;}
+  .sec-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px;}
+  .sec-head h2{font-size:17px;font-weight:600;margin:0;display:flex;align-items:center;gap:8px;color:#1D3B53;}
+  .sec-head .count{font-size:12px;color:#8998A5;font-weight:400;font-family:'IBM Plex Mono',monospace;}
+  .tag-dot{width:9px;height:9px;border-radius:2px;display:inline-block;}
+
+  .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+  .grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;}
+  @media (max-width:1000px){ .grid-4{grid-template-columns:repeat(2,1fr);} }
+
+  .card{background:var(--surface);border:1px solid #E5EBF0;border-radius:14px;padding:18px;box-shadow:0 8px 24px rgba(22,50,79,.055);}
+  .card:hover{border-color:#D8E2E8;box-shadow:0 10px 28px rgba(22,50,79,.075);}
+  .card.clickable{cursor:pointer;}
+
+  .urgent-card{border-left:4px solid var(--clay);border-radius:0 var(--radius) var(--radius) 0;cursor:pointer;}
+  .urgent-card .name{font-size:14.5px;font-weight:600;margin:0 0 4px;color:#173A52;}
+  .urgent-card .reason{font-size:12.5px;color:var(--clay-800);background:var(--clay-100);display:inline-block;
+    padding:2px 9px;border-radius:20px;margin-bottom:8px;}
+  .urgent-card .meta{font-size:12px;color:var(--ink-soft);}
+
+  .overdue-card{border-left:4px solid var(--amber);border-radius:0 var(--radius) var(--radius) 0;cursor:pointer;
+    display:flex;justify-content:space-between;align-items:center;}
+  .overdue-card .name{font-size:14px;font-weight:600;margin:0 0 3px;color:#173A52;}
+  .overdue-card .meta{font-size:12px;color:var(--ink-soft);}
+  .overdue-card .days{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:500;color:var(--amber-800);text-align:right;}
+  .overdue-card .days span{display:block;font-size:12.5px;color:var(--ink-soft);font-family:'IBM Plex Sans Thai';font-weight:400;}
+
+  .disease-stat{display:flex;flex-direction:column;gap:8px;cursor:pointer;}
+  .disease-stat .top{display:flex;justify-content:space-between;align-items:baseline;}
+  .disease-stat .label{font-size:13.5px;font-weight:500;}
+  .disease-stat .num{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:500;color:#16324F;}
+  .bar-track{height:6px;background:#EEF3F6;border-radius:4px;overflow:hidden;}
+  .bar-fill{height:100%;border-radius:4px;}
+
+  .rank-row{display:flex;align-items:center;gap:14px;padding:12px 4px;border-bottom:1px solid var(--line);cursor:pointer;}
+  .rank-row:last-child{border-bottom:none;}
+  .rank-num{width:26px;height:26px;border-radius:50%;background:var(--teal-100);color:var(--clay-800);
+    display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:13px;flex-shrink:0;}
+  .rank-row:nth-child(1) .rank-num{background:var(--clay-100);color:var(--clay-800);}
+  .rank-body{flex:1;}
+  .rank-body .name{font-size:13.5px;font-weight:500;margin-bottom:2px;}
+  .rank-body .note{font-size:12px;color:var(--ink-soft);}
+  .risk-score{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--ink-soft);}
+
+  .toolbar{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;}
+  .search-box{flex:1;min-width:220px;display:flex;align-items:center;gap:8px;background:#fff;
+    border:1px solid #DDE5EB;border-radius:10px;padding:9px 13px;}
+  .search-box input{border:none;outline:none;font-size:14px;flex:1;font-family:inherit;background:none;color:var(--ink);}
+  .chip{padding:8px 14px;border-radius:999px;border:1px solid #DDE5EB;background:#fff;
+    font-size:13px;color:#6D7F8D;}
+  .chip.active{background:#137C8B;border-color:#137C8B;color:#fff;}
+
+  table.plist{width:100%;border-collapse:collapse;background:#fff;border:1px solid #E5EBF0;border-radius:14px;overflow:hidden;box-shadow:0 8px 24px rgba(22,50,79,.055);}
+  table.plist thead th{text-align:left;font-size:12.5px;text-transform:uppercase;letter-spacing:0.5px;
+    color:#6F8190;font-weight:600;padding:12px 16px;border-bottom:1px solid #E4EAF0;background:#F8FAFC;}
+  table.plist tbody td{padding:13px 16px;border-bottom:1px solid var(--line);font-size:14px;vertical-align:middle;color:#2C4255;}
+  table.plist tbody tr:last-child td{border-bottom:none;}
+  table.plist tbody tr{cursor:pointer;}
+  table.plist tbody tr:hover td{background:#F3F9FA;}
+  .hn{font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#748896;}
+  .p-name{font-weight:600;color:#183850;}
+  .p-sub{font-size:12.5px;color:var(--ink-soft);}
+  .badge{display:inline-block;padding:4px 10px;border-radius:999px;font-size:12.5px;font-weight:700;}
+  .badge.urgent{background:var(--clay-100);color:var(--clay-800);}
+  .badge.overdue{background:var(--amber-100);color:var(--amber-800);}
+  .badge.ok{background:var(--teal-100);color:#137C8B;}
+  .chevron{color:var(--ink-soft);font-size:16px;}
+  .quick-btn{border:1px solid #DDE5EB;background:#fff;color:#356675;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:600;}
+  .quick-btn:hover{background:#F3F9FA;border-color:#A9D5DA;}
+
+  .stage-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap;}
+  .stage-dot{width:7px;height:7px;border-radius:50%;background:currentColor;}
+
+  .pd-header{background:var(--surface);border:1px solid var(--line);border-radius:14px 14px 0 0;box-shadow:0 8px 24px rgba(22,50,79,.055);
+    padding:22px 24px;display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0;flex-wrap:wrap;gap:14px;}
+  .pd-id{display:flex;gap:16px;align-items:center;}
+  .pd-photo{width:56px;height:56px;border-radius:50%;background:var(--teal-100);color:var(--clay-800);
+    display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:600;font-family:'Kanit',sans-serif;flex-shrink:0;}
+  .pd-name{font-size:19px;font-weight:600;margin:0 0 4px;font-family:'Kanit',sans-serif;color:#17344E;}
+  .pd-meta{font-size:12.5px;color:var(--ink-soft);display:flex;gap:14px;flex-wrap:wrap;}
+  .pd-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  .btn-ghost{background:#fff;border:1px solid #D9E2E8;border-radius:10px;padding:8px 14px;font-size:13px;color:#285065;}
+  .btn-ghost:hover{background:#F4F8FA;}
+  .back-link{background:none;border:none;color:var(--teal-700);font-size:13px;margin-bottom:14px;padding:0;}
+
+  .completeness-wrap{margin-top:10px;}
+  .completeness-top{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-soft);margin-bottom:4px;}
+  .completeness-track{height:6px;background:#EEF3F6;border-radius:4px;overflow:hidden;width:160px;}
+  .completeness-fill{height:100%;border-radius:4px;background:#2FA7B5;}
+  .completeness-missing{font-size:11.5px;color:var(--amber-800);margin-top:4px;}
+
+  .tab-strip{
+    display:flex;background:var(--surface);border:1px solid var(--line);border-top:none;
+    padding:0 16px;overflow-x:auto;
   }
-
-  @media (max-width:820px){
-    #view-app{display:block !important;min-height:100vh;}
-    .sidebar{
-      position:fixed !important;left:0 !important;right:0 !important;bottom:0 !important;top:auto !important;
-      z-index:9999 !important;width:100% !important;height:72px !important;
-      padding:8px 10px calc(8px + env(safe-area-inset-bottom)) !important;
-      display:flex !important;flex-direction:row !important;align-items:center !important;gap:6px !important;
-      background:rgba(255,255,255,.96) !important;
-      backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
-      border-top:1px solid #E6ECF0 !important;border-right:none !important;
-      box-shadow:0 -8px 28px rgba(22,50,79,.07) !important;
-    }
-    .sidebar > .brand-mark{display:none !important;}
-    .nav-item{
-      flex:1 !important;min-height:50px !important;justify-content:center !important;
-      padding:8px 10px !important;margin:0 !important;border-radius:12px !important;
-      font-size:12.5px !important;text-align:center !important;gap:6px !important;
-    }
-    .sidebar-foot{flex:0 0 auto !important;margin:0 !important;padding:0 !important;border:0 !important;}
-    .sidebar-foot .user-chip{display:none !important;}
-    .logout-btn{
-      min-width:72px !important;min-height:50px !important;padding:8px 10px !important;
-      border-radius:12px !important;text-align:center !important;font-size:12px !important;
-      background:#F7F9FA !important;color:#6F7F8A !important;
-    }
-    .main{width:100% !important;padding:20px 16px calc(105px + env(safe-area-inset-bottom)) !important;}
-    .topline{gap:12px !important;align-items:flex-start !important;margin-bottom:20px !important;}
-    .topline h1{font-size:24px !important;}
-    .date-badge{font-size:11.5px !important;padding:7px 10px !important;white-space:nowrap;}
-    .grid-4,.grid-2{grid-template-columns:1fr !important;gap:12px !important;}
-    .search-box{width:100% !important;min-width:100% !important;}
-    table.plist,table.data{
-      display:block !important;width:100% !important;overflow-x:auto !important;
-      -webkit-overflow-scrolling:touch;white-space:nowrap;
-    }
-    .pd-header{flex-direction:column !important;gap:18px !important;padding:18px !important;}
-    .pd-actions{width:100% !important;justify-content:space-between !important;}
-    .pd-id{align-items:flex-start !important;}
-    .tab-strip{
-      padding:0 8px !important;overflow-x:auto !important;-webkit-overflow-scrolling:touch;scrollbar-width:none;
-    }
-    .tab-strip::-webkit-scrollbar{display:none;}
-    .tab-btn{min-height:44px !important;padding:12px 13px 9px !important;flex:0 0 auto !important;}
-    .tab-panel-wrap{padding:20px 16px 28px !important;}
-    .kv-grid,.inhomesss-grid{grid-template-columns:1fr !important;gap:12px !important;}
-    .photo-grid{grid-template-columns:repeat(2,minmax(0,1fr)) !important;}
-    .a4-preview{width:100% !important;max-width:none !important;padding:20px !important;}
+  .tab-btn{
+    font-family:'IBM Plex Sans Thai',sans-serif;
+    background:transparent;color:#778895;border:none;border-bottom:3px solid transparent;
+    font-size:12.5px;padding:13px 14px 10px;margin:0 4px 0 0;white-space:nowrap;
   }
+  .tab-btn:hover{color:#137C8B;}
+  .tab-btn.active{color:#137C8B;font-weight:600;border-bottom-color:#2FA7B5;}
+  .tab-panel-wrap{background:var(--surface);border:1px solid var(--line);border-top:none;box-shadow:0 8px 24px rgba(22,50,79,.055);
+    border-radius:0 0 14px 14px;padding:28px;min-height:340px;}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+  .tab-panel h3{font-size:15px;margin:0 0 14px;font-weight:600;color:#1A4058;}
 
-  @media (max-width:520px){
-    #view-login{min-height:100dvh !important;padding:22px 18px !important;}
-    .welcome-shell{width:100% !important;}
-    .welcome-shell h1{font-size:58px !important;line-height:.95 !important;}
-    .welcome-hospital{font-size:19px !important;line-height:1.45 !important;padding:0 12px;}
-    .welcome-kicker{font-size:10px !important;letter-spacing:2.2px !important;}
-    .welcome-mark{width:48px !important;height:48px !important;margin-bottom:18px !important;}
-    .admin-entry{min-height:44px;padding:10px 16px !important;}
-    .admin-login-box{width:100% !important;max-width:360px !important;padding:18px !important;}
-    .main{padding-left:12px !important;padding-right:12px !important;}
-    .card{padding:15px !important;}
-    .sec{margin-bottom:26px !important;}
-    .pd-photo{width:48px !important;height:48px !important;}
-    .pd-name{font-size:18px !important;}
-    .pd-actions{flex-wrap:wrap;}
-    .btn-ghost{min-height:44px;}
-  }
+  .kv-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px 28px;}
+  .kv{border-bottom:1px solid var(--line);padding-bottom:10px;}
+  .kv .k{font-size:12.5px;color:var(--ink-soft);margin-bottom:3px;}
+  .kv .v{font-size:14px;color:#263F52;}
 
-  @media (min-width:821px){
-    .sidebar{position:sticky;top:0;height:100vh;}
-    .main{max-width:1600px;margin:0 auto;}
-  }
+  table.data{width:100%;border-collapse:collapse;font-size:13px;}
+  table.data th{text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:0.4px;color:var(--ink-soft);
+    font-weight:600;padding:8px 10px;border-bottom:1px solid var(--line-strong);}
+  table.data td{padding:10px 10px;border-bottom:1px solid var(--line);font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#29475A;}
+  table.data td.label-cell{font-family:'IBM Plex Sans Thai',sans-serif;font-size:13px;}
+  .trend{font-family:'IBM Plex Sans Thai',sans-serif;font-size:12px;padding:2px 7px;border-radius:5px;}
+  .trend.up{background:var(--clay-100);color:var(--clay-800);}
+  .trend.down{background:var(--teal-100);color:var(--manila-dark);}
+  .trend.flat{background:var(--paper);color:var(--ink-soft);}
 
+  .med-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--line);}
+  .med-row:last-child{border-bottom:none;}
+  .med-name{font-size:13.5px;font-weight:500;color:#263F52;}
+  .med-dose{font-size:12px;color:var(--ink-soft);}
+  .med-tag{font-size:12px;background:var(--teal-100);color:var(--manila-dark);padding:3px 9px;border-radius:20px;}
 
-/* Enhanced dimensional typography */
-.welcome-shell h1{color:#123D55!important;text-shadow:0 1px 0 #fff,0 3px 7px rgba(17,70,91,.16),0 12px 28px rgba(19,124,139,.10)!important;text-rendering:optimizeLegibility}
-.welcome-hospital{color:#405F72!important;font-weight:600!important;text-shadow:0 1px 0 #fff,0 2px 5px rgba(22,50,79,.09)!important}
-.welcome-kicker{color:#4F8390!important;font-weight:700!important;text-shadow:0 1px 0 #fff}
-.topline h1{color:#163A54!important;text-shadow:0 1px 0 #fff,0 2px 5px rgba(22,50,79,.10)!important}
-.sec-head h2,.tab-panel h3{color:#1A4058!important;font-weight:700!important;text-shadow:0 1px 0 #fff,0 1px 3px rgba(22,50,79,.07)!important}
-.p-name,.pd-name,.urgent-card .name,.overdue-card .name,.rank-body .name,.med-name,.prob-name{color:#173A52!important;font-weight:700!important;text-shadow:0 1px 1px rgba(255,255,255,.9)}
-.disease-stat .num,.rank-num{color:#123E56!important;font-weight:700!important;text-shadow:0 1px 0 #fff,0 2px 5px rgba(22,50,79,.09)!important}
-table.plist thead th,table.data th{color:#526C7D!important;font-weight:700!important;text-shadow:0 1px 0 #fff}
-table.plist tbody td,table.data td{color:#29475A!important;font-weight:500}
-.nav-item{font-weight:600!important;text-shadow:0 1px 0 rgba(255,255,255,.9)}
-.nav-item.active{color:#0F7180!important;font-weight:700!important}
-.btn-primary{text-shadow:0 1px 2px rgba(0,65,76,.20)!important;box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 7px 18px rgba(19,124,139,.18)!important}
-.admin-entry{color:#426978!important;font-weight:600!important;text-shadow:0 1px 0 #fff;box-shadow:0 1px 0 #fff inset,0 5px 16px rgba(22,50,79,.06)!important}
-.badge{font-weight:700!important;box-shadow:0 1px 0 rgba(255,255,255,.75) inset,0 2px 5px rgba(22,50,79,.05)}
-.field label{color:#496676!important;font-weight:650!important}
-@media(max-width:520px){.welcome-shell h1{text-shadow:0 1px 0 #fff,0 3px 7px rgba(17,70,91,.14),0 8px 20px rgba(19,124,139,.08)!important}.topline h1,.sec-head h2,.pd-name{text-shadow:0 1px 2px rgba(22,50,79,.07)!important}}
+  .visit-item{display:flex;gap:14px;padding-bottom:20px;position:relative;}
+  .visit-item::before{content:"";position:absolute;left:5px;top:16px;bottom:0;width:1px;background:var(--line-strong);}
+  .visit-item:last-child::before{display:none;}
+  .visit-dot{width:11px;height:11px;border-radius:50%;background:var(--teal-600);margin-top:3px;flex-shrink:0;}
+  .visit-date{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-soft);margin-bottom:3px;}
+  .visit-note{font-size:13.5px;color:#263F52;}
 
+  .inhomesss-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .ih-card{border:1px solid var(--line);border-radius:12px;padding:13px 14px;display:flex;gap:12px;background:#FCFDFE;}
+  .ih-letter{width:30px;height:30px;border-radius:8px;background:var(--teal-100);color:var(--clay-800);
+    display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-weight:600;flex-shrink:0;font-size:14px;}
+  .ih-title{font-size:13px;font-weight:600;margin:0 0 3px;}
+  .ih-note{font-size:12px;color:var(--ink-soft);line-height:1.5;}
 
-/* ===== ORIGINAL HOME-VISIT MASCOTS (non-branded) ===== */
-.dashboard-mascot{
-  width:64px;height:64px;min-width:64px;border-radius:20px;
-  display:flex;align-items:center;justify-content:center;
-  position:relative;overflow:hidden;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 8px 20px rgba(31,70,90,.08);
-}
-.dashboard-mascot svg{width:58px;height:58px;display:block}
-.mascot-pig{background:linear-gradient(145deg,#fff3f5,#fde4e8)}
-.mascot-bear{background:linear-gradient(145deg,#fff8e9,#f8ead1)}
-.mascot-starbear{background:linear-gradient(145deg,#eefaf6,#dff3eb)}
-.mascot-donkey{background:linear-gradient(145deg,#f1f5fb,#e1eaf7)}
-.metric-card.with-mascot{position:relative;overflow:hidden}
-.metric-card.with-mascot .metric-mascot-wrap{
-  display:flex;align-items:center;gap:14px;margin-bottom:10px
-}
-.metric-card.with-mascot .metric-mascot-copy{min-width:0}
-.metric-card.with-mascot .metric-mascot-copy .metric-title{margin-bottom:3px}
-@media(max-width:520px){
-  .dashboard-mascot{width:56px;height:56px;min-width:56px;border-radius:17px}
-  .dashboard-mascot svg{width:50px;height:50px}
-}
+  .prob-row{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line);}
+  .prob-row:last-child{border-bottom:none;}
+  .prob-status{width:8px;height:8px;border-radius:50%;margin-top:6px;flex-shrink:0;}
+  .prob-status.active{background:var(--clay);}
+  .prob-status.watch{background:var(--amber);}
+  .prob-status.stable{background:var(--manila-dark);}
+  .prob-name{font-size:13.5px;font-weight:500;color:#263F52;}
+  .prob-meta{font-size:12.5px;color:var(--ink-soft);}
 
-  /* ===== REAL DATA FORMS / MODALS / PRINT ===== */
+  .plan-goal{border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px;background:#FCFDFE;}
+  .plan-goal .g-title{font-size:13.5px;font-weight:600;margin-bottom:4px;}
+  .plan-goal .g-detail{font-size:12.5px;color:var(--ink-soft);line-height:1.6;}
+  .plan-goal .g-target{display:inline-block;margin-top:8px;font-size:12.5px;background:var(--teal-100);color:var(--manila-dark);padding:3px 9px;border-radius:20px;}
+
+  .photo-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+  .photo-tile{aspect-ratio:1;border-radius:12px;background:var(--paper);border:1px dashed var(--line-strong);
+    display:flex;align-items:center;justify-content:center;color:var(--ink-soft);font-size:12px;text-align:center;padding:6px;}
+
+  .a4-preview{border:1px solid var(--line-strong);border-radius:12px;padding:30px;background:#fff;
+    box-shadow:0 1px 3px rgba(22,48,44,0.08);max-width:480px;margin:0 auto 18px;}
+  .a4-preview h4{font-family:'Kanit',sans-serif;font-size:15px;text-align:center;margin:0 0 4px;}
+  .a4-preview .a4-sub{text-align:center;font-size:12px;color:var(--ink-soft);margin-bottom:16px;}
+  .a4-preview .a4-line{display:flex;justify-content:space-between;font-size:12.5px;padding:5px 0;border-bottom:1px dotted var(--line-strong);}
+  .print-btn{display:flex;align-items:center;gap:8px;justify-content:center;}
+
   .modal{position:fixed;inset:0;z-index:20000;background:rgba(18,44,59,.38);display:flex;align-items:center;justify-content:center;padding:20px;}
   .modal-card{width:min(620px,96vw);max-height:92vh;overflow:auto;background:#fff;border-radius:18px;padding:22px;box-shadow:0 24px 70px rgba(18,44,59,.22);}
   .modal-wide{width:min(900px,96vw);}
@@ -938,20 +346,16 @@ table.plist tbody td,table.data td{color:#29475A!important;font-weight:500}
   .field textarea:focus,.field select:focus{outline:none;border-color:#2FA7B5;box-shadow:0 0 0 4px rgba(47,167,181,.10);background:#fff;}
   .form-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px;padding-top:16px;border-top:1px solid #E7EDF1;}
   .form-help{font-size:12px;color:#788995;margin-top:6px;}
-  .disease-stat{cursor:pointer;}
   .disease-member{display:flex;justify-content:space-between;gap:12px;padding:12px 4px;border-bottom:1px solid #E7EDF1;cursor:pointer;}
   .disease-member:hover{background:#F6FAFB;}
   .empty-state{padding:28px;text-align:center;color:#788995;background:#fff;border:1px dashed #D9E2E8;border-radius:14px;}
-  .top-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;}
-  .quick-add-btn{width:auto!important;margin:0!important;padding:10px 16px!important;white-space:nowrap;}
   .db-save-note{font-size:12px;color:#738795;margin-top:8px;}
-  @media(max-width:650px){.topline{flex-direction:column!important}.top-actions{width:100%;justify-content:space-between}.quick-add-btn{flex:1}.date-badge{flex:0 0 auto}}
+  .warning-banner{background:#FFF5E5;border:1px solid #F3DFB0;color:#8A5B0B;border-radius:10px;padding:10px 14px;font-size:12.5px;margin-bottom:16px;line-height:1.6;}
 
   .photo-real{position:relative;overflow:hidden;padding:0!important;border-style:solid!important;}
   .photo-real img{width:100%;height:100%;object-fit:cover;display:block;}
   .photo-caption{position:absolute;left:0;right:0;bottom:0;background:rgba(18,44,59,.72);color:#fff;font-size:11px;padding:5px 7px;}
   .detail-edit-btn{white-space:nowrap;}
-  @media(max-width:650px){.form-grid{grid-template-columns:1fr}.form-span-2{grid-column:auto}.modal{padding:8px}.modal-card{padding:16px}.modal-head{top:-16px}}
   @media print{
     body *{visibility:hidden!important;}
     #print-area,#print-area *{visibility:visible!important;}
@@ -961,7 +365,6 @@ table.plist tbody td,table.data td{color:#29475A!important;font-weight:500}
     @page{size:A4;margin:12mm;}
   }
 
-  /* ===== v4 structured form / BE date / Lab OCR ===== */
   .option-box{border:1px solid #DDE5EB;border-radius:12px;padding:12px;background:#FCFDFE;display:flex;flex-wrap:wrap;gap:8px}
   .option-chip{display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border:1px solid #D9E3E8;border-radius:999px;background:#fff;font-size:13px;color:#496676;cursor:pointer}
   .option-chip input{accent-color:#137C8B}
@@ -976,18 +379,30 @@ table.plist tbody td,table.data td{color:#29475A!important;font-weight:500}
   .lab-status{font-size:12.5px;color:#667F8D;white-space:pre-wrap}
   .lab-file-link{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #E7EDF1}
   .lab-file-link a{color:#137C8B;text-decoration:none;font-weight:600}
-  @media(max-width:650px){.structured-row{grid-template-columns:1fr}.be-date-row{grid-template-columns:.8fr 1.2fr 1fr}}
+  .be-date-label{font-size:12px;color:#6f8190;margin-top:6px}
+  .patient-period{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .period-pill{font-size:12px;padding:4px 9px;border-radius:999px;background:#f1f7f9;color:#356675;border:1px solid #dce9ed}
+  .inhomes-problem{margin-top:8px;padding:10px 12px;background:#fff8f0;border:1px solid #f2dfc6;border-radius:10px}
+  .inhomes-problem.hidden{display:none!important}
+  .inhomes-problem select,.inhomes-problem input{width:100%;margin-top:6px}
+  .inhomes-problem .form-help{margin-top:5px}
 
-
-/* ===== v5: dates, age, home-visit period, INHOMESSS problem details ===== */
-.be-date-label{font-size:12px;color:#6f8190;margin-top:6px}
-.patient-period{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
-.period-pill{font-size:12px;padding:4px 9px;border-radius:999px;background:#f1f7f9;color:#356675;border:1px solid #dce9ed}
-.inhomes-problem{margin-top:8px;padding:10px 12px;background:#fff8f0;border:1px solid #f2dfc6;border-radius:10px}
-.inhomes-problem.hidden{display:none!important}
-.inhomes-problem select,.inhomes-problem input{width:100%;margin-top:6px}
-.inhomes-problem .form-help{margin-top:5px}
-@media(max-width:520px){.be-date-row{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
+  /* ===== Today page ===== */
+  .today-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:30px;}
+  @media (max-width:1100px){.today-grid{grid-template-columns:repeat(2,1fr);}}
+  .today-stat{border-radius:14px;padding:16px 18px;cursor:pointer;border:1px solid transparent;color:#fff;box-shadow:0 8px 20px rgba(22,50,79,.10);}
+  .today-stat .n{font-family:'IBM Plex Mono',monospace;font-size:30px;font-weight:600;line-height:1;}
+  .today-stat .l{font-size:13px;margin-top:6px;font-weight:600;opacity:.95;}
+  .today-stat.c-today{background:linear-gradient(135deg,#137C8B,#2FA7B5);}
+  .today-stat.c-overdue{background:linear-gradient(135deg,#C24A57,#E35D6A);}
+  .today-stat.c-lab{background:linear-gradient(135deg,#B8801F,#E6A23C);}
+  .today-stat.c-incomplete{background:linear-gradient(135deg,#5B6E8C,#7C8FAE);}
+  .today-stat.dim{opacity:.4;filter:grayscale(.3);}
+  .today-list-item{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 4px;border-bottom:1px solid var(--line);}
+  .today-list-item:last-child{border-bottom:none;}
+  .today-list-main .name{font-size:14px;font-weight:600;color:#183850;}
+  .today-list-main .meta{font-size:12px;color:var(--ink-soft);margin-top:2px;}
+  .today-list-actions{display:flex;gap:8px;flex-shrink:0;}
 
 </style>
 </head>
@@ -1034,7 +449,8 @@ table.plist tbody td,table.data td{color:#29475A!important;font-weight:500}
   <div id="view-app" class="hidden">
     <div class="sidebar">
       <div class="brand-mark"><div class="glyph">เยี่ยม</div><div class="word">งานเยี่ยมบ้าน</div></div>
-      <button class="nav-item active" id="nav-dashboard" onclick="showScreen('dashboard')"><span class="dot"></span> แดชบอร์ด</button>
+      <button class="nav-item active" id="nav-today" onclick="showScreen('today')"><span class="dot"></span> งานวันนี้ <span class="nav-badge hidden" id="today-nav-badge">0</span></button>
+      <button class="nav-item" id="nav-dashboard" onclick="showScreen('dashboard')"><span class="dot"></span> แดชบอร์ด</button>
       <button class="nav-item" id="nav-list" onclick="showScreen('list')"><span class="dot"></span> รายชื่อผู้ป่วย</button>
       <div class="sidebar-foot">
         <div class="user-chip">
@@ -1050,8 +466,21 @@ table.plist tbody td,table.data td{color:#29475A!important;font-weight:500}
 
     <div class="main">
 
+      <!-- ---- TODAY ---- -->
+      <div id="screen-today">
+        <div class="topline">
+          <div><h1>งานวันนี้</h1><div class="sub">สิ่งที่ต้องทำวันนี้ ไม่ต้องไล่ดูทั้งฐานข้อมูล</div></div>
+          <div class="date-badge" id="today-badge-2">—</div>
+        </div>
+        <div class="today-grid" id="today-stat-grid"></div>
+        <div class="sec">
+          <div class="sec-head"><h2 id="today-list-title">ต้องเยี่ยมวันนี้</h2><span class="count" id="today-list-count"></span></div>
+          <div class="card" id="today-list" style="padding:4px 14px;"></div>
+        </div>
+      </div>
+
       <!-- ---- DASHBOARD ---- -->
-      <div id="screen-dashboard">
+      <div id="screen-dashboard" class="hidden">
         <div class="topline">
           <div><h1>แดชบอร์ด</h1><div class="sub">ภาพรวมผู้ป่วยจากฐานข้อมูลจริง</div></div>
           <div class="top-actions">
@@ -1089,12 +518,15 @@ table.plist tbody td,table.data td{color:#29475A!important;font-weight:500}
         </div>
         <div class="toolbar">
           <button class="btn-primary add-patient-btn" style="width:auto;margin:0" onclick="openPatientForm()">＋ เพิ่มผู้ป่วยใหม่</button>
-          <div class="search-box">🔍<input id="patient-search" placeholder="ค้นหาชื่อ หรือ เลข HN..." oninput="renderList()"></div>
+          <div class="search-box">🔍<input id="patient-search" placeholder="ค้นหาชื่อ, HN, เบอร์โทร, โรค..." oninput="renderList()"></div>
           <button class="chip active" data-filter="all" onclick="setPatientFilter('all',this)">ทั้งหมด</button>
           <button class="chip" data-filter="overdue" onclick="setPatientFilter('overdue',this)">เกินกำหนดเยี่ยม</button>
+          <button class="chip" data-filter="today" onclick="setPatientFilter('today',this)">ต้องเยี่ยมวันนี้</button>
+          <button class="chip" data-filter="incomplete" onclick="setPatientFilter('incomplete',this)">ข้อมูลยังไม่ครบ</button>
+          <button class="chip" data-filter="discharged" onclick="setPatientFilter('discharged',this)">จำหน่ายแล้ว</button>
         </div>
         <table class="plist">
-          <thead><tr><th>HN</th><th>ชื่อ-สกุล</th><th>กลุ่มโรค</th><th>เยี่ยมล่าสุด</th><th>สถานะ</th><th></th></tr></thead>
+          <thead><tr><th>HN</th><th>ชื่อ-สกุล</th><th>กลุ่มโรค</th><th>สถานะ Workflow</th><th>เยี่ยมล่าสุด</th><th>นัดครั้งถัดไป</th><th></th></tr></thead>
           <tbody id="patient-table-body"></tbody>
         </table>
       </div>
@@ -1115,9 +547,11 @@ table.plist tbody td,table.data td{color:#29475A!important;font-weight:500}
                 <span id="pd-start">เริ่มเยี่ยมบ้าน —</span>
                 <span id="pd-discharge">จำหน่าย —</span>
               </div>
+              <div class="completeness-wrap" id="pd-completeness"></div>
             </div>
           </div>
-          <div class="pd-actions">
+          <div class="pd-actions" id="pd-actions">
+            <span class="stage-badge" id="pd-stage">—</span>
             <span class="badge urgent" id="pd-badge">เร่งด่วน</span>
             <button class="btn-ghost" onclick="showTab('print')">พิมพ์ A4</button>
           </div>
@@ -1135,6 +569,7 @@ table.plist tbody td,table.data td{color:#29475A!important;font-weight:500}
   <div class="modal-card modal-wide">
     <div class="modal-head"><h2 id="patient-form-title">เพิ่มผู้ป่วยใหม่</h2><button class="modal-close" onclick="closePatientForm()">×</button></div>
     <div style="margin:0 0 14px;padding:10px 12px;border-radius:10px;background:#F4F8FA;color:#5D7483;font-size:13px">สามารถบันทึกข้อมูลที่มีอยู่ก่อน แล้วกลับมาแก้ไข/เติมข้อมูลภายหลังได้ โดยต้องมี HN และชื่อ-สกุล</div>
+    <div id="form-warning-banner" class="warning-banner hidden"></div>
     <form id="patient-form" onsubmit="savePatient(event)">
       <input type="hidden" id="patient-id">
       <div class="form-grid">
@@ -1142,8 +577,10 @@ table.plist tbody td,table.data td{color:#29475A!important;font-weight:500}
         <div class="field"><label>ชื่อ-สกุล *</label><input id="f-name"></div>
         <div class="field"><label>วันเดือนปีเกิด (พ.ศ.)</label><input id="f-birth-date" type="hidden"><div class="be-date-row"><select id="f-birth-day"></select><select id="f-birth-month"></select><select id="f-birth-year"></select></div><div class="be-date-label">อายุปัจจุบัน: <b id="birth-age-preview">—</b></div></div>
         <div class="field"><label>เพศ</label><select id="f-sex"><option value="">— เลือก —</option><option>ชาย</option><option>หญิง</option><option>อื่นๆ</option></select></div>
+        <div class="field"><label>สถานะ Workflow</label><select id="f-stage"></select></div>
+        <div class="field"><label>วันที่ควรเยี่ยมครั้งถัดไป (พ.ศ.)</label><input id="f-next-visit-date" type="hidden"><div class="be-date-row"><select id="f-nextvisit-day"></select><select id="f-nextvisit-month"></select><select id="f-nextvisit-year"></select></div></div>
         <div class="field form-span-2"><label>กลุ่มโรค <span class="form-help">เลือกได้มากกว่า 1 รายการ</span></label><input id="f-group" type="hidden"><div id="group-options" class="option-box"></div><div class="lab-tools"><input id="f-group-other" placeholder="กลุ่มโรคอื่น ๆ" style="max-width:320px"><button type="button" class="btn-ghost" onclick="addOtherOption('group')">เพิ่ม</button></div></div>
-        <div class="field"><label>สถานะ</label><select id="f-status"><option value="ok">ปกติ</option><option value="urgent">เร่งด่วน</option><option value="overdue">เกินกำหนดเยี่ยม</option></select></div>
+        <div class="field"><label>สถานะความเร่งด่วน</label><select id="f-status"><option value="ok">ปกติ</option><option value="urgent">เร่งด่วน</option><option value="overdue">เกินกำหนดเยี่ยม</option></select></div>
         <div class="field"><label>วันที่เยี่ยมล่าสุด (พ.ศ.)</label><input id="f-last-visit" type="hidden"><div class="be-date-row"><select id="f-last-day"></select><select id="f-last-month"></select><select id="f-last-year"></select></div></div>
         <div class="field"><label>วันที่เริ่มส่งเยี่ยมบ้าน (พ.ศ.)</label><input id="f-start-date" type="hidden"><div class="be-date-row"><select id="f-start-day"></select><select id="f-start-month"></select><select id="f-start-year"></select></div></div>
         <div class="field"><label>วันที่จำหน่ายจากผู้ป่วยเยี่ยมบ้าน (พ.ศ.)</label><input id="f-discharge-date" type="hidden"><div class="be-date-row"><select id="f-discharge-day"></select><select id="f-discharge-month"></select><select id="f-discharge-year"></select></div><div class="form-help">เว้นว่างได้ หากยังอยู่ในระบบเยี่ยมบ้าน</div></div>
@@ -1157,7 +594,7 @@ table.plist tbody td,table.data td{color:#29475A!important;font-weight:500}
         <div class="field form-span-2"><label>ประวัติเดิม</label><textarea id="f-history" rows="3"></textarea></div>
         <div class="field form-span-2"><label>Lab / ผลตรวจจากภาพหรือ PDF</label><div class="lab-upload-box"><input id="f-lab-files" type="file" accept="image/*,application/pdf" multiple><div class="form-help">รองรับภาพถ่ายและ PDF ระบบจะอ่านข้อความในเบราว์เซอร์ แล้วให้ตรวจสอบก่อนบันทึก</div><div class="lab-tools"><button type="button" class="btn-ghost" onclick="analyzeLabFiles()">อ่านผลจากไฟล์</button><span id="lab-ocr-status" class="lab-status"></span></div></div><textarea id="f-lab" rows="7" placeholder="ผลที่ระบบอ่านได้จะแสดงที่นี่ สามารถแก้ไขก่อนบันทึก"></textarea></div>
         <div class="field form-span-2"><label>Medication</label><textarea id="f-medication" rows="3" placeholder="1 รายการต่อ 1 บรรทัด"></textarea></div>
-        <div class="field form-span-2"><label>Home Visit</label><input id="f-homevisit" type="hidden"><div class="structured-box"><div class="structured-row"><label>ประเภทการเยี่ยม</label><select id="hv-type"><option value="">— เลือก —</option><option>เยี่ยมครั้งแรก</option><option>ติดตามต่อเนื่อง</option><option>หลังจำหน่ายจากโรงพยาบาล</option><option>เยี่ยมเร่งด่วน</option><option>เยี่ยมผู้ป่วยติดบ้าน/ติดเตียง</option><option>เยี่ยมประคับประคอง</option></select></div><div class="structured-row"><label>ผลการเยี่ยม</label><select id="hv-result"><option value="">— เลือก —</option><option>อาการคงที่</option><option>ดีขึ้น</option><option>ต้องติดตามต่อ</option><option>พบปัญหาใหม่</option><option>ส่งต่อ/นัดพบแพทย์</option></select></div><div class="structured-row"><label>บันทึกเพิ่มเติม</label><textarea id="hv-note" rows="3"></textarea></div></div></div>
+        <div class="field form-span-2"><label>Home Visit — บันทึกครั้งนี้ <span class="form-help">จะถูกเพิ่มเป็นรายการใหม่ในไทม์ไลน์ ไม่ทับของเดิม</span></label><input id="f-homevisit" type="hidden"><div class="structured-box"><div class="structured-row"><label>ประเภทการเยี่ยม</label><select id="hv-type"><option value="">— เลือก —</option><option>เยี่ยมครั้งแรก</option><option>ติดตามต่อเนื่อง</option><option>หลังจำหน่ายจากโรงพยาบาล</option><option>เยี่ยมเร่งด่วน</option><option>เยี่ยมผู้ป่วยติดบ้าน/ติดเตียง</option><option>เยี่ยมประคับประคอง</option></select></div><div class="structured-row"><label>ผลการเยี่ยม</label><select id="hv-result"><option value="">— เลือก —</option><option>อาการคงที่</option><option>ดีขึ้น</option><option>ต้องติดตามต่อ</option><option>พบปัญหาใหม่</option><option>ส่งต่อ/นัดพบแพทย์</option></select></div><div class="structured-row"><label>บันทึกเพิ่มเติม</label><textarea id="hv-note" rows="3"></textarea></div></div></div>
         <div class="field form-span-2"><label>INHOMESSS Assessment</label><input id="f-inhomesss" type="hidden"><div id="inhomesss-structured" class="structured-box"></div></div>
         <div class="field form-span-2"><label>Problems</label><textarea id="f-problems" rows="3"></textarea></div>
         <div class="field form-span-2"><label>Care Plan</label><textarea id="f-careplan" rows="4"></textarea></div>
@@ -1165,6 +602,18 @@ table.plist tbody td,table.data td{color:#29475A!important;font-weight:500}
       </div>
       <div class="form-actions"><button type="button" class="btn-ghost" onclick="closePatientForm()">ยกเลิก</button><button id="save-patient-btn" class="btn-primary" style="width:auto;margin:0" type="submit">บันทึกข้อมูล</button></div>
     </form>
+  </div>
+</div>
+
+<!-- Quick update modal -->
+<div id="quick-update-modal" class="modal hidden">
+  <div class="modal-card">
+    <div class="modal-head"><h2>บันทึกการเยี่ยมด่วน</h2><button class="modal-close" onclick="closeQuickUpdate()">×</button></div>
+    <div id="quick-update-patient-name" style="font-size:13px;color:#667F8D;margin-bottom:14px"></div>
+    <div class="field"><label>ผลการเยี่ยมวันนี้</label><select id="qu-result"><option value="">— เลือก —</option><option>อาการคงที่</option><option>ดีขึ้น</option><option>ต้องติดตามต่อ</option><option>พบปัญหาใหม่</option><option>ส่งต่อ/นัดพบแพทย์</option></select></div>
+    <div class="field"><label>BP / DTX / อาการสำคัญ</label><textarea id="qu-note" rows="3" placeholder="เช่น BP 130/80, DTX 145"></textarea></div>
+    <div class="field"><label>นัดเยี่ยมครั้งถัดไป (พ.ศ.)</label><div class="be-date-row"><select id="qu-next-day"></select><select id="qu-next-month"></select><select id="qu-next-year"></select></div></div>
+    <div class="form-actions"><button type="button" class="btn-ghost" onclick="closeQuickUpdate()">ยกเลิก</button><button id="qu-save-btn" class="btn-primary" style="width:auto;margin:0" onclick="saveQuickUpdate()">บันทึก</button></div>
   </div>
 </div>
 
@@ -1191,6 +640,7 @@ if(window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudf
 let patients = [];
 let currentPatient = null;
 let activePatientFilter = 'all';
+let activeScreen = 'today';
 
 const e = id => document.getElementById(id);
 const safe = v => String(v ?? '').replace(/[&<>'"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
@@ -1212,6 +662,17 @@ const INHOMESSS_PROBLEMS={
  S2:['วิตกกังวล','อารมณ์เศร้า/ซึมเศร้า','เครียด','นอนไม่หลับ','รู้สึกโดดเดี่ยว','ต้องการการสนับสนุนด้านจิตใจ/จิตวิญญาณ'],
  S3:['เข้าถึงบริการยาก','ขาดนัด','ปัญหาการเดินทาง','ปัญหาสิทธิการรักษา','ขาดอุปกรณ์/เวชภัณฑ์','ต้องประสานหน่วยบริการอื่น']
 };
+
+const STAGES=[
+ {id:'new',label:'รับใหม่',color:'#7C8FAE',bg:'#EEF1F7'},
+ {id:'awaiting_first',label:'รอเยี่ยมครั้งแรก',color:'#B8801F',bg:'#FFF5E5'},
+ {id:'following',label:'กำลังติดตาม',color:'#137C8B',bg:'#EAF7F9'},
+ {id:'scheduled',label:'นัดเยี่ยม',color:'#2B6CB0',bg:'#E8F1FC'},
+ {id:'pre_discharge',label:'เตรียมจำหน่าย',color:'#B63A47',bg:'#FDEDEF'},
+ {id:'discharged',label:'จำหน่ายแล้ว',color:'#5B6E8C',bg:'#EEF1F5'},
+];
+const stageInfo = id => STAGES.find(s=>s.id===id) || STAGES[0];
+
 function renderChoiceGroups(){
   e('group-options').innerHTML=GROUP_OPTIONS.map(x=>`<label class="option-chip"><input type="checkbox" value="${safe(x)}" onchange="syncChoices('group')"> ${safe(x)}</label>`).join('');
   e('reason-options').innerHTML=REASON_OPTIONS.map(x=>`<label class="option-chip"><input type="checkbox" value="${safe(x)}" onchange="syncChoices('reason')"> ${safe(x)}</label>`).join('');
@@ -1253,8 +714,16 @@ function initBEDate(prefix,yearsBack=20,yearsForward=5){
  const nowBE=new Date().getFullYear()+543;
  y.innerHTML='<option value="">พ.ศ.</option>'+Array.from({length:yearsBack+yearsForward+1},(_,i)=>nowBE+yearsForward-i).map(x=>`<option value="${x}">${x}</option>`).join('');
 }
+function initBEDatePrefixed(prefix,elPrefix,yearsBack=20,yearsForward=5){
+ const d=e(`${elPrefix}-day`),m=e(`${elPrefix}-month`),y=e(`${elPrefix}-year`); if(!d||!m||!y)return;
+ d.innerHTML='<option value="">วัน</option>'+Array.from({length:31},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join('');
+ m.innerHTML='<option value="">เดือน</option>'+THAI_MONTHS.map((x,i)=>`<option value="${i+1}">${x}</option>`).join('');
+ const nowBE=new Date().getFullYear()+543;
+ y.innerHTML='<option value="">พ.ศ.</option>'+Array.from({length:yearsBack+yearsForward+1},(_,i)=>nowBE+yearsForward-i).map(x=>`<option value="${x}">${x}</option>`).join('');
+}
 function initBuddhistDateSelects(){
- initBEDate('last',30,2); initBEDate('start',30,2); initBEDate('discharge',30,2); initBEDate('birth',130,0);
+ initBEDate('last',30,2); initBEDate('start',30,2); initBEDate('discharge',30,2); initBEDate('birth',130,0); initBEDate('nextvisit',2,2);
+ initBEDatePrefixed('qu','qu-next',2,2);
  ['f-birth-day','f-birth-month','f-birth-year'].forEach(id=>e(id)?.addEventListener('change',updateBirthAgePreview));
 }
 function setBEDate(prefix,iso){
@@ -1262,8 +731,21 @@ function setBEDate(prefix,iso){
  if(!iso){d.value='';m.value='';y.value='';return;}
  const [yy,mm,dd]=String(iso).split('-').map(Number);d.value=dd||'';m.value=mm||'';y.value=yy?yy+543:'';
 }
+function setBEDateEl(elPrefix,iso){
+ const d=e(`${elPrefix}-day`),m=e(`${elPrefix}-month`),y=e(`${elPrefix}-year`); if(!d||!m||!y)return;
+ if(!iso){d.value='';m.value='';y.value='';return;}
+ const [yy,mm,dd]=String(iso).split('-').map(Number);d.value=dd||'';m.value=mm||'';y.value=yy?yy+543:'';
+}
 function getISOFromBEDate(prefix,label,required=false){
  const d=Number(e(`f-${prefix}-day`)?.value),m=Number(e(`f-${prefix}-month`)?.value),be=Number(e(`f-${prefix}-year`)?.value);
+ if(!d&&!m&&!be){if(required)throw new Error(`กรุณาระบุ${label}`);return null;}
+ if(!d||!m||!be)throw new Error(`กรุณาเลือก${label}ให้ครบ วัน เดือน และ พ.ศ.`);
+ const ce=be-543,dt=new Date(ce,m-1,d);
+ if(dt.getFullYear()!==ce||dt.getMonth()!==m-1||dt.getDate()!==d)throw new Error(`${label}ไม่ถูกต้อง`);
+ return `${ce}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+}
+function getISOFromBEDateEl(elPrefix,label,required=false){
+ const d=Number(e(`${elPrefix}-day`)?.value),m=Number(e(`${elPrefix}-month`)?.value),be=Number(e(`${elPrefix}-year`)?.value);
  if(!d&&!m&&!be){if(required)throw new Error(`กรุณาระบุ${label}`);return null;}
  if(!d||!m||!be)throw new Error(`กรุณาเลือก${label}ให้ครบ วัน เดือน และ พ.ศ.`);
  const ce=be-543,dt=new Date(ce,m-1,d);
@@ -1294,6 +776,22 @@ function syncInhomesss(){
    rows.push(line);
  });
  const note=e('inh-note')?.value.trim();if(note)rows.push(`หมายเหตุ: ${note}`);e('f-inhomesss').value=rows.join('\n');
+ suggestProblemsFromInhomesss();
+}
+function suggestProblemsFromInhomesss(){
+ const problemsBox=e('f-problems'); if(!problemsBox) return;
+ const suggested=[];
+ document.querySelectorAll('[data-inhomes-key]').forEach(x=>{
+   const k=x.dataset.inhomesKey,status=x.value;
+   if(status==='มีปัญหา'||status==='ควรติดตาม'){
+     const problem=document.querySelector(`[data-inhomes-problem="${k}"]`)?.value||'';
+     if(problem && problem!=='อื่น ๆ') suggested.push(`${problem} (จาก INHOMESSS ${k})`);
+   }
+ });
+ if(!suggested.length) return;
+ const existing=lines(problemsBox.value);
+ suggested.forEach(s=>{ if(!existing.some(e=>e.startsWith(s.split(' (จาก')[0]))) existing.push(s); });
+ problemsBox.value=existing.join('\n');
 }
 function setInhomesss(v){
  const map={};let note='';
@@ -1341,22 +839,26 @@ const thaiDate = iso => {
   if(Number.isNaN(d.getTime())) return iso;
   return d.toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'numeric'});
 };
+function todayISO(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function daysBetween(iso1,iso2){if(!iso1||!iso2)return null;const a=new Date(iso1+'T00:00:00'),b=new Date(iso2+'T00:00:00');return Math.round((b-a)/86400000);}
 
 async function loadPatients(){
   const {data,error}=await supabaseClient.from(PATIENTS_TABLE).select('*').order('created_at',{ascending:false});
   if(error){
     console.error(error);
     patients=[];
-    renderDashboard(); renderList();
-    alert('ยังอ่านข้อมูลผู้ป่วยจาก Supabase ไม่ได้: '+error.message+'\n\nกรุณารันไฟล์ SQL ที่แนบให้หนึ่งครั้งก่อนใช้งาน');
+    renderAllScreens();
+    alert('ยังอ่านข้อมูลผู้ป่วยจาก Supabase ไม่ได้: '+error.message+'\n\nกรุณารันไฟล์ SQL ที่แนบให้หนึ่งครั้งก่อนใช้งาน (รวมถึง supabase_v9_workflow.sql ถ้ายังไม่ได้รัน)');
     return;
   }
   patients=(data||[]).map(normalizePatient);
   await hydratePhotoUrls();
-  renderDashboard(); renderList();
+  renderAllScreens();
 }
+function renderAllScreens(){ renderToday(); renderDashboard(); renderList(); }
+
 function normalizePatient(p){
-  return {...p,id:p.id,hn:p.hn||'',name:p.name||'',birthDate:p.birth_date||'',age:calculateAge(p.birth_date),sex:p.sex||'',group:p.disease_group||'',lastVisit:thaiDate(p.last_visit),startVisitDate:p.home_visit_start_date||'',startVisit:thaiDate(p.home_visit_start_date),dischargeDate:p.home_visit_discharge_date||'',dischargeVisit:thaiDate(p.home_visit_discharge_date),status:p.status||'ok',overdueDays:p.overdue_days||0,reason:p.reason||'',address:p.address||'',phone:p.phone||'',photos:Array.isArray(p.photos)?p.photos:[],labFiles:Array.isArray(p.lab_files)?p.lab_files:[]};
+  return {...p,id:p.id,hn:p.hn||'',name:p.name||'',birthDate:p.birth_date||'',age:calculateAge(p.birth_date),sex:p.sex||'',group:p.disease_group||'',lastVisit:thaiDate(p.last_visit),startVisitDate:p.home_visit_start_date||'',startVisit:thaiDate(p.home_visit_start_date),dischargeDate:p.home_visit_discharge_date||'',dischargeVisit:thaiDate(p.home_visit_discharge_date),status:p.status||'ok',overdueDays:p.overdue_days||0,reason:p.reason||'',address:p.address||'',phone:p.phone||'',photos:Array.isArray(p.photos)?p.photos:[],labFiles:Array.isArray(p.lab_files)?p.lab_files:[],stage:p.workflow_stage||'new',nextVisitDate:p.next_visit_date||''};
 }
 async function hydratePhotoUrls(){
   for(const p of patients){
@@ -1378,6 +880,83 @@ async function hydratePhotoUrls(){
   }
 }
 
+/* ---- Data completeness ---- */
+const COMPLETENESS_FIELDS=[
+ ['birthDate','วันเกิด'],['phone','เบอร์โทร'],['address','ที่อยู่'],['group','กลุ่มโรค'],
+ ['diagnosis','Diagnosis'],['lab','ผล Lab'],['medication','Medication'],['homevisit','Home Visit'],
+ ['inhomesss','INHOMESSS'],['problems','Problems'],['care_plan','Care Plan'],['nextVisitDate','นัดครั้งถัดไป']
+];
+function patientCompleteness(p){
+  let filled=0; const missing=[];
+  COMPLETENESS_FIELDS.forEach(([key,label])=>{
+    const v=p[key]; const has=v!==undefined&&v!==null&&String(v).trim()!=='' && String(v).trim()!=='—';
+    if(has) filled++; else missing.push(label);
+  });
+  const pct=Math.round(filled/COMPLETENESS_FIELDS.length*100);
+  return {pct,missing};
+}
+function labFlagged(p){
+  const t=String(p.lab||'');
+  return /สูง|ต่ำ|ผิดปกติ|↑|↓|abnormal|high|low/i.test(t);
+}
+
+function renderCompletenessBadge(p,target){
+  const c=patientCompleteness(p);
+  const color = c.pct>=80?'#2FA7B5':c.pct>=50?'#E6A23C':'#E35D6A';
+  target.innerHTML=`<div class="completeness-top"><span>ความสมบูรณ์ของข้อมูล</span><span style="font-family:'IBM Plex Mono',monospace;color:${color};font-weight:600">${c.pct}%</span></div>
+    <div class="completeness-track"><div class="completeness-fill" style="width:${c.pct}%;background:${color}"></div></div>
+    ${c.missing.length?`<div class="completeness-missing">ยังขาด: ${c.missing.map(safe).join(', ')}</div>`:''}`;
+}
+
+function stageBadgeHtml(p){
+  const s=stageInfo(p.stage);
+  return `<span class="stage-badge" style="background:${s.bg};color:${s.color}"><span class="stage-dot"></span>${safe(s.label)}</span>`;
+}
+
+/* ---- Today page ---- */
+function renderToday(){
+  const today=todayISO();
+  const dueToday=patients.filter(p=>p.nextVisitDate===today && p.stage!=='discharged');
+  const overdue=patients.filter(p=>p.nextVisitDate && p.nextVisitDate<today && p.stage!=='discharged');
+  const labWatch=patients.filter(p=>labFlagged(p) && p.stage!=='discharged');
+  const incomplete=patients.filter(p=>patientCompleteness(p).pct<70 && p.stage!=='discharged');
+
+  e('today-badge-2').textContent=new Date().toLocaleDateString('th-TH',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const totalToday=dueToday.length+overdue.length;
+  const badgeNav=e('today-nav-badge');
+  if(totalToday>0){badgeNav.textContent=totalToday;badgeNav.classList.remove('hidden');}else{badgeNav.classList.add('hidden');}
+
+  const stats=[
+    {key:'today',cls:'c-today',n:dueToday.length,l:'ต้องเยี่ยมวันนี้',list:dueToday},
+    {key:'overdue',cls:'c-overdue',n:overdue.length,l:'เกินกำหนดเยี่ยม',list:overdue},
+    {key:'lab',cls:'c-lab',n:labWatch.length,l:'ต้องติดตาม Lab',list:labWatch},
+    {key:'incomplete',cls:'c-incomplete',n:incomplete.length,l:'ข้อมูลยังไม่ครบ',list:incomplete},
+  ];
+  e('today-stat-grid').innerHTML=stats.map(s=>`<div class="today-stat ${s.cls} ${window.__todayActive===s.key?'':''}" onclick="setTodayBucket('${s.key}')"><div class="n">${s.n}</div><div class="l">${s.l}</div></div>`).join('');
+  window.__todayBuckets=stats;
+  setTodayBucket(window.__todayActive||'today',true);
+}
+function setTodayBucket(key,silent){
+  window.__todayActive=key;
+  const stats=window.__todayBuckets||[];
+  [...document.querySelectorAll('.today-stat')].forEach((el,i)=>el.classList.toggle('dim',stats[i]&&stats[i].key!==key));
+  const bucket=stats.find(s=>s.key===key)||stats[0];
+  if(!bucket) return;
+  e('today-list-title').textContent=bucket.l;
+  e('today-list-count').textContent=`${bucket.list.length} ราย`;
+  e('today-list').innerHTML=bucket.list.length?bucket.list.map(p=>`
+    <div class="today-list-item">
+      <div class="today-list-main" style="cursor:pointer" onclick="openPatient('${p.id}')">
+        <div class="name">${safe(p.name)}</div>
+        <div class="meta">${safe(p.hn)} · ${safe(p.group||'—')} ${p.nextVisitDate?`· นัด ${safe(thaiDate(p.nextVisitDate))}`:''}</div>
+      </div>
+      <div class="today-list-actions">
+        <button class="quick-btn" onclick="openQuickUpdate('${p.id}')">＋ บันทึกเยี่ยม</button>
+        <button class="quick-btn" onclick="openPatient('${p.id}')">เปิดเวชระเบียน</button>
+      </div>
+    </div>`).join(''):'<div class="empty-state">ไม่มีรายการในหมวดนี้ 🎉</div>';
+}
+
 function renderDashboard(){
   const urgent=patients.filter(p=>p.status==='urgent');
   e('urgent-list').innerHTML=urgent.length?urgent.map(p=>`<div class="card urgent-card" onclick="openPatient('${p.id}')"><div class="name">${safe(p.name)}</div><div class="reason">${safe(p.reason||'ควรติดตามเร่งด่วน')}</div><div class="meta">${safe(p.hn)} · เยี่ยมล่าสุด ${safe(p.lastVisit)}</div></div>`).join(''):'<div class="empty-state" style="grid-column:1/-1">ไม่มีเคสเร่งด่วน</div>';
@@ -1385,23 +964,34 @@ function renderDashboard(){
   patients.forEach(p=>{ lines((p.group||'').replace(/\//g,'\n')).forEach(g=>map.set(g,(map.get(g)||0)+1)); });
   const diseaseGroups=[...map.entries()].sort((a,b)=>b[1]-a[1]);
   e('disease-list').innerHTML=diseaseGroups.length?diseaseGroups.map(([label,num])=>`<div class="card disease-stat" onclick="openDiseaseModal('${encodeURIComponent(label)}')"><div class="top"><span class="label">${safe(label)}</span><span class="num">${num}</span></div><div class="bar-track"><div class="bar-fill" style="width:${patients.length?Math.max(5,num/patients.length*100):0}%;background:var(--teal-600)"></div></div></div>`).join(''):'<div class="empty-state" style="grid-column:1/-1">ยังไม่มีข้อมูลกลุ่มโรค</div>';
-  document.querySelector('#screen-dashboard .sec-head .count')?.replaceChildren(document.createTextNode(`${urgent.length} ราย`));
-  const countNodes=document.querySelectorAll('#screen-dashboard .sec-head .count'); if(countNodes[1]) countNodes[1].textContent=`ผู้ป่วยทั้งหมด ${patients.length} ราย`;
+  const headCounts=document.querySelectorAll('#screen-dashboard .sec-head .count');
+  if(headCounts[0]) headCounts[0].textContent=`${urgent.length} ราย`;
+  if(headCounts[1]){ headCounts[1].textContent=`ผู้ป่วยทั้งหมด ${patients.length} ราย`; headCounts[1].style.cursor='pointer'; headCounts[1].onclick=()=>{setPatientFilter('all',null);showScreen('list');}; }
   const ranked=[...patients].sort((a,b)=>scorePatient(b)-scorePatient(a)).slice(0,5);
   e('top5-list').innerHTML=ranked.length?ranked.map((p,i)=>`<div class="rank-row" onclick="openPatient('${p.id}')"><div class="rank-num">${i+1}</div><div class="rank-body"><div class="name">${safe(p.name)}</div><div class="note">${safe(p.group||'—')}</div></div><div class="risk-score">${safe(p.hn)}</div></div>`).join(''):'<div class="empty-state">ยังไม่มีข้อมูลผู้ป่วย</div>';
   const overdue=patients.filter(p=>p.status==='overdue');
   e('overdue-list').innerHTML=overdue.length?overdue.map(p=>`<div class="card overdue-card" onclick="openPatient('${p.id}')"><div><div class="name">${safe(p.name)}</div><div class="meta">${safe(p.group)} · เยี่ยมล่าสุด ${safe(p.lastVisit)}</div></div><div class="days">${p.overdueDays}<span>วันเกินกำหนด</span></div></div>`).join(''):'<div class="empty-state">ไม่มีเคสเกินกำหนด</div>';
-  if(countNodes[2]) countNodes[2].textContent=`${overdue.length} ราย`;
+  if(headCounts[2]){ headCounts[2].textContent=`${overdue.length} ราย`; headCounts[2].style.cursor='pointer'; headCounts[2].onclick=()=>{setPatientFilter('overdue',null);showScreen('list');}; }
 }
 function scorePatient(p){return p.status==='urgent'?1000:p.status==='overdue'?500+(p.overdueDays||0):0;}
 
 function statusBadge(p){if(p.status==='urgent')return '<span class="badge urgent">เร่งด่วน</span>';if(p.status==='overdue')return `<span class="badge overdue">เกินกำหนด ${p.overdueDays||0} วัน</span>`;return '<span class="badge ok">ปกติ</span>';}
-function setPatientFilter(filter,btn){activePatientFilter=filter;document.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));btn?.classList.add('active');renderList();}
+function setPatientFilter(filter,btn){
+  activePatientFilter=filter;
+  document.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));
+  const target=btn||document.querySelector(`.chip[data-filter="${filter}"]`);
+  target?.classList.add('active');
+  renderList();
+}
 function renderList(){
   const q=(e('patient-search')?.value||'').trim().toLowerCase();
+  const today=todayISO();
   let arr=patients.filter(p=>!q||[p.name,p.hn,p.group,p.phone].some(v=>String(v||'').toLowerCase().includes(q)));
-  if(activePatientFilter==='overdue') arr=arr.filter(p=>p.status==='overdue');
-  e('patient-table-body').innerHTML=arr.length?arr.map(p=>`<tr onclick="openPatient('${p.id}')"><td class="hn">${safe(p.hn)}</td><td><div class="p-name">${safe(p.name)}</div><div class="p-sub">${p.age==null?'—':safe(p.age)+' ปี'} · ${safe(p.sex||'—')}</div></td><td>${safe(p.group||'—')}</td><td>${safe(p.lastVisit)}</td><td>${statusBadge(p)}</td><td class="chevron">›</td></tr>`).join(''):'<tr><td colspan="6"><div class="empty-state">ไม่พบข้อมูลผู้ป่วย</div></td></tr>';
+  if(activePatientFilter==='overdue') arr=arr.filter(p=>p.nextVisitDate&&p.nextVisitDate<today&&p.stage!=='discharged');
+  else if(activePatientFilter==='today') arr=arr.filter(p=>p.nextVisitDate===today&&p.stage!=='discharged');
+  else if(activePatientFilter==='incomplete') arr=arr.filter(p=>patientCompleteness(p).pct<70);
+  else if(activePatientFilter==='discharged') arr=arr.filter(p=>p.stage==='discharged');
+  e('patient-table-body').innerHTML=arr.length?arr.map(p=>`<tr><td class="hn" onclick="openPatient('${p.id}')">${safe(p.hn)}</td><td onclick="openPatient('${p.id}')"><div class="p-name">${safe(p.name)}</div><div class="p-sub">${p.age==null?'—':safe(p.age)+' ปี'} · ${safe(p.sex||'—')}</div></td><td onclick="openPatient('${p.id}')">${safe(p.group||'—')}</td><td onclick="openPatient('${p.id}')">${stageBadgeHtml(p)}</td><td onclick="openPatient('${p.id}')">${safe(p.lastVisit)}</td><td onclick="openPatient('${p.id}')">${p.nextVisitDate?safe(thaiDate(p.nextVisitDate)):'—'}</td><td><button class="quick-btn" onclick="event.stopPropagation();openQuickUpdate('${p.id}')">＋ บันทึกเยี่ยม</button></td></tr>`).join(''):'<tr><td colspan="7"><div class="empty-state">ไม่พบข้อมูลผู้ป่วย</div></td></tr>';
   document.querySelector('#screen-list .topline .sub').textContent=`ทั้งหมด ${patients.length} ราย ในความดูแล`;
 }
 
@@ -1418,7 +1008,10 @@ function openPatient(id){
   currentPatient=patients.find(p=>String(p.id)===String(id)); if(!currentPatient)return; const p=currentPatient;
   e('pd-initials').textContent=(p.name||'ผู้ป่วย').replace(/\s/g,'').slice(0,2);e('pd-name').textContent=p.name;e('pd-hn').textContent=p.hn;e('pd-age').textContent=`${p.age==null?'—':p.age+' ปี'} · ${p.sex||'—'} · เกิด ${p.birthDate?thaiDate(p.birthDate):'—'}`;e('pd-address').textContent=`📍 ${p.address||'—'}`;e('pd-phone').textContent=`📞 ${p.phone||'—'}`;e('pd-start').textContent=`เริ่มเยี่ยมบ้าน ${p.startVisit||'—'}`;e('pd-discharge').textContent=p.dischargeDate?`จำหน่าย ${p.dischargeVisit}`:'ยังอยู่ในระบบเยี่ยมบ้าน';
   const b=e('pd-badge');b.className='badge '+(p.status==='urgent'?'urgent':p.status==='overdue'?'overdue':'ok');b.textContent=p.status==='urgent'?'เร่งด่วน':p.status==='overdue'?`เกินกำหนด ${p.overdueDays||0} วัน`:'ปกติ';
+  const stg=stageInfo(p.stage); const stageEl=e('pd-stage'); stageEl.style.background=stg.bg; stageEl.style.color=stg.color; stageEl.innerHTML=`<span class="stage-dot"></span>${safe(stg.label)}`;
+  renderCompletenessBadge(p,e('pd-completeness'));
   if(!document.getElementById('edit-patient-btn')){const btn=document.createElement('button');btn.id='edit-patient-btn';btn.className='btn-ghost detail-edit-btn';btn.textContent='แก้ไขข้อมูล';btn.onclick=()=>openPatientForm(currentPatient);e('pd-actions').insertBefore(btn,e('pd-actions').lastElementChild);}
+  if(!document.getElementById('quick-visit-btn')){const btn2=document.createElement('button');btn2.id='quick-visit-btn';btn2.className='btn-ghost detail-edit-btn';btn2.textContent='＋ บันทึกเยี่ยมด่วน';btn2.onclick=()=>openQuickUpdate(currentPatient.id);e('pd-actions').insertBefore(btn2,e('pd-actions').lastElementChild);}
   e('tab-strip').innerHTML=tabs.map((t,i)=>`<button class="tab-btn ${i===0?'active':''}" data-tab="${t[0]}" onclick="showTab('${t[0]}')">${t[1]}</button>`).join('');
   renderAllTabPanels(p);showScreen('detail');showTab('history');
 }
@@ -1427,28 +1020,61 @@ function textBlock(v){return safe(v||'—').replace(/\n/g,'<br>');}
 function renderAllTabPanels(p){
   const photoHtml=(p.photos||[]).map((x,i)=>`<div class="photo-tile photo-real"><img src="${safe(x.url||x)}" alt="ภาพผู้ป่วย ${i+1}"><div class="photo-caption">ภาพที่ ${i+1}</div></div>`).join('');
   e('tab-panel-wrap').innerHTML=`
-  <div class="tab-panel active" id="panel-history"><h3>ประวัติเดิม</h3><div class="kv-grid"><div class="kv"><div class="k">วันเดือนปีเกิด / อายุปัจจุบัน</div><div class="v">${p.birthDate?safe(thaiDate(p.birthDate)):'—'} · ${p.age==null?'—':safe(p.age)+' ปี'}</div></div><div class="kv"><div class="k">กลุ่มโรค</div><div class="v">${safe(p.group||'—')}</div></div><div class="kv"><div class="k">วันที่เริ่มส่งเยี่ยมบ้าน</div><div class="v">${safe(p.startVisit||'—')}</div></div><div class="kv"><div class="k">วันที่จำหน่ายจากผู้ป่วยเยี่ยมบ้าน</div><div class="v">${safe(p.dischargeVisit||'—')}</div></div><div class="kv"><div class="k">ประวัติแพ้ยา</div><div class="v">${safe(p.allergy||'—')}</div></div><div class="kv form-span-2"><div class="k">ประวัติเดิม</div><div class="v">${textBlock(p.history)}</div></div></div></div>
+  <div class="tab-panel active" id="panel-history"><h3>ประวัติเดิม</h3><div class="kv-grid"><div class="kv"><div class="k">วันเดือนปีเกิด / อายุปัจจุบัน</div><div class="v">${p.birthDate?safe(thaiDate(p.birthDate)):'—'} · ${p.age==null?'—':safe(p.age)+' ปี'}</div></div><div class="kv"><div class="k">กลุ่มโรค</div><div class="v">${safe(p.group||'—')}</div></div><div class="kv"><div class="k">วันที่เริ่มส่งเยี่ยมบ้าน</div><div class="v">${safe(p.startVisit||'—')}</div></div><div class="kv"><div class="k">วันที่จำหน่ายจากผู้ป่วยเยี่ยมบ้าน</div><div class="v">${safe(p.dischargeVisit||'—')}</div></div><div class="kv"><div class="k">ประวัติแพ้ยา</div><div class="v">${safe(p.allergy||'—')}</div></div><div class="kv"><div class="k">นัดเยี่ยมครั้งถัดไป</div><div class="v">${p.nextVisitDate?safe(thaiDate(p.nextVisitDate)):'—'}</div></div><div class="kv form-span-2"><div class="k">ประวัติเดิม</div><div class="v">${textBlock(p.history)}</div></div></div></div>
   <div class="tab-panel" id="panel-diagnosis"><h3>Diagnosis</h3><div class="kv-grid"><div class="kv"><div class="k">Diagnosis</div><div class="v">${safe(p.diagnosis||'—')}</div></div><div class="kv"><div class="k">ICD-10</div><div class="v">${safe(p.icd10||'—')}</div></div></div></div>
-  <div class="tab-panel" id="panel-lab"><h3>Lab / ผลตรวจ</h3><div class="visit-note" style="white-space:pre-wrap">${textBlock(p.lab)}</div>${p.labFiles?.length?`<h3 style="margin-top:24px">ไฟล์ Lab ที่แนบ</h3>${p.labFiles.map((f,i)=>`<div class="lab-file-link"><span>${safe(f.name||('ไฟล์ '+(i+1)))}</span><a href="${safe(f.url)}" target="_blank" rel="noopener">เปิดไฟล์</a></div>`).join('')}`:''}</div>
+  <div class="tab-panel" id="panel-lab"><h3>Lab / ผลตรวจ</h3>${labFlagged(p)?'<div class="warning-banner">พบคำที่บ่งชี้ผลผิดปกติในบันทึก Lab นี้ ควรติดตาม</div>':''}<div class="visit-note" style="white-space:pre-wrap">${textBlock(p.lab)}</div>${p.labFiles?.length?`<h3 style="margin-top:24px">ไฟล์ Lab ที่แนบ</h3>${p.labFiles.map((f,i)=>`<div class="lab-file-link"><span>${safe(f.name||('ไฟล์ '+(i+1)))}</span><a href="${safe(f.url)}" target="_blank" rel="noopener">เปิดไฟล์</a></div>`).join('')}`:''}</div>
   <div class="tab-panel" id="panel-medication"><h3>Medication</h3>${lines(p.medication).map(x=>`<div class="med-row"><div class="med-name">${safe(x)}</div></div>`).join('')||'<div class="empty-state">ยังไม่มีข้อมูล</div>'}</div>
-  <div class="tab-panel" id="panel-homevisit"><h3>Home Visit</h3><div class="visit-note">${textBlock(p.homevisit)}</div></div>
+  <div class="tab-panel" id="panel-homevisit"><h3>Home Visit — ไทม์ไลน์</h3><div class="form-help" style="margin-bottom:14px">แต่ละครั้งจะถูกบันทึกแยกกันตามวันที่แก้ไข ไม่ทับของเดิม</div>${homeVisitTimelineHtml(p)}</div>
   <div class="tab-panel" id="panel-inhomesss"><h3>INHOMESSS Assessment</h3><div class="visit-note">${textBlock(p.inhomesss)}</div></div>
   <div class="tab-panel" id="panel-problems"><h3>Problem List</h3><div class="visit-note">${textBlock(p.problems)}</div></div>
   <div class="tab-panel" id="panel-careplan"><h3>Care Plan</h3><div class="visit-note">${textBlock(p.care_plan)}</div></div>
   <div class="tab-panel" id="panel-photos"><h3>รูปภาพที่แนบ</h3><div class="photo-grid">${photoHtml||'<div class="empty-state" style="grid-column:1/-1">ยังไม่มีภาพแนบ</div>'}</div></div>
   <div class="tab-panel" id="panel-print"><h3>พิมพ์ข้อมูลผู้ป่วย</h3><div id="print-area" class="a4-preview" style="max-width:760px"><h4>ข้อมูลผู้ป่วยเยี่ยมบ้าน</h4><div class="a4-sub">${safe(p.name)} · ${safe(p.hn)}</div>${printRows(p)}${p.photos?.length?`<h4 style="text-align:left;margin-top:20px">ภาพถ่ายที่แนบ</h4><div class="print-photo-grid">${p.photos.map(x=>`<img src="${safe(x.url||x)}">`).join('')}</div>`:''}</div><button class="btn-primary print-btn" style="max-width:220px;margin:0 auto" onclick="window.print()">🖨 พิมพ์ข้อมูลผู้ป่วย</button></div>`;
 }
-function printRows(p){const rows=[['วันเดือนปีเกิด',p.birthDate?thaiDate(p.birthDate):''],['อายุ / เพศ',`${p.age==null?'—':p.age+' ปี'} / ${p.sex||'—'}`],['วันที่เริ่มส่งเยี่ยมบ้าน',p.startVisit],['วันที่จำหน่ายจากผู้ป่วยเยี่ยมบ้าน',p.dischargeVisit],['กลุ่มโรค',p.group],['Diagnosis',p.diagnosis],['ICD-10',p.icd10],['ประวัติแพ้ยา',p.allergy],['ที่อยู่',p.address],['โทรศัพท์',p.phone],['เยี่ยมล่าสุด',p.lastVisit],['สถานะ',p.status==='urgent'?'เร่งด่วน':p.status==='overdue'?`เกินกำหนด ${p.overdueDays||0} วัน`:'ปกติ'],['เหตุผล/ข้อควรติดตาม',p.reason],['ประวัติเดิม',p.history],['Lab / ผลตรวจ',p.lab],['Medication',p.medication],['Home Visit',p.homevisit],['INHOMESSS',p.inhomesss],['Problems',p.problems],['Care Plan',p.care_plan]];return rows.filter(r=>r[1]&&r[1]!=='—').map(r=>`<div class="a4-line"><span>${safe(r[0])}</span><span style="max-width:65%;text-align:right;white-space:pre-wrap">${safe(r[1])}</span></div>`).join('');}
+function homeVisitTimelineHtml(p){
+  // v9: homevisit is stored as dated blocks separated by a marker so multiple visits don't overwrite each other.
+  const blocks=String(p.homevisit||'').split('\n===VISIT===\n').map(x=>x.trim()).filter(Boolean);
+  if(!blocks.length) return '<div class="empty-state">ยังไม่มีบันทึกการเยี่ยม</div>';
+  return blocks.slice().reverse().map(b=>{
+    const dateMatch=b.match(/^\[(.+?)\]/); const date=dateMatch?dateMatch[1]:'';
+    const rest=dateMatch?b.slice(dateMatch[0].length).trim():b;
+    return `<div class="visit-item"><div class="visit-dot"></div><div><div class="visit-date">${safe(date)}</div><div class="visit-note">${textBlock(rest)}</div></div></div>`;
+  }).join('');
+}
+function printRows(p){const rows=[['วันเดือนปีเกิด',p.birthDate?thaiDate(p.birthDate):''],['อายุ / เพศ',`${p.age==null?'—':p.age+' ปี'} / ${p.sex||'—'}`],['วันที่เริ่มส่งเยี่ยมบ้าน',p.startVisit],['วันที่จำหน่ายจากผู้ป่วยเยี่ยมบ้าน',p.dischargeVisit],['กลุ่มโรค',p.group],['Diagnosis',p.diagnosis],['ICD-10',p.icd10],['ประวัติแพ้ยา',p.allergy],['ที่อยู่',p.address],['โทรศัพท์',p.phone],['เยี่ยมล่าสุด',p.lastVisit],['นัดครั้งถัดไป',p.nextVisitDate?thaiDate(p.nextVisitDate):''],['สถานะ Workflow',stageInfo(p.stage).label],['สถานะ',p.status==='urgent'?'เร่งด่วน':p.status==='overdue'?`เกินกำหนด ${p.overdueDays||0} วัน`:'ปกติ'],['เหตุผล/ข้อควรติดตาม',p.reason],['ประวัติเดิม',p.history],['Lab / ผลตรวจ',p.lab],['Medication',p.medication],['Home Visit',p.homevisit],['INHOMESSS',p.inhomesss],['Problems',p.problems],['Care Plan',p.care_plan]];return rows.filter(r=>r[1]&&r[1]!=='—').map(r=>`<div class="a4-line"><span>${safe(r[0])}</span><span style="max-width:65%;text-align:right;white-space:pre-wrap">${safe(r[1])}</span></div>`).join('');}
 
+function populateStageSelect(current){
+  e('f-stage').innerHTML=STAGES.map(s=>`<option value="${s.id}" ${s.id===current?'selected':''}>${safe(s.label)}</option>`).join('');
+}
+function checkWarnings(p){
+  const warn=[];
+  if(!p?.phone) warn.push('ยังไม่มีเบอร์โทรศัพท์');
+  if(!p?.inhomesss) warn.push('ยังไม่ได้ประเมิน INHOMESSS');
+  if(!p?.care_plan) warn.push('ยังไม่มี Care Plan');
+  if(!p?.nextVisitDate) warn.push('ยังไม่ได้กำหนดวันนัดเยี่ยมครั้งถัดไป');
+  const box=e('form-warning-banner');
+  if(warn.length){box.classList.remove('hidden');box.innerHTML='⚠️ ข้อมูลยังไม่สมบูรณ์ (บันทึกได้ตามปกติ): '+warn.join(' · ');}
+  else box.classList.add('hidden');
+}
 function openPatientForm(p=null){
   e('patient-form').reset(); e('patient-id').value=p?.id||'';e('patient-form-title').textContent=p?'แก้ไข / เพิ่มเติมข้อมูลผู้ป่วย':'เพิ่มผู้ป่วยใหม่';
   e('save-patient-btn').textContent=p?'บันทึกข้อมูลเพิ่มเติม':'บันทึกข้อมูล';
   const vals={ 'f-hn':p?.hn,'f-name':p?.name,'f-sex':p?.sex,'f-status':p?.status||'ok','f-overdue-days':p?.overdueDays,'f-address':p?.address,'f-phone':p?.phone,'f-diagnosis':p?.diagnosis,'f-icd10':p?.icd10,'f-allergy':p?.allergy,'f-history':p?.history,'f-lab':p?.lab,'f-medication':p?.medication,'f-problems':p?.problems,'f-careplan':p?.care_plan};
   Object.entries(vals).forEach(([id,v])=>{if(e(id))e(id).value=v??'';});
-  renderChoiceGroups();setChoiceValues('group',p?.group||'');setChoiceValues('reason',p?.reason||'');setBEDate('birth',p?.birth_date||p?.birthDate||'');updateBirthAgePreview();setBuddhistDate(p?.last_visit||'');setBEDate('start',p?.home_visit_start_date||p?.startVisitDate||'');setBEDate('discharge',p?.home_visit_discharge_date||p?.dischargeDate||'');setHomeVisit(p?.homevisit||'');setInhomesss(p?.inhomesss||'');e('lab-ocr-status').textContent='';
+  populateStageSelect(p?.stage||'new');
+  renderChoiceGroups();setChoiceValues('group',p?.group||'');setChoiceValues('reason',p?.reason||'');setBEDate('birth',p?.birth_date||p?.birthDate||'');updateBirthAgePreview();setBuddhistDate(p?.last_visit||'');setBEDate('start',p?.home_visit_start_date||p?.startVisitDate||'');setBEDate('discharge',p?.home_visit_discharge_date||p?.dischargeDate||'');setBEDate('nextvisit',p?.nextVisitDate||'');
+  e('hv-type').value='';e('hv-result').value='';e('hv-note').value='';syncHomeVisit();
+  setInhomesss(p?.inhomesss||'');e('lab-ocr-status').textContent='';
+  checkWarnings(p);
   e('patient-form-modal').classList.remove('hidden');
 }
 function closePatientForm(){e('patient-form-modal').classList.add('hidden');}
+function appendHomeVisitEntry(existing,entryText){
+  if(!entryText.trim()) return existing||'';
+  const stamped=`[${thaiDate(todayISO())}] ${entryText.trim()}`;
+  const prior=String(existing||'').trim();
+  return prior?`${prior}\n===VISIT===\n${stamped}`:stamped;
+}
 async function savePatient(ev){
   ev.preventDefault();const btn=e('save-patient-btn');btn.disabled=true;btn.textContent='กำลังบันทึก...';
   try{
@@ -1458,8 +1084,6 @@ async function savePatient(ev){
     const id=e('patient-id').value||null;
     syncChoices('group');syncChoices('reason');syncHomeVisit();syncInhomesss();
 
-    // v8: allow incomplete records to be saved and completed later.
-    // Only HN and patient name are required to identify the record.
     const hnValue=e('f-hn').value.trim();
     const nameValue=e('f-name').value.trim();
     if(!hnValue)throw new Error('กรุณากรอก HN เพื่อระบุตัวผู้ป่วย');
@@ -1470,6 +1094,11 @@ async function savePatient(ev){
     const startDate=getISOFromBEDate('start','วันที่เริ่มส่งเยี่ยมบ้าน');
     const dischargeDate=getISOFromBEDate('discharge','วันที่จำหน่ายจากผู้ป่วยเยี่ยมบ้าน');
     if(startDate&&dischargeDate&&dischargeDate<startDate)throw new Error('วันที่จำหน่ายต้องไม่ก่อนวันที่เริ่มส่งเยี่ยมบ้าน');
+    const nextVisitDate=getISOFromBEDate('nextvisit','วันที่ควรเยี่ยมครั้งถัดไป');
+
+    const existingPatient=id?patients.find(x=>String(x.id)===String(id)):null;
+    const newVisitEntry=e('f-homevisit').value.trim();
+    const homevisitFinal=appendHomeVisitEntry(existingPatient?.homevisit,newVisitEntry);
 
     const payload={
       hn:hnValue,name:nameValue,
@@ -1479,19 +1108,18 @@ async function savePatient(ev){
       overdue_days:Number(e('f-overdue-days').value||0),reason:e('f-reason').value.trim(),
       address:e('f-address').value.trim(),phone:e('f-phone').value.trim(),diagnosis:e('f-diagnosis').value.trim(),
       icd10:e('f-icd10').value.trim(),allergy:e('f-allergy').value.trim(),history:e('f-history').value.trim(),
-      lab:e('f-lab').value.trim(),medication:e('f-medication').value.trim(),homevisit:e('f-homevisit').value.trim(),
-      inhomesss:e('f-inhomesss').value.trim(),problems:e('f-problems').value.trim(),care_plan:e('f-careplan').value.trim()
+      lab:e('f-lab').value.trim(),medication:e('f-medication').value.trim(),homevisit:homevisitFinal,
+      inhomesss:e('f-inhomesss').value.trim(),problems:e('f-problems').value.trim(),care_plan:e('f-careplan').value.trim(),
+      workflow_stage:e('f-stage').value||'new', next_visit_date:nextVisitDate
     };
 
-    // v7: save through a database RPC instead of direct INSERT/UPDATE.
-    // This avoids legacy RLS / NOT NULL / schema-policy conflicts in older installations.
     const {data:rpcRow,error:rpcError}=await supabaseClient.rpc('save_home_visit_patient',{
       p_id:id||null,
       p_data:payload
     });
     if(rpcError)throw rpcError;
     const row=Array.isArray(rpcRow)?rpcRow[0]:rpcRow;
-    if(!row?.id)throw new Error('ฐานข้อมูลตอบกลับโดยไม่มีรหัสผู้ป่วย กรุณารัน supabase_v7_rpc_repair.sql');
+    if(!row?.id)throw new Error('ฐานข้อมูลตอบกลับโดยไม่มีรหัสผู้ป่วย กรุณารัน supabase_v9_workflow.sql');
 
     const attachmentErrors=[];
     const files=[...e('f-photos').files];
@@ -1531,12 +1159,12 @@ async function savePatient(ev){
     const msg=String(err?.message||err||'ไม่ทราบสาเหตุ');
     const details=[err?.code&&`code: ${err.code}`,err?.details&&`details: ${err.details}`,err?.hint&&`hint: ${err.hint}`].filter(Boolean).join('\n');
     let help='';
-    if(/save_home_visit_patient|function .* does not exist|Could not find the function|PGRST202/i.test(msg+' '+details)) help='\n\nยังไม่มีฟังก์ชันบันทึก v7 ในฐานข้อมูล กรุณารัน supabase_v7_rpc_repair.sql ทั้งไฟล์ แล้วกด Ctrl+F5';
-    else if(/birth_date|home_visit_start_date|home_visit_discharge_date|column .* does not exist|schema cache/i.test(msg)) help='\n\nโครงสร้างตารางยังเป็นเวอร์ชันเก่า กรุณารันไฟล์ supabase_v7_rpc_repair.sql แล้วรีเฟรชหน้าเว็บ';
-    else if(/relation .*patients.* does not exist|Could not find the table/i.test(msg)) help='\n\nยังไม่มีตาราง patients กรุณารัน supabase_v7_rpc_repair.sql';
-    else if(/row-level security|permission denied|policy|42501/i.test(msg+' '+details)) help='\n\nสิทธิ์ฐานข้อมูลยังไม่อนุญาตให้บันทึก กรุณารัน supabase_v7_rpc_repair.sql เพื่ออัปเดต GRANT และ RLS Policy';
+    if(/save_home_visit_patient|function .* does not exist|Could not find the function|PGRST202/i.test(msg+' '+details)) help='\n\nยังไม่มีฟังก์ชันบันทึกในฐานข้อมูล กรุณารัน supabase_v9_workflow.sql ทั้งไฟล์ แล้วกด Ctrl+F5';
+    else if(/workflow_stage|next_visit_date|birth_date|home_visit_start_date|home_visit_discharge_date|column .* does not exist|schema cache/i.test(msg)) help='\n\nโครงสร้างตารางยังเป็นเวอร์ชันเก่า กรุณารันไฟล์ supabase_v9_workflow.sql แล้วรีเฟรชหน้าเว็บ';
+    else if(/relation .*patients.* does not exist|Could not find the table/i.test(msg)) help='\n\nยังไม่มีตาราง patients กรุณารัน supabase_v9_workflow.sql';
+    else if(/row-level security|permission denied|policy|42501/i.test(msg+' '+details)) help='\n\nสิทธิ์ฐานข้อมูลยังไม่อนุญาตให้บันทึก กรุณารัน supabase_v9_workflow.sql เพื่ออัปเดต GRANT และ RLS Policy';
     else if(/duplicate key|patients_hn_key|23505/i.test(msg+' '+details)) help='\n\nเลข HN นี้มีอยู่ในระบบแล้ว กรุณาตรวจสอบ HN';
-    else if(/null value in column|not-null constraint|23502|check constraint|23514/i.test(msg+' '+details)) help='\n\nโครงสร้างตารางเดิมมีข้อบังคับเก่าที่ไม่ตรงกับเว็บเวอร์ชันปัจจุบัน กรุณารัน supabase_v7_rpc_repair.sql ทั้งไฟล์';
+    else if(/null value in column|not-null constraint|23502|check constraint|23514/i.test(msg+' '+details)) help='\n\nโครงสร้างตารางเดิมมีข้อบังคับเก่าที่ไม่ตรงกับเว็บเวอร์ชันปัจจุบัน กรุณารัน supabase_v9_workflow.sql ทั้งไฟล์';
     else if(/Failed to fetch|NetworkError|fetch/i.test(msg)) help='\n\nไม่สามารถเชื่อมต่อ Supabase ได้ กรุณาตรวจสอบอินเทอร์เน็ตและค่า SUPABASE_URL / KEY';
     alert('บันทึกไม่สำเร็จ: '+msg+(details?'\n\n'+details:'')+help);
   }finally{
@@ -1545,11 +1173,55 @@ async function savePatient(ev){
   }
 }
 
-function showScreen(name){e('screen-dashboard').classList.toggle('hidden',name!=='dashboard');e('screen-list').classList.toggle('hidden',name!=='list');e('screen-detail').classList.toggle('hidden',name!=='detail');e('nav-dashboard').classList.toggle('active',name==='dashboard');e('nav-list').classList.toggle('active',name==='list'||name==='detail');window.scrollTo({top:0,left:0,behavior:'instant'});}
+/* ---- Quick update (from Today page / list) ---- */
+let quickUpdateTargetId=null;
+function openQuickUpdate(id){
+  quickUpdateTargetId=id;
+  const p=patients.find(x=>String(x.id)===String(id)); if(!p)return;
+  e('quick-update-patient-name').textContent=`${p.name} · ${p.hn}`;
+  e('qu-result').value=''; e('qu-note').value='';
+  setBEDateEl('qu-next',p.nextVisitDate||'');
+  e('quick-update-modal').classList.remove('hidden');
+}
+function closeQuickUpdate(){e('quick-update-modal').classList.add('hidden');quickUpdateTargetId=null;}
+async function saveQuickUpdate(){
+  const p=patients.find(x=>String(x.id)===String(quickUpdateTargetId)); if(!p)return;
+  const btn=e('qu-save-btn'); btn.disabled=true; btn.textContent='กำลังบันทึก...';
+  try{
+    const result=e('qu-result').value, note=e('qu-note').value.trim();
+    const entryText=[result&&`ผลการเยี่ยม: ${result}`,note&&`บันทึก: ${note}`].filter(Boolean).join('\n')||'บันทึกการเยี่ยมด่วน';
+    const homevisitFinal=appendHomeVisitEntry(p.homevisit,entryText);
+    const nextVisitDate=getISOFromBEDateEl('qu-next','วันนัดครั้งถัดไป');
+    const payload={...stripClientOnlyFields(p),homevisit:homevisitFinal,last_visit:todayISO(),next_visit_date:nextVisitDate||p.nextVisitDate||null};
+    const {data:rpcRow,error:rpcError}=await supabaseClient.rpc('save_home_visit_patient',{p_id:p.id,p_data:payload});
+    if(rpcError)throw rpcError;
+    closeQuickUpdate();
+    await loadPatients();
+  }catch(err){
+    console.error(err);
+    alert('บันทึกไม่สำเร็จ: '+(err.message||err));
+  }finally{ btn.disabled=false; btn.textContent='บันทึก'; }
+}
+function stripClientOnlyFields(p){
+  return {hn:p.hn,name:p.name,age:p.age,birth_date:p.birthDate,sex:p.sex,disease_group:p.group,status:p.status,
+    last_visit:p.last_visit,home_visit_start_date:p.startVisitDate,home_visit_discharge_date:p.dischargeDate,
+    overdue_days:p.overdueDays,reason:p.reason,address:p.address,phone:p.phone,diagnosis:p.diagnosis,icd10:p.icd10,
+    allergy:p.allergy,history:p.history,lab:p.lab,medication:p.medication,homevisit:p.homevisit,inhomesss:p.inhomesss,
+    problems:p.problems,care_plan:p.care_plan,workflow_stage:p.stage,next_visit_date:p.nextVisitDate};
+}
+
+function showScreen(name){
+  ['today','dashboard','list','detail'].forEach(s=>e('screen-'+s)?.classList.toggle('hidden',s!==name));
+  e('nav-today')?.classList.toggle('active',name==='today');
+  e('nav-dashboard')?.classList.toggle('active',name==='dashboard');
+  e('nav-list')?.classList.toggle('active',name==='list'||name==='detail');
+  activeScreen=name;
+  window.scrollTo({top:0,left:0,behavior:'instant'});
+}
 function openAdminLogin(){e('admin-login-box').classList.remove('hidden');document.querySelector('.admin-entry').classList.add('hidden');setTimeout(()=>e('email')?.focus(),50);}
 function closeAdminLogin(){e('admin-login-box').classList.add('hidden');document.querySelector('.admin-entry').classList.remove('hidden');e('password').value='';}
 async function loadCurrentProfile(user){const {data:profile,error}=await supabaseClient.from('profiles').select('full_name, role, department, is_active').eq('id',user.id).single();if(error)throw new Error('ไม่สามารถอ่านข้อมูลสิทธิ์ผู้ใช้งานได้: '+error.message);if(!profile||!profile.is_active){await supabaseClient.auth.signOut();throw new Error('บัญชีนี้ถูกปิดใช้งาน');}const name=profile.full_name||user.email||'ผู้ใช้งาน';const roleMap={admin:'ผู้ดูแลระบบ',nurse:'พยาบาล',doctor:'แพทย์',viewer:'ผู้ดูข้อมูล'};document.querySelector('.u-name').textContent=name;document.querySelector('.u-role').textContent=`${roleMap[profile.role]||profile.role||'เจ้าหน้าที่'}${profile.department?' · '+profile.department:''}`;document.querySelector('.user-chip .av').textContent=name.replace(/\s+/g,'').slice(0,2)||'ผู้';}
-async function enterApp(session){if(!session?.user)return;await loadCurrentProfile(session.user);e('view-login').classList.add('hidden');e('view-app').classList.remove('hidden');document.documentElement.scrollTop=0;document.body.scrollTop=0;showScreen('dashboard');await loadPatients();requestAnimationFrame(()=>window.scrollTo(0,0));}
+async function enterApp(session){if(!session?.user)return;await loadCurrentProfile(session.user);e('view-login').classList.add('hidden');e('view-app').classList.remove('hidden');document.documentElement.scrollTop=0;document.body.scrollTop=0;showScreen('today');await loadPatients();requestAnimationFrame(()=>window.scrollTo(0,0));}
 async function doLogin(){const email=e('email').value.trim(),password=e('password').value,btn=document.querySelector('#view-login .btn-primary');if(!email||!password){alert('กรุณากรอกอีเมลและรหัสผ่าน');return;}btn.disabled=true;btn.textContent='กำลังเข้าสู่ระบบ...';try{const {data,error}=await supabaseClient.auth.signInWithPassword({email,password});if(error)throw error;await enterApp(data.session);}catch(err){console.error(err);alert('เข้าสู่ระบบไม่สำเร็จ: '+(err.message||'กรุณาตรวจสอบอีเมลและรหัสผ่าน'));}finally{btn.disabled=false;btn.textContent='เข้าสู่ระบบ';}}
 async function doLogout(){await supabaseClient.auth.signOut();e('view-app').classList.add('hidden');e('view-login').classList.remove('hidden');e('password').value='';document.documentElement.scrollTop=0;document.body.scrollTop=0;window.scrollTo(0,0);}
 async function restoreSession(){try{const {data:{session}}=await supabaseClient.auth.getSession();if(session)await enterApp(session);}catch(err){console.error(err);await supabaseClient.auth.signOut();}}
