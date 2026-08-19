@@ -1134,14 +1134,15 @@ table.plist tbody td,table.data td{color:#29475A!important;font-weight:500}
 <div id="patient-form-modal" class="modal hidden">
   <div class="modal-card modal-wide">
     <div class="modal-head"><h2 id="patient-form-title">เพิ่มผู้ป่วยใหม่</h2><button class="modal-close" onclick="closePatientForm()">×</button></div>
+    <div style="margin:0 0 14px;padding:10px 12px;border-radius:10px;background:#F4F8FA;color:#5D7483;font-size:13px">สามารถบันทึกข้อมูลที่มีอยู่ก่อน แล้วกลับมาแก้ไข/เติมข้อมูลภายหลังได้ โดยต้องมี HN และชื่อ-สกุล</div>
     <form id="patient-form" onsubmit="savePatient(event)">
       <input type="hidden" id="patient-id">
       <div class="form-grid">
-        <div class="field"><label>HN *</label><input id="f-hn" required></div>
-        <div class="field"><label>ชื่อ-สกุล *</label><input id="f-name" required></div>
-        <div class="field"><label>วันเดือนปีเกิด (พ.ศ.) *</label><input id="f-birth-date" type="hidden"><div class="be-date-row"><select id="f-birth-day"></select><select id="f-birth-month"></select><select id="f-birth-year"></select></div><div class="be-date-label">อายุปัจจุบัน: <b id="birth-age-preview">—</b></div></div>
+        <div class="field"><label>HN *</label><input id="f-hn"></div>
+        <div class="field"><label>ชื่อ-สกุล *</label><input id="f-name"></div>
+        <div class="field"><label>วันเดือนปีเกิด (พ.ศ.)</label><input id="f-birth-date" type="hidden"><div class="be-date-row"><select id="f-birth-day"></select><select id="f-birth-month"></select><select id="f-birth-year"></select></div><div class="be-date-label">อายุปัจจุบัน: <b id="birth-age-preview">—</b></div></div>
         <div class="field"><label>เพศ</label><select id="f-sex"><option value="">— เลือก —</option><option>ชาย</option><option>หญิง</option><option>อื่นๆ</option></select></div>
-        <div class="field form-span-2"><label>กลุ่มโรค * <span class="form-help">เลือกได้มากกว่า 1 รายการ</span></label><input id="f-group" type="hidden"><div id="group-options" class="option-box"></div><div class="lab-tools"><input id="f-group-other" placeholder="กลุ่มโรคอื่น ๆ" style="max-width:320px"><button type="button" class="btn-ghost" onclick="addOtherOption('group')">เพิ่ม</button></div></div>
+        <div class="field form-span-2"><label>กลุ่มโรค <span class="form-help">เลือกได้มากกว่า 1 รายการ</span></label><input id="f-group" type="hidden"><div id="group-options" class="option-box"></div><div class="lab-tools"><input id="f-group-other" placeholder="กลุ่มโรคอื่น ๆ" style="max-width:320px"><button type="button" class="btn-ghost" onclick="addOtherOption('group')">เพิ่ม</button></div></div>
         <div class="field"><label>สถานะ</label><select id="f-status"><option value="ok">ปกติ</option><option value="urgent">เร่งด่วน</option><option value="overdue">เกินกำหนดเยี่ยม</option></select></div>
         <div class="field"><label>วันที่เยี่ยมล่าสุด (พ.ศ.)</label><input id="f-last-visit" type="hidden"><div class="be-date-row"><select id="f-last-day"></select><select id="f-last-month"></select><select id="f-last-year"></select></div></div>
         <div class="field"><label>วันที่เริ่มส่งเยี่ยมบ้าน (พ.ศ.)</label><input id="f-start-date" type="hidden"><div class="be-date-row"><select id="f-start-day"></select><select id="f-start-month"></select><select id="f-start-year"></select></div></div>
@@ -1440,7 +1441,8 @@ function renderAllTabPanels(p){
 function printRows(p){const rows=[['วันเดือนปีเกิด',p.birthDate?thaiDate(p.birthDate):''],['อายุ / เพศ',`${p.age==null?'—':p.age+' ปี'} / ${p.sex||'—'}`],['วันที่เริ่มส่งเยี่ยมบ้าน',p.startVisit],['วันที่จำหน่ายจากผู้ป่วยเยี่ยมบ้าน',p.dischargeVisit],['กลุ่มโรค',p.group],['Diagnosis',p.diagnosis],['ICD-10',p.icd10],['ประวัติแพ้ยา',p.allergy],['ที่อยู่',p.address],['โทรศัพท์',p.phone],['เยี่ยมล่าสุด',p.lastVisit],['สถานะ',p.status==='urgent'?'เร่งด่วน':p.status==='overdue'?`เกินกำหนด ${p.overdueDays||0} วัน`:'ปกติ'],['เหตุผล/ข้อควรติดตาม',p.reason],['ประวัติเดิม',p.history],['Lab / ผลตรวจ',p.lab],['Medication',p.medication],['Home Visit',p.homevisit],['INHOMESSS',p.inhomesss],['Problems',p.problems],['Care Plan',p.care_plan]];return rows.filter(r=>r[1]&&r[1]!=='—').map(r=>`<div class="a4-line"><span>${safe(r[0])}</span><span style="max-width:65%;text-align:right;white-space:pre-wrap">${safe(r[1])}</span></div>`).join('');}
 
 function openPatientForm(p=null){
-  e('patient-form').reset(); e('patient-id').value=p?.id||'';e('patient-form-title').textContent=p?'แก้ไขข้อมูลผู้ป่วย':'เพิ่มผู้ป่วยใหม่';
+  e('patient-form').reset(); e('patient-id').value=p?.id||'';e('patient-form-title').textContent=p?'แก้ไข / เพิ่มเติมข้อมูลผู้ป่วย':'เพิ่มผู้ป่วยใหม่';
+  e('save-patient-btn').textContent=p?'บันทึกข้อมูลเพิ่มเติม':'บันทึกข้อมูล';
   const vals={ 'f-hn':p?.hn,'f-name':p?.name,'f-sex':p?.sex,'f-status':p?.status||'ok','f-overdue-days':p?.overdueDays,'f-address':p?.address,'f-phone':p?.phone,'f-diagnosis':p?.diagnosis,'f-icd10':p?.icd10,'f-allergy':p?.allergy,'f-history':p?.history,'f-lab':p?.lab,'f-medication':p?.medication,'f-problems':p?.problems,'f-careplan':p?.care_plan};
   Object.entries(vals).forEach(([id,v])=>{if(e(id))e(id).value=v??'';});
   renderChoiceGroups();setChoiceValues('group',p?.group||'');setChoiceValues('reason',p?.reason||'');setBEDate('birth',p?.birth_date||p?.birthDate||'');updateBirthAgePreview();setBuddhistDate(p?.last_visit||'');setBEDate('start',p?.home_visit_start_date||p?.startVisitDate||'');setBEDate('discharge',p?.home_visit_discharge_date||p?.dischargeDate||'');setHomeVisit(p?.homevisit||'');setInhomesss(p?.inhomesss||'');e('lab-ocr-status').textContent='';
@@ -1455,16 +1457,23 @@ async function savePatient(ev){
 
     const id=e('patient-id').value||null;
     syncChoices('group');syncChoices('reason');syncHomeVisit();syncInhomesss();
-    if(!e('f-group').value.trim())throw new Error('กรุณาเลือกกลุ่มโรคอย่างน้อย 1 รายการ');
 
-    const birthDate=getISOFromBEDate('birth','วันเดือนปีเกิด',true);
-    if(new Date(birthDate+'T00:00:00')>new Date())throw new Error('วันเดือนปีเกิดต้องไม่เป็นวันที่ในอนาคต');
+    // v8: allow incomplete records to be saved and completed later.
+    // Only HN and patient name are required to identify the record.
+    const hnValue=e('f-hn').value.trim();
+    const nameValue=e('f-name').value.trim();
+    if(!hnValue)throw new Error('กรุณากรอก HN เพื่อระบุตัวผู้ป่วย');
+    if(!nameValue)throw new Error('กรุณากรอกชื่อ-สกุลเพื่อระบุตัวผู้ป่วย');
+
+    const birthDate=getISOFromBEDate('birth','วันเดือนปีเกิด');
+    if(birthDate && new Date(birthDate+'T00:00:00')>new Date())throw new Error('วันเดือนปีเกิดต้องไม่เป็นวันที่ในอนาคต');
     const startDate=getISOFromBEDate('start','วันที่เริ่มส่งเยี่ยมบ้าน');
     const dischargeDate=getISOFromBEDate('discharge','วันที่จำหน่ายจากผู้ป่วยเยี่ยมบ้าน');
     if(startDate&&dischargeDate&&dischargeDate<startDate)throw new Error('วันที่จำหน่ายต้องไม่ก่อนวันที่เริ่มส่งเยี่ยมบ้าน');
 
     const payload={
-      hn:e('f-hn').value.trim(),name:e('f-name').value.trim(),birth_date:birthDate,sex:e('f-sex').value,
+      hn:hnValue,name:nameValue,
+      age:calculateAge(birthDate),birth_date:birthDate,sex:e('f-sex').value,
       disease_group:e('f-group').value.trim(),status:e('f-status').value,last_visit:getISOFromBuddhistDate(),
       home_visit_start_date:startDate,home_visit_discharge_date:dischargeDate,
       overdue_days:Number(e('f-overdue-days').value||0),reason:e('f-reason').value.trim(),
@@ -1474,10 +1483,15 @@ async function savePatient(ev){
       inhomesss:e('f-inhomesss').value.trim(),problems:e('f-problems').value.trim(),care_plan:e('f-careplan').value.trim()
     };
 
-    let row,error;
-    if(id){({data:row,error}=await supabaseClient.from(PATIENTS_TABLE).update(payload).eq('id',id).select().single());}
-    else {({data:row,error}=await supabaseClient.from(PATIENTS_TABLE).insert(payload).select().single());}
-    if(error)throw error;
+    // v7: save through a database RPC instead of direct INSERT/UPDATE.
+    // This avoids legacy RLS / NOT NULL / schema-policy conflicts in older installations.
+    const {data:rpcRow,error:rpcError}=await supabaseClient.rpc('save_home_visit_patient',{
+      p_id:id||null,
+      p_data:payload
+    });
+    if(rpcError)throw rpcError;
+    const row=Array.isArray(rpcRow)?rpcRow[0]:rpcRow;
+    if(!row?.id)throw new Error('ฐานข้อมูลตอบกลับโดยไม่มีรหัสผู้ป่วย กรุณารัน supabase_v7_rpc_repair.sql');
 
     const attachmentErrors=[];
     const files=[...e('f-photos').files];
@@ -1517,13 +1531,18 @@ async function savePatient(ev){
     const msg=String(err?.message||err||'ไม่ทราบสาเหตุ');
     const details=[err?.code&&`code: ${err.code}`,err?.details&&`details: ${err.details}`,err?.hint&&`hint: ${err.hint}`].filter(Boolean).join('\n');
     let help='';
-    if(/birth_date|home_visit_start_date|home_visit_discharge_date|column .* does not exist|schema cache/i.test(msg)) help='\n\nโครงสร้างตารางยังเป็นเวอร์ชันเก่า กรุณารันไฟล์ supabase_v5_migration.sql แล้วรีเฟรชหน้าเว็บ';
-    else if(/relation .*patients.* does not exist|Could not find the table/i.test(msg)) help='\n\nยังไม่มีตาราง patients กรุณารัน supabase_v5_migration.sql';
-    else if(/row-level security|permission denied|policy|42501/i.test(msg+' '+details)) help='\n\nสิทธิ์ฐานข้อมูลยังไม่อนุญาตให้บันทึก กรุณารัน supabase_v5_migration.sql เพื่ออัปเดต GRANT และ RLS Policy';
+    if(/save_home_visit_patient|function .* does not exist|Could not find the function|PGRST202/i.test(msg+' '+details)) help='\n\nยังไม่มีฟังก์ชันบันทึก v7 ในฐานข้อมูล กรุณารัน supabase_v7_rpc_repair.sql ทั้งไฟล์ แล้วกด Ctrl+F5';
+    else if(/birth_date|home_visit_start_date|home_visit_discharge_date|column .* does not exist|schema cache/i.test(msg)) help='\n\nโครงสร้างตารางยังเป็นเวอร์ชันเก่า กรุณารันไฟล์ supabase_v7_rpc_repair.sql แล้วรีเฟรชหน้าเว็บ';
+    else if(/relation .*patients.* does not exist|Could not find the table/i.test(msg)) help='\n\nยังไม่มีตาราง patients กรุณารัน supabase_v7_rpc_repair.sql';
+    else if(/row-level security|permission denied|policy|42501/i.test(msg+' '+details)) help='\n\nสิทธิ์ฐานข้อมูลยังไม่อนุญาตให้บันทึก กรุณารัน supabase_v7_rpc_repair.sql เพื่ออัปเดต GRANT และ RLS Policy';
     else if(/duplicate key|patients_hn_key|23505/i.test(msg+' '+details)) help='\n\nเลข HN นี้มีอยู่ในระบบแล้ว กรุณาตรวจสอบ HN';
+    else if(/null value in column|not-null constraint|23502|check constraint|23514/i.test(msg+' '+details)) help='\n\nโครงสร้างตารางเดิมมีข้อบังคับเก่าที่ไม่ตรงกับเว็บเวอร์ชันปัจจุบัน กรุณารัน supabase_v7_rpc_repair.sql ทั้งไฟล์';
     else if(/Failed to fetch|NetworkError|fetch/i.test(msg)) help='\n\nไม่สามารถเชื่อมต่อ Supabase ได้ กรุณาตรวจสอบอินเทอร์เน็ตและค่า SUPABASE_URL / KEY';
     alert('บันทึกไม่สำเร็จ: '+msg+(details?'\n\n'+details:'')+help);
-  }finally{btn.disabled=false;btn.textContent='บันทึกข้อมูล';}
+  }finally{
+    btn.disabled=false;
+    btn.textContent=e('patient-id').value?'บันทึกข้อมูลเพิ่มเติม':'บันทึกข้อมูล';
+  }
 }
 
 function showScreen(name){e('screen-dashboard').classList.toggle('hidden',name!=='dashboard');e('screen-list').classList.toggle('hidden',name!=='list');e('screen-detail').classList.toggle('hidden',name!=='detail');e('nav-dashboard').classList.toggle('active',name==='dashboard');e('nav-list').classList.toggle('active',name==='list'||name==='detail');window.scrollTo({top:0,left:0,behavior:'instant'});}
