@@ -581,7 +581,7 @@
   .visit-tab-delete{border:0;border-left:1px solid #E3EAED;background:#fff;color:#9A6970;padding:0 8px;font-size:16px;cursor:pointer;}
   .visit-tab-delete:hover{background:#FFF0F1;color:#B73343;}
 
-/* ===== v14.5 Bright Medical Theme ===== */
+/* ===== v14.6 Bright Medical Theme ===== */
 :root{
   --navy:#123B5D;
   --teal:#12A6B5;
@@ -705,7 +705,7 @@ body{
   box-shadow:0 0 0 3px rgba(66,191,199,.12);
 }
 
-/* ===== v14.5 Formal Teal Pastel Theme (matched to selected reference) ===== */
+/* ===== v14.6 Formal Teal Pastel Theme (matched to selected reference) ===== */
 :root{
   --navy:#123F59;
   --teal:#0786A0;
@@ -998,6 +998,22 @@ body{
   .lab-target-feedback{font-size:11px;margin-top:3px;color:#738994}
   .lab-target-feedback.target-met{color:#187A55;font-weight:600}
   .lab-target-feedback.target-not-met{color:#A45D14;font-weight:600}
+
+  .conditional-assessment-box{border:1px solid #D6E4E9;border-radius:12px;padding:12px;background:#FBFDFE}
+  .assessment-trigger-row{display:flex;flex-wrap:wrap;gap:8px}
+  .assessment-trigger{display:flex;align-items:center;gap:6px;padding:8px 10px;border:1px solid #D8E4E8;border-radius:9px;background:#fff;font-size:12px;cursor:pointer}
+  .assessment-panel{margin-top:12px;padding:12px;border-top:1px solid #DCE6EA}
+  .assessment-title{font-weight:700;color:#16495F;font-size:14px;margin-bottom:8px}
+  .assessment-subtitle{font-weight:700;color:#456675;font-size:12px;margin:12px 0 6px}
+  .assessment-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .assessment-grid.two-col{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .assessment-grid.four-col{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .assessment-score-row{display:grid;grid-template-columns:1fr 160px;gap:8px;align-items:center}
+  .assessment-score-row label,.assessment-grid label{font-size:11.5px;color:#496A78;font-weight:600}
+  .assessment-summary-line{margin-top:9px;padding:7px 9px;background:#F0F7F9;border-radius:8px;color:#16495F}
+  .assessment-result-card{padding:8px 10px;margin:6px 0;border:1px solid #DCE7EB;border-radius:8px;background:#fff;font-size:12px}
+  .assessment-compare{margin-top:6px;padding:8px 10px;border-radius:8px;background:#fff;border:1px solid #DFE8EC}
+  @media(max-width:700px){.assessment-grid,.assessment-grid.two-col,.assessment-grid.four-col{grid-template-columns:1fr}.assessment-score-row{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -1226,7 +1242,67 @@ body{
         <div class="field form-span-2"><label>Medication</label><textarea id="f-medication" rows="3" placeholder="1 รายการต่อ 1 บรรทัด"></textarea></div>
         <div class="field form-span-2"><label>Home Visit — บันทึกครั้งนี้ <span class="form-help">จะถูกเพิ่มเป็นรายการใหม่ในไทม์ไลน์ ไม่ทับของเดิม</span></label><input id="f-homevisit" type="hidden"><div class="structured-box"><div class="structured-row"><label>ประเภทการเยี่ยม</label><select id="hv-type"><option value="">— เลือก —</option><option>เยี่ยมครั้งแรก</option><option>ติดตามต่อเนื่อง</option><option>หลังจำหน่ายจากโรงพยาบาล</option><option>เยี่ยมเร่งด่วน</option><option>เยี่ยมผู้ป่วยติดบ้าน/ติดเตียง</option><option>เยี่ยมประคับประคอง</option></select></div><div class="structured-row"><label>ผลการเยี่ยม</label><select id="hv-result"><option value="">— เลือก —</option><option>อาการคงที่</option><option>ดีขึ้น</option><option>ต้องติดตามต่อ</option><option>พบปัญหาใหม่</option><option>ส่งต่อ/นัดพบแพทย์</option></select></div><div class="structured-row"><label>บันทึกเพิ่มเติม</label><textarea id="hv-note" rows="3"></textarea></div></div></div>
         <div class="field form-span-2"><label>INHOMESSS Assessment</label><input id="f-inhomesss" type="hidden"><div id="inhomesss-structured" class="structured-box"></div></div>
-        <div class="field form-span-2"><label>Problems</label><textarea id="f-problems" rows="3"></textarea></div>
+        
+        <div class="field form-span-2">
+          <label>การประเมินเพิ่มเติมตามปัญหา</label>
+          <div class="conditional-assessment-box">
+            <div class="assessment-trigger-row">
+              <label class="assessment-trigger"><input id="assess-fall-toggle" type="checkbox" onchange="toggleConditionalAssessments()"> เสี่ยงพลัดตกหกล้ม / การทรงตัวไม่ดี</label>
+              <label class="assessment-trigger"><input id="assess-wound-toggle" type="checkbox" onchange="toggleConditionalAssessments()"> มีแผลกดทับ / เสี่ยงแผลกดทับ</label>
+              <label class="assessment-trigger"><input id="assess-neuro-toggle" type="checkbox" onchange="toggleConditionalAssessments()"> อัมพฤกษ์ / แขนขาอ่อนแรง / กล้ามเนื้ออ่อนแรง</label>
+            </div>
+
+            <div id="assessment-fall-panel" class="assessment-panel hidden">
+              <div class="assessment-title">ADL / Barthel Index + การล้ม</div>
+              <div class="form-help">กรอกตามความสามารถจริงของผู้ป่วยในวันที่เยี่ยม ระบบรวมคะแนน ADL ให้อัตโนมัติ</div>
+              <div id="adl-grid" class="assessment-grid"></div>
+              <div class="assessment-summary-line"><b>คะแนน ADL รวม:</b> <span id="adl-total">0</span> / 20</div>
+              <div class="assessment-grid two-col">
+                <div><label>ประวัติหกล้ม</label><select id="fall-history"><option value="">— เลือก —</option><option>ไม่มี</option><option>มีภายใน 1 เดือน</option><option>มีภายใน 6 เดือน</option><option>มีมากกว่า 1 ครั้ง</option></select></div>
+                <div><label>การเดิน/การทรงตัว</label><select id="fall-gait"><option value="">— เลือก —</option><option>เดินเองมั่นคง</option><option>เดินเองแต่ไม่มั่นคง</option><option>ใช้ไม้เท้า</option><option>ใช้ Walker</option><option>ต้องมีคนช่วย</option><option>เดินไม่ได้</option></select></div>
+                <div><label>อาการเวียนศีรษะ/หน้ามืด</label><select id="fall-dizziness"><option value="">— เลือก —</option><option>ไม่มี</option><option>มี</option></select></div>
+                <div><label>สิ่งแวดล้อมเสี่ยงล้ม</label><input id="fall-environment" placeholder="เช่น พื้นต่างระดับ ห้องน้ำลื่น แสงสว่างไม่พอ"></div>
+              </div>
+            </div>
+
+            <div id="assessment-wound-panel" class="assessment-panel hidden">
+              <div class="assessment-title">แผลกดทับ / Braden Scale</div>
+              <div class="assessment-grid two-col">
+                <div><label>ระดับแผลกดทับ</label><select id="wound-stage"><option value="">— เลือก —</option><option>Stage 1</option><option>Stage 2</option><option>Stage 3</option><option>Stage 4</option><option>Unstageable</option><option>Deep Tissue Pressure Injury</option><option>ยังไม่มีแผล - ประเมินความเสี่ยง</option></select></div>
+                <div><label>ตำแหน่งแผล</label><input id="wound-location" placeholder="เช่น Sacrum, Heel"></div>
+                <div><label>ขนาดแผล กว้าง × ยาว × ลึก (cm)</label><input id="wound-size" placeholder="เช่น 2 × 3 × 0.5"></div>
+                <div><label>ลักษณะเนื้อแผล</label><input id="wound-bed" placeholder="เช่น granulation / slough / eschar"></div>
+                <div><label>สารคัดหลั่ง</label><select id="wound-exudate"><option value="">— เลือก —</option><option>ไม่มี</option><option>น้อย</option><option>ปานกลาง</option><option>มาก</option></select></div>
+                <div><label>กลิ่น</label><select id="wound-odor"><option value="">— เลือก —</option><option>ไม่มี</option><option>มี</option></select></div>
+                <div><label>ผิวหนังรอบแผล</label><input id="wound-skin" placeholder="เช่น ปกติ แดง บวม เปื่อย"></div>
+                <div><label>ปวดแผล (0–10)</label><input id="wound-pain" type="number" min="0" max="10" step="1"></div>
+              </div>
+              <div class="assessment-subtitle">Braden Scale</div>
+              <div id="braden-grid" class="assessment-grid"></div>
+              <div class="assessment-summary-line"><b>คะแนน Braden รวม:</b> <span id="braden-total">0</span> / 23</div>
+            </div>
+
+            <div id="assessment-neuro-panel" class="assessment-panel hidden">
+              <div class="assessment-title">Neurological & Functional Assessment</div>
+              <div class="assessment-subtitle">Muscle Power (MRC Grade 0–5)</div>
+              <div class="assessment-grid four-col">
+                <div><label>แขนขวา</label><select id="mrc-ra" class="mrc-score"></select></div>
+                <div><label>แขนซ้าย</label><select id="mrc-la" class="mrc-score"></select></div>
+                <div><label>ขาขวา</label><select id="mrc-rl" class="mrc-score"></select></div>
+                <div><label>ขาซ้าย</label><select id="mrc-ll" class="mrc-score"></select></div>
+              </div>
+              <div class="assessment-grid two-col">
+                <div><label>ROM</label><select id="neuro-rom"><option value="">— เลือก —</option><option>ปกติ</option><option>จำกัดบางข้อ</option><option>มีข้อยึดติด/Contracture</option></select></div>
+                <div><label>การเดิน/การทรงตัว</label><select id="neuro-gait"><option value="">— เลือก —</option><option>เดินเองได้</option><option>เดินไม่มั่นคง</option><option>ใช้ไม้เท้า</option><option>ใช้ Walker</option><option>ต้องมีคนช่วย</option><option>เดินไม่ได้</option></select></div>
+                <div><label>Sensory</label><select id="neuro-sensory"><option value="">— เลือก —</option><option>ปกติ</option><option>ชา</option><option>รับสัมผัสลดลง</option><option>ผิดปกติอื่น ๆ</option></select></div>
+                <div><label>Spasticity/เกร็ง</label><select id="neuro-spasticity"><option value="">— เลือก —</option><option>ไม่มี</option><option>มีเล็กน้อย</option><option>มีปานกลาง</option><option>มีมาก</option></select></div>
+                <div><label>การกลืน</label><select id="neuro-swallow"><option value="">— เลือก —</option><option>ปกติ</option><option>ไอ/สำลักขณะกิน</option><option>เสียงเปลี่ยนหลังกลืน</option><option>ต้องปรับเนื้ออาหาร</option><option>ให้อาหารทางสาย</option></select></div>
+                <div><label>การสื่อสาร/ความรู้สึกตัว</label><input id="neuro-communication" placeholder="เช่น พูดชัด เข้าใจคำสั่ง / Aphasia / สับสน"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+<div class="field form-span-2"><label>Problems</label><textarea id="f-problems" rows="3"></textarea></div>
         <div class="field form-span-2"><label>Care Plan</label><textarea id="f-careplan" rows="4"></textarea></div>
         <div class="field form-span-2"><label>แนบภาพถ่าย</label><input id="f-photos" type="file" accept="image/*" multiple><div class="form-help">เลือกได้หลายภาพ ภาพจะถูกเก็บใน Supabase Storage</div></div>
         <div class="field form-span-2"><label>ทีมผู้เยี่ยมบ้าน <span class="form-help">กรอกเป็นส่วนสุดท้ายของแบบบันทึก กำหนด 2–5 คน และจะแสดงท้ายเอกสาร A4 พร้อมช่องลงลายมือชื่อ</span></label><div id="visit-team-box" class="structured-box"></div><div class="lab-tools"><button type="button" class="btn-ghost" onclick="addVisitTeamMember()">＋ เพิ่มผู้เยี่ยมบ้าน</button></div></div>
@@ -2214,6 +2290,130 @@ function clearManualLabForm(){
   e('f-lab').value='';e('f-lab-analysis').value='';e('lab-structured-preview').innerHTML='';
   window.__pendingLabSnapshot=null;e('lab-ocr-status').textContent='';
 }
+
+const ADL_ITEMS=[
+  ['feeding','รับประทานอาหาร',[[0,'ทำไม่ได้'],[1,'ต้องช่วยบางส่วน'],[2,'ทำได้เอง']]],
+  ['grooming','ล้างหน้า หวีผม แปรงฟัน',[[0,'ต้องช่วย'],[1,'ทำได้เอง']]],
+  ['transfer','ลุกนั่งจากเตียงไปเก้าอี้',[[0,'ทำไม่ได้'],[1,'ต้องช่วยมาก'],[2,'ต้องช่วยเล็กน้อย'],[3,'ทำได้เอง']]],
+  ['toilet','ใช้ห้องน้ำ',[[0,'ทำไม่ได้'],[1,'ต้องช่วย'],[2,'ทำได้เอง']]],
+  ['mobility','การเคลื่อนที่',[[0,'เคลื่อนที่ไม่ได้'],[1,'ใช้รถเข็นเอง'],[2,'เดินโดยมีคนช่วย'],[3,'เดินเองได้']]],
+  ['dressing','สวมใส่เสื้อผ้า',[[0,'ทำไม่ได้'],[1,'ต้องช่วยบางส่วน'],[2,'ทำได้เอง']]],
+  ['stairs','ขึ้นลงบันได',[[0,'ทำไม่ได้'],[1,'ต้องช่วย'],[2,'ทำได้เอง']]],
+  ['bathing','อาบน้ำ',[[0,'ต้องช่วย'],[1,'ทำได้เอง']]],
+  ['bowels','การกลั้นอุจจาระ',[[0,'กลั้นไม่ได้'],[1,'มีพลาดเป็นครั้งคราว'],[2,'กลั้นได้']]],
+  ['bladder','การกลั้นปัสสาวะ',[[0,'กลั้นไม่ได้/คาสาย'],[1,'มีพลาดเป็นครั้งคราว'],[2,'กลั้นได้']]]
+];
+const BRADEN_ITEMS=[
+  ['sensory','การรับความรู้สึก',4],['moisture','ความชื้น',4],['activity','กิจกรรม',4],
+  ['mobility','การเคลื่อนไหว',4],['nutrition','โภชนาการ',4],['friction','แรงเสียดสี/เฉือน',3]
+];
+
+function initConditionalAssessmentControls(){
+  const adl=e('adl-grid');
+  if(adl&&!adl.innerHTML){
+    adl.innerHTML=ADL_ITEMS.map(([id,label,opts])=>`<div class="assessment-score-row"><label>${safe(label)}</label><select id="adl-${id}" class="adl-score" onchange="updateADLTotal()"><option value="">—</option>${opts.map(([v,t])=>`<option value="${v}">${v} · ${safe(t)}</option>`).join('')}</select></div>`).join('');
+  }
+  const br=e('braden-grid');
+  if(br&&!br.innerHTML){
+    br.innerHTML=BRADEN_ITEMS.map(([id,label,max])=>`<div class="assessment-score-row"><label>${safe(label)}</label><select id="braden-${id}" class="braden-score" onchange="updateBradenTotal()"><option value="">—</option>${Array.from({length:max},(_,i)=>i+1).map(v=>`<option value="${v}">${v}</option>`).join('')}</select></div>`).join('');
+  }
+  document.querySelectorAll('.mrc-score').forEach(sel=>{
+    if(!sel.options.length)sel.innerHTML='<option value="">—</option>'+Array.from({length:6},(_,i)=>`<option value="${i}">${i}/5</option>`).join('');
+  });
+  updateADLTotal();updateBradenTotal();
+}
+function toggleConditionalAssessments(){
+  e('assessment-fall-panel')?.classList.toggle('hidden',!e('assess-fall-toggle')?.checked);
+  e('assessment-wound-panel')?.classList.toggle('hidden',!e('assess-wound-toggle')?.checked);
+  e('assessment-neuro-panel')?.classList.toggle('hidden',!e('assess-neuro-toggle')?.checked);
+}
+function updateADLTotal(){
+  const total=[...document.querySelectorAll('.adl-score')].reduce((sum,x)=>sum+(x.value===''?0:Number(x.value)),0);
+  if(e('adl-total'))e('adl-total').textContent=total;
+  return total;
+}
+function updateBradenTotal(){
+  const total=[...document.querySelectorAll('.braden-score')].reduce((sum,x)=>sum+(x.value===''?0:Number(x.value)),0);
+  if(e('braden-total'))e('braden-total').textContent=total;
+  return total;
+}
+function collectVisitAssessments(){
+  const out={};
+  if(e('assess-fall-toggle')?.checked){
+    const scores={};
+    ADL_ITEMS.forEach(([id])=>scores[id]=e(`adl-${id}`)?.value===''?null:Number(e(`adl-${id}`)?.value));
+    out.fall={
+      enabled:true,adl:{scores,total:updateADLTotal()},
+      history:e('fall-history')?.value||'',gait:e('fall-gait')?.value||'',
+      dizziness:e('fall-dizziness')?.value||'',environment:e('fall-environment')?.value?.trim()||''
+    };
+  }
+  if(e('assess-wound-toggle')?.checked){
+    const braden={};
+    BRADEN_ITEMS.forEach(([id])=>braden[id]=e(`braden-${id}`)?.value===''?null:Number(e(`braden-${id}`)?.value));
+    out.wound={
+      enabled:true,stage:e('wound-stage')?.value||'',location:e('wound-location')?.value?.trim()||'',
+      size:e('wound-size')?.value?.trim()||'',bed:e('wound-bed')?.value?.trim()||'',
+      exudate:e('wound-exudate')?.value||'',odor:e('wound-odor')?.value||'',
+      surroundingSkin:e('wound-skin')?.value?.trim()||'',pain:e('wound-pain')?.value===''?null:Number(e('wound-pain')?.value),
+      braden:{scores:braden,total:updateBradenTotal()}
+    };
+  }
+  if(e('assess-neuro-toggle')?.checked){
+    out.neuro={
+      enabled:true,mrc:{
+        rightArm:e('mrc-ra')?.value===''?null:Number(e('mrc-ra')?.value),
+        leftArm:e('mrc-la')?.value===''?null:Number(e('mrc-la')?.value),
+        rightLeg:e('mrc-rl')?.value===''?null:Number(e('mrc-rl')?.value),
+        leftLeg:e('mrc-ll')?.value===''?null:Number(e('mrc-ll')?.value)
+      },
+      rom:e('neuro-rom')?.value||'',gait:e('neuro-gait')?.value||'',sensory:e('neuro-sensory')?.value||'',
+      spasticity:e('neuro-spasticity')?.value||'',swallow:e('neuro-swallow')?.value||'',
+      communication:e('neuro-communication')?.value?.trim()||''
+    };
+  }
+  return out;
+}
+function resetConditionalAssessments(){
+  ['assess-fall-toggle','assess-wound-toggle','assess-neuro-toggle'].forEach(id=>{if(e(id))e(id).checked=false;});
+  document.querySelectorAll('#assessment-fall-panel select,#assessment-wound-panel select,#assessment-neuro-panel select').forEach(x=>x.value='');
+  document.querySelectorAll('#assessment-fall-panel input,#assessment-wound-panel input,#assessment-neuro-panel input').forEach(x=>{if(x.type!=='checkbox')x.value='';});
+  toggleConditionalAssessments();updateADLTotal();updateBradenTotal();
+}
+function assessmentSummaryHtml(a){
+  if(!a||!Object.keys(a).length)return '<div class="empty-state">ไม่มีแบบประเมินเพิ่มเติมในครั้งนี้</div>';
+  let html='';
+  if(a.fall?.enabled){
+    html+=`<div class="assessment-result-card"><b>เสี่ยงพลัดตกหกล้ม / ADL</b><div>ADL ${safe(a.fall.adl?.total??'—')}/20</div>${a.fall.gait?`<div>การเดิน: ${safe(a.fall.gait)}</div>`:''}${a.fall.history?`<div>ประวัติล้ม: ${safe(a.fall.history)}</div>`:''}${a.fall.environment?`<div>สิ่งแวดล้อมเสี่ยง: ${safe(a.fall.environment)}</div>`:''}</div>`;
+  }
+  if(a.wound?.enabled){
+    html+=`<div class="assessment-result-card"><b>แผลกดทับ / Braden</b><div>Stage: ${safe(a.wound.stage||'—')} · Braden ${safe(a.wound.braden?.total??'—')}/23</div>${a.wound.location?`<div>ตำแหน่ง: ${safe(a.wound.location)}</div>`:''}${a.wound.size?`<div>ขนาด: ${safe(a.wound.size)} cm</div>`:''}</div>`;
+  }
+  if(a.neuro?.enabled){
+    const m=a.neuro.mrc||{};
+    html+=`<div class="assessment-result-card"><b>Neurological / Muscle power</b><div>MRC: แขนขวา ${m.rightArm??'—'}/5 · แขนซ้าย ${m.leftArm??'—'}/5 · ขาขวา ${m.rightLeg??'—'}/5 · ขาซ้าย ${m.leftLeg??'—'}/5</div>${a.neuro.gait?`<div>การเดิน: ${safe(a.neuro.gait)}</div>`:''}${a.neuro.swallow?`<div>การกลืน: ${safe(a.neuro.swallow)}</div>`:''}</div>`;
+  }
+  return html||'<div class="empty-state">ไม่มีแบบประเมินเพิ่มเติมในครั้งนี้</div>';
+}
+function assessmentComparisonHtml(prev,cur){
+  if(!prev&&!cur)return '';
+  const rows=[];
+  const pFall=prev?.fall,cFall=cur?.fall;
+  if(pFall||cFall){
+    const p=pFall?.adl?.total,c=cFall?.adl?.total;
+    rows.push(`<div><b>ADL:</b> ${p??'—'} → ${c??'—'}${p!=null&&c!=null?` (${c>p?'ดีขึ้น':c<p?'ลดลง':'คงเดิม'})`:''}</div>`);
+  }
+  const pW=prev?.wound,cW=cur?.wound;
+  if(pW||cW){
+    rows.push(`<div><b>แผลกดทับ:</b> ${safe(pW?.stage||'—')} → ${safe(cW?.stage||'—')} · Braden ${pW?.braden?.total??'—'} → ${cW?.braden?.total??'—'}</div>`);
+  }
+  const pN=prev?.neuro,cN=cur?.neuro;
+  if(pN||cN){
+    const limb=[['rightArm','แขนขวา'],['leftArm','แขนซ้าย'],['rightLeg','ขาขวา'],['leftLeg','ขาซ้าย']];
+    rows.push(`<div><b>MRC:</b> ${limb.map(([k,l])=>`${l} ${pN?.mrc?.[k]??'—'}→${cN?.mrc?.[k]??'—'}`).join(' · ')}</div>`);
+  }
+  return rows.length?`<div class="assessment-compare">${rows.join('')}</div>`:'';
+}
 function renderVisitTeam(team=[],forceEdit=false){
   const box=e('visit-team-box');if(!box)return;
   let a=Array.isArray(team)?team.filter(x=>x&&(x.name||x.role)):[];
@@ -2663,6 +2863,7 @@ function visitMainTabHtml(p,index){
       <button type="button" class="visit-subtab" onclick="showVisitSubtab(${index},'inhomesss',this)">INHOMESSS</button>
       <button type="button" class="visit-subtab" onclick="showVisitSubtab(${index},'problems',this)">Problems</button>
       <button type="button" class="visit-subtab" onclick="showVisitSubtab(${index},'careplan',this)">Care Plan</button>
+      <button type="button" class="visit-subtab" onclick="showVisitSubtab(${index},'assessment',this)">แบบประเมินเพิ่มเติม</button>
       <button type="button" class="visit-subtab" onclick="showVisitSubtab(${index},'photos',this)">รูปภาพ</button>
       <button type="button" class="visit-subtab" onclick="showVisitSubtab(${index},'print',this)">รายงานผลการเยี่ยมบ้าน</button>
     </div>
@@ -2739,6 +2940,7 @@ function visitPrintA4Html(p,index){
     ${printSection('INHOMESSS',v.inhomesss||'—')}
     ${printSection('Problems',v.problems||'—')}
     ${printSection('Care Plan',v.care_plan||'—')}
+    ${v.assessments&&Object.keys(v.assessments).length?`<div class="a4-visit-section"><div class="a4-visit-label">แบบประเมินเพิ่มเติม</div><div class="a4-visit-value">${assessmentSummaryHtml(v.assessments)}</div></div>`:''}
 
     ${visitPrintPhotosHtml(p,index)}
     ${visitorSignatureHtml(p,team)}
@@ -2754,6 +2956,7 @@ function visitSubContentHtml(p,index,type){
   if(type==='inhomesss')return `<div class="visit-note">${textBlock(v.inhomesss||'—')}</div>`;
   if(type==='problems')return `<div class="visit-note">${textBlock(v.problems||'—')}</div>`;
   if(type==='careplan')return `<div class="visit-note">${textBlock(v.care_plan||'—')}</div>`;
+  if(type==='assessment')return assessmentSummaryHtml(v.assessments);
   if(type==='photos'){
     const photos=photosForVisit(p,index);
     return `<div class="photo-grid">${photos.length?photos.map((x,i)=>`<div class="photo-tile photo-real"><img src="${safe(x.url||x)}"><div class="photo-caption">ภาพเยี่ยมครั้งที่ ${index+1} · ภาพที่ ${i+1}</div></div>`).join(''):'<div class="empty-state" style="grid-column:1/-1">ยังไม่มีภาพของการเยี่ยมครั้งนี้</div>'}</div>`;
@@ -2840,6 +3043,7 @@ function visitAnalysisHtml(p){
       ${lab?`<div style="margin-top:7px"><b>Lab ครั้งนี้:</b> ${(lab.results||[]).length} รายการ · <span style="color:${abnormalLabs.length?'#b33d49':'#26856f'}">${abnormalLabs.length?`${abnormalLabs.length} ค่าผิดปกติ`:'ไม่พบค่าผิดปกติจากรายการที่ประเมินได้'}</span></div>
       ${abnormalLabs.length?`<div style="font-size:12px;margin-top:4px;color:#6a4a4f">${safe(abnormalLabs.map(x=>`${x.label} ${resultDisplay(x)} (${labStatusThai(x.status)})`).join(' · '))}</div>`:''}`:'<div style="margin-top:7px;color:#81909a;font-size:12px">ยังไม่มีผล Lab ที่จับคู่กับการเยี่ยมครั้งนี้</div>'}
       ${v.care_plan?`<div style="margin-top:5px"><b>แผนดูแล:</b> ${textBlock(v.care_plan)}</div>`:''}
+      ${v.assessments&&Object.keys(v.assessments).length?`<div style="margin-top:8px"><b>แบบประเมินเพิ่มเติม:</b>${assessmentSummaryHtml(v.assessments)}</div>`:''}
     </div>`;
   }).join('');
 
@@ -2859,6 +3063,9 @@ function visitAnalysisHtml(p){
       <div style="margin-top:6px">🟠 <b>ปัญหาที่ยังคงอยู่:</b> ${persistent.length?safe(persistent.join(' · ')):'ไม่พบจากรายการปัญหาที่คีย์ไว้'}</div>
       <div style="margin-top:5px">🔴 <b>ปัญหาใหม่:</b> ${added.length?safe(added.join(' · ')):'ไม่พบ'}</div>
       <div style="margin-top:5px">🟢 <b>ปัญหาที่ไม่พบในครั้งล่าสุด:</b> ${resolved.length?safe(resolved.join(' · ')):'ไม่พบ'}</div>
+
+      <div style="margin-top:13px;padding-top:10px;border-top:1px solid #dce7ea;font-weight:700;color:#36596b">การเปลี่ยนแปลงของแบบประเมินเพิ่มเติม</div>
+      ${assessmentComparisonHtml(h[i-1].assessments,h[i].assessments)||'<div style="margin-top:6px;color:#81909a">ไม่มีข้อมูลแบบประเมินเพิ่มเติมครบทั้งสองครั้ง</div>'}
 
       <div style="margin-top:13px;padding-top:10px;border-top:1px solid #dce7ea;font-weight:700;color:#36596b">การเปลี่ยนแปลงของผล Lab</div>
       ${labsByVisit[i-1]&&labsByVisit[i]?`
@@ -2954,7 +3161,7 @@ function openPatientForm(p=null){
   populateStageSelect(p?.stage||'new');
   renderChoiceGroups();setChoiceValues('group',p?.group||'');setChoiceValues('reason',p?.reason||'');setBEDate('birth',p?.birth_date||p?.birthDate||'');updateBirthAgePreview();setBuddhistDate(p?.last_visit||'');setBEDate('start',p?.home_visit_start_date||p?.startVisitDate||'');setBEDate('discharge',p?.home_visit_discharge_date||p?.dischargeDate||'');setBEDate('nextvisit',p?.nextVisitDate||'');
   e('hv-type').value='';e('hv-result').value='';e('hv-note').value='';syncHomeVisit();
-  setInhomesss(p?.inhomesss||'');renderVisitTeam(p?.home_visit_team||[]);window.__pendingLabSnapshot=null;renderLabEntryGroups();e('lab-extra-rows').innerHTML='';renderLabStructuredPreview([],null);renderExistingLabHistory(p);e('lab-ocr-status').textContent=''; if(e('f-sex'))e('f-sex').onchange=refreshAutomaticReferences;
+  setInhomesss(p?.inhomesss||'');renderVisitTeam(p?.home_visit_team||[]);initConditionalAssessmentControls();resetConditionalAssessments();window.__pendingLabSnapshot=null;renderLabEntryGroups();e('lab-extra-rows').innerHTML='';renderLabStructuredPreview([],null);renderExistingLabHistory(p);e('lab-ocr-status').textContent=''; if(e('f-sex'))e('f-sex').onchange=refreshAutomaticReferences;
   checkWarnings(p);
   e('patient-form-modal').classList.remove('hidden');
 }
@@ -3002,6 +3209,7 @@ async function savePatient(ev){
         problems:e('f-problems').value.trim(),
         care_plan:e('f-careplan').value.trim(),
         inhomesss:e('f-inhomesss')?.value?.trim?.()||'',
+        assessments:collectVisitAssessments(),
         home_visit_team:team.map(x=>({...x})),
         photos:[]
       });
