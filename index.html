@@ -615,7 +615,12 @@
         <div class="field"><label>ICD-10</label><input id="f-icd10"></div>
         <div class="field"><label>ประวัติแพ้ยา</label><input id="f-allergy"></div>
         <div class="field form-span-2"><label>ประวัติเดิม</label><textarea id="f-history" rows="3"></textarea></div>
-        <div class="field form-span-2"><label>Lab / ผลตรวจจากภาพหรือ PDF</label><div class="lab-upload-box"><input id="f-lab-files" type="file" accept="image/*,application/pdf" multiple><div class="form-help">ระบบเน้นอ่านชื่อการตรวจ ตัวเลข หน่วย และช่วงอ้างอิง เพื่อลดปัญหาภาษาเพี้ยน</div><div class="lab-tools"><button type="button" class="btn-ghost" onclick="analyzeLabFiles()">อ่านและวิเคราะห์ผล Lab</button><span id="lab-ocr-status" class="lab-status"></span></div></div><textarea id="f-lab" rows="7" placeholder="ค่าที่อ่านจากผล Lab — กรุณาตรวจสอบกับต้นฉบับ"></textarea><label style="margin-top:12px">สรุปผล Lab / สิ่งที่ควรติดตาม</label><textarea id="f-lab-analysis" rows="7"></textarea><div class="form-help">ใช้ช่วยคัดกรองเท่านั้น ต้องยืนยันค่ากับเอกสารต้นฉบับ</div></div>
+        <div class="field form-span-2"><label>Lab / ผลตรวจจากภาพหรือ PDF</label><div class="lab-upload-box"><input id="f-lab-files" type="file" accept="image/*,application/pdf" multiple><div class="form-help">ระบบเน้นอ่านชื่อการตรวจ ตัวเลข หน่วย และช่วงอ้างอิง เพื่อลดปัญหาภาษาเพี้ยน</div><div class="lab-tools"><button type="button" class="btn-ghost" onclick="analyzeLabFiles()">อ่านและวิเคราะห์ผล Lab</button><span id="lab-ocr-status" class="lab-status"></span></div></div><textarea id="f-lab" rows="7" placeholder="ค่าที่อ่านจากผล Lab — กรุณาตรวจสอบกับต้นฉบับ"></textarea>
+<div id="existing-lab-files" style="margin-top:10px"></div>
+<div class="lab-tools" style="margin-top:8px">
+  <button type="button" class="btn-ghost" onclick="clearLabReadResult()">ล้างข้อความ/ผลวิเคราะห์ Lab</button>
+</div>
+<label style="margin-top:12px">สรุปผล Lab / สิ่งที่ควรติดตาม</label><textarea id="f-lab-analysis" rows="7"></textarea><div class="form-help">ใช้ช่วยคัดกรองเท่านั้น ต้องยืนยันค่ากับเอกสารต้นฉบับ</div></div>
         <div class="field form-span-2"><label>Medication</label><textarea id="f-medication" rows="3" placeholder="1 รายการต่อ 1 บรรทัด"></textarea></div>
         <div class="field form-span-2"><label>Home Visit — บันทึกครั้งนี้ <span class="form-help">จะถูกเพิ่มเป็นรายการใหม่ในไทม์ไลน์ ไม่ทับของเดิม</span></label><input id="f-homevisit" type="hidden"><div class="structured-box"><div class="structured-row"><label>ประเภทการเยี่ยม</label><select id="hv-type"><option value="">— เลือก —</option><option>เยี่ยมครั้งแรก</option><option>ติดตามต่อเนื่อง</option><option>หลังจำหน่ายจากโรงพยาบาล</option><option>เยี่ยมเร่งด่วน</option><option>เยี่ยมผู้ป่วยติดบ้าน/ติดเตียง</option><option>เยี่ยมประคับประคอง</option></select></div><div class="structured-row"><label>ผลการเยี่ยม</label><select id="hv-result"><option value="">— เลือก —</option><option>อาการคงที่</option><option>ดีขึ้น</option><option>ต้องติดตามต่อ</option><option>พบปัญหาใหม่</option><option>ส่งต่อ/นัดพบแพทย์</option></select></div><div class="structured-row"><label>บันทึกเพิ่มเติม</label><textarea id="hv-note" rows="3"></textarea></div></div></div>
         <div class="field form-span-2"><label>INHOMESSS Assessment</label><input id="f-inhomesss" type="hidden"><div id="inhomesss-structured" class="structured-box"></div></div>
@@ -849,10 +854,40 @@ async function extractPdfTextOrOcr(file,worker,status){
 function cleanLabText(raw){return raw.replace(/\r/g,'').replace(/[ \t]+/g,' ').replace(/\n{3,}/g,'\n\n').trim();}
 function interpretLabText(raw){const lines=String(raw||'').split(/\n/).map(x=>x.trim()).filter(Boolean),bad=[];const rr=/(-?\d+(?:\.\d+)?)\s*(?:-|–|—|to)\s*(-?\d+(?:\.\d+)?)/i,nr=/(-?\d+(?:\.\d+)?)/g;for(const line of lines){const r=line.match(rr);if(r){const vals=[...line.slice(0,line.indexOf(r[0])).matchAll(nr)].map(m=>+m[1]);if(vals.length){const v=vals.at(-1),lo=+r[1],hi=+r[2];if(v<lo||v>hi)bad.push(`${line} → ${v<lo?'ต่ำ':'สูง'}กว่าช่วงอ้างอิง`);}}else if(/\b(H|HIGH|L|LOW)\b|[↑↓]/i.test(line))bad.push(line);}return 'สรุปจากผล Lab ที่ระบบอ่านได้\n'+(bad.length?'ค่าที่อาจผิดปกติ:\n- '+[...new Set(bad)].slice(0,30).join('\n- '):'ยังไม่พบค่าที่ระบุสูง/ต่ำได้อย่างมั่นใจ')+'\n\nควรติดตาม:\n- ตรวจสอบชื่อรายการ ค่า หน่วย และช่วงอ้างอิงกับเอกสารต้นฉบับ\n- เปรียบเทียบแนวโน้มกับผลครั้งก่อน โรคประจำตัว และอาการ\n- ค่าที่มี H/L/↑/↓ หรืออยู่นอกช่วงอ้างอิงควรให้ผู้ประกอบวิชาชีพประเมิน\n\nหมายเหตุ: ไม่ใช้ OCR เพียงอย่างเดียวเพื่อวินิจฉัย';}
 async function analyzeLabFiles(){const files=[...e('f-lab-files').files],status=e('lab-ocr-status');if(!files.length){alert('กรุณาเลือกภาพหรือ PDF ผล Lab ก่อน');return;}if(!window.Tesseract||!window.pdfjsLib){alert('ไม่สามารถโหลดโมดูลอ่านไฟล์ได้');return;}let worker,chunks=[];try{worker=await Tesseract.createWorker('eng',1,{logger:m=>{if(m.status&&m.progress!=null)status.textContent=`${m.status} ${Math.round(m.progress*100)}%`;}});for(let i=0;i<files.length;i++){const f=files[i];status.textContent=`กำลังอ่าน ${f.name} (${i+1}/${files.length})...`;let text=(f.type==='application/pdf'||f.name.toLowerCase().endsWith('.pdf'))?await extractPdfTextOrOcr(f,worker,status):await ocrImageSource(f,worker);chunks.push(`===== ${f.name} =====\n${cleanLabText(text)}`);}const result=chunks.join('\n\n');e('f-lab').value=result;e('f-lab-analysis').value=interpretLabText(result);status.textContent='อ่านและวิเคราะห์เสร็จแล้ว — กรุณาตรวจสอบต้นฉบับ';}catch(err){status.textContent='อ่านไฟล์ไม่สำเร็จ';alert('อ่านผล Lab ไม่สำเร็จ: '+(err.message||err));}finally{if(worker)await worker.terminate();}}
-function renderVisitTeam(team=[]){const box=e('visit-team-box');if(!box)return;let a=Array.isArray(team)?team:[];while(a.length<2)a.push({name:'',role:''});a=a.slice(0,5);box.innerHTML=a.map((m,i)=>`<div class="structured-row visit-team-row"><label>ผู้เยี่ยมคนที่ ${i+1}</label><div style="display:grid;grid-template-columns:1.4fr 1fr auto;gap:8px"><input class="visit-team-name" placeholder="ชื่อ-สกุล" value="${safe(m?.name||'')}"><input class="visit-team-role" placeholder="ตำแหน่ง/วิชาชีพ" value="${safe(m?.role||'')}">${i>=2?`<button type="button" class="btn-ghost" onclick="removeVisitTeamMember(${i})">ลบ</button>`:''}</div></div>`).join('');}
-function getVisitTeam(){return [...document.querySelectorAll('.visit-team-row')].map(r=>({name:r.querySelector('.visit-team-name').value.trim(),role:r.querySelector('.visit-team-role').value.trim()})).filter(x=>x.name||x.role);}
-function addVisitTeamMember(){const a=getVisitTeam();if(a.length>=5){alert('สูงสุด 5 คน');return;}a.push({name:'',role:''});renderVisitTeam(a);}
-function removeVisitTeamMember(i){const a=getVisitTeam();a.splice(i,1);renderVisitTeam(a);}
+function renderVisitTeam(team=[],forceEdit=false){
+  const box=e('visit-team-box');if(!box)return;
+  let a=Array.isArray(team)?team.filter(x=>x&&(x.name||x.role)):[];
+  window.__visitTeamSaved=a.map(x=>({name:x.name||'',role:x.role||''}));
+  window.__visitTeamEditing=forceEdit || a.length===0;
+  if(!window.__visitTeamEditing){
+    box.innerHTML=`<div style="display:grid;gap:8px">
+      ${a.map((m,i)=>`<div class="lab-file-link"><span><b>${i+1}. ${safe(m.name||'')}</b>${m.role?` · ${safe(m.role)}`:''}</span></div>`).join('')}
+      <div class="lab-tools"><button type="button" class="btn-ghost" onclick="editVisitTeam()">แก้ไข / เพิ่ม / ลบรายชื่อผู้เยี่ยมบ้าน</button></div>
+    </div>`;
+    return;
+  }
+  while(a.length<2)a.push({name:'',role:''});
+  a=a.slice(0,5);
+  box.innerHTML=a.map((m,i)=>`<div class="structured-row visit-team-row">
+    <label>ผู้เยี่ยมคนที่ ${i+1}</label>
+    <div style="display:grid;grid-template-columns:1.4fr 1fr auto;gap:8px">
+      <input class="visit-team-name" placeholder="ชื่อ-สกุล" value="${safe(m?.name||'')}">
+      <input class="visit-team-role" placeholder="ตำแหน่ง/วิชาชีพ" value="${safe(m?.role||'')}">
+      ${i>=2?`<button type="button" class="btn-ghost" onclick="removeVisitTeamMember(${i})">ลบ</button>`:''}
+    </div>
+  </div>`).join('')+`<div class="lab-tools"><button type="button" class="btn-ghost" onclick="addVisitTeamMember()">＋ เพิ่มผู้เยี่ยมบ้าน</button>${window.__visitTeamSaved?.length?'<button type="button" class="btn-ghost" onclick="cancelVisitTeamEdit()">ยกเลิกการแก้ไข</button>':''}</div>`;
+}
+function getVisitTeam(){
+  if(!window.__visitTeamEditing)return Array.isArray(window.__visitTeamSaved)?window.__visitTeamSaved:[];
+  return [...document.querySelectorAll('.visit-team-row')].map(r=>({
+    name:r.querySelector('.visit-team-name').value.trim(),
+    role:r.querySelector('.visit-team-role').value.trim()
+  })).filter(x=>x.name||x.role);
+}
+function editVisitTeam(){renderVisitTeam(window.__visitTeamSaved||[],true);}
+function cancelVisitTeamEdit(){renderVisitTeam(window.__visitTeamSaved||[],false);}
+function addVisitTeamMember(){const a=getVisitTeam();if(a.length>=5){alert('กำหนดผู้เยี่ยมบ้านได้สูงสุด 5 คน');return;}a.push({name:'',role:''});window.__visitTeamEditing=true;renderVisitTeam(a,true);}
+function removeVisitTeamMember(i){const a=getVisitTeam();a.splice(i,1);window.__visitTeamEditing=true;renderVisitTeam(a,true);}
 const thaiDate = iso => {
   if(!iso) return '—';
   const d = new Date(iso+'T00:00:00');
@@ -878,7 +913,7 @@ async function loadPatients(){
 function renderAllScreens(){ renderToday(); renderDashboard(); renderList(); }
 
 function normalizePatient(p){
-  return {...p,id:p.id,hn:p.hn||'',name:p.name||'',birthDate:p.birth_date||'',age:calculateAge(p.birth_date),sex:p.sex||'',group:p.disease_group||'',lastVisit:thaiDate(p.last_visit),startVisitDate:p.home_visit_start_date||'',startVisit:thaiDate(p.home_visit_start_date),dischargeDate:p.home_visit_discharge_date||'',dischargeVisit:thaiDate(p.home_visit_discharge_date),status:p.status||'ok',overdueDays:p.overdue_days||0,reason:p.reason||'',address:p.address||'',phone:p.phone||'',photos:Array.isArray(p.photos)?p.photos:[],labFiles:Array.isArray(p.lab_files)?p.lab_files:[],home_visit_team:Array.isArray(p.home_visit_team)?p.home_visit_team:[],stage:p.workflow_stage||'new',nextVisitDate:p.next_visit_date||''};
+  return {...p,id:p.id,hn:p.hn||'',name:p.name||'',birthDate:p.birth_date||'',age:calculateAge(p.birth_date),sex:p.sex||'',group:p.disease_group||'',lastVisit:thaiDate(p.last_visit),startVisitDate:p.home_visit_start_date||'',startVisit:thaiDate(p.home_visit_start_date),dischargeDate:p.home_visit_discharge_date||'',dischargeVisit:thaiDate(p.home_visit_discharge_date),status:p.status||'ok',overdueDays:p.overdue_days||0,reason:p.reason||'',address:p.address||'',phone:p.phone||'',photos:Array.isArray(p.photos)?p.photos:[],labFiles:Array.isArray(p.lab_files)?p.lab_files:[],lab_analysis:p.lab_analysis||'',home_visit_team:Array.isArray(p.home_visit_team)?p.home_visit_team:[],stage:p.workflow_stage||'new',nextVisitDate:p.next_visit_date||''};
 }
 async function hydratePhotoUrls(){
   for(const p of patients){
@@ -1091,7 +1126,14 @@ function renderAllTabPanels(p){
   e('tab-panel-wrap').innerHTML=`
   <div class="tab-panel active" id="panel-history"><h3>ประวัติเดิม</h3><div class="kv-grid"><div class="kv"><div class="k">วันเดือนปีเกิด / อายุปัจจุบัน</div><div class="v">${p.birthDate?safe(thaiDate(p.birthDate)):'—'} · ${p.age==null?'—':safe(p.age)+' ปี'}</div></div><div class="kv"><div class="k">กลุ่มโรค</div><div class="v">${safe(p.group||'—')}</div></div><div class="kv"><div class="k">วันที่เริ่มส่งเยี่ยมบ้าน</div><div class="v">${safe(p.startVisit||'—')}</div></div><div class="kv"><div class="k">วันที่จำหน่ายจากผู้ป่วยเยี่ยมบ้าน</div><div class="v">${safe(p.dischargeVisit||'—')}</div></div><div class="kv"><div class="k">ประวัติแพ้ยา</div><div class="v">${safe(p.allergy||'—')}</div></div><div class="kv"><div class="k">นัดเยี่ยมครั้งถัดไป</div><div class="v">${p.nextVisitDate?safe(thaiDate(p.nextVisitDate)):'—'}</div></div><div class="kv form-span-2"><div class="k">ประวัติเดิม</div><div class="v">${textBlock(p.history)}</div></div></div></div>
   <div class="tab-panel" id="panel-diagnosis"><h3>Diagnosis</h3><div class="kv-grid"><div class="kv"><div class="k">Diagnosis</div><div class="v">${safe(p.diagnosis||'—')}</div></div><div class="kv"><div class="k">ICD-10</div><div class="v">${safe(p.icd10||'—')}</div></div></div></div>
-  <div class="tab-panel" id="panel-lab"><h3>Lab / ผลตรวจ</h3>${labFlagged(p)?'<div class="warning-banner">พบคำที่บ่งชี้ผลผิดปกติในบันทึก Lab นี้ ควรติดตาม</div>':''}<div class="visit-note" style="white-space:pre-wrap">${textBlock(p.lab)}</div>${p.labFiles?.length?`<h3 style="margin-top:24px">ไฟล์ Lab ที่แนบ</h3>${p.labFiles.map((f,i)=>`<div class="lab-file-link"><span>${safe(f.name||('ไฟล์ '+(i+1)))}</span><a href="${safe(f.url)}" target="_blank" rel="noopener">เปิดไฟล์</a></div>`).join('')}`:''}</div>
+  <div class="tab-panel" id="panel-lab"><h3>Lab / ผลตรวจ</h3>
+  ${labFlagged(p)?'<div class="warning-banner">พบคำที่บ่งชี้ผลผิดปกติในบันทึก Lab นี้ ควรติดตาม</div>':''}
+  <div class="visit-note" style="white-space:pre-wrap">${textBlock(p.lab)}</div>
+  ${p.lab_analysis?`<h3 style="margin-top:24px">สรุปผล Lab / สิ่งที่ควรติดตาม</h3><div class="visit-note" style="white-space:pre-wrap">${textBlock(p.lab_analysis)}</div>`:''}
+  <h3 style="margin-top:24px">ไฟล์ผล Lab ที่บันทึกไว้</h3>
+  ${p.labFiles?.length?p.labFiles.map((f,i)=>`<div class="lab-file-link"><span>${safe(f.name||('ไฟล์ '+(i+1)))}</span><a href="${safe(f.url)}" target="_blank" rel="noopener">เปิดไฟล์ต้นฉบับ</a></div>`).join(''):'<div class="empty-state">ยังไม่มีไฟล์ Lab</div>'}
+  <div class="lab-tools" style="margin-top:12px"><button type="button" class="btn-ghost" onclick="openPatientForm(currentPatient)">แก้ไข / เปลี่ยนไฟล์ Lab</button></div>
+  </div>
   <div class="tab-panel" id="panel-medication"><h3>Medication</h3>${lines(p.medication).map(x=>`<div class="med-row"><div class="med-name">${safe(x)}</div></div>`).join('')||'<div class="empty-state">ยังไม่มีข้อมูล</div>'}</div>
   <div class="tab-panel" id="panel-homevisit"><h3>Home Visit — ไทม์ไลน์</h3><div class="form-help" style="margin-bottom:14px">แต่ละครั้งจะถูกบันทึกแยกกันตามวันที่แก้ไข ไม่ทับของเดิม</div>${homeVisitTimelineHtml(p)}</div>
   <div class="tab-panel" id="panel-inhomesss"><h3>INHOMESSS Assessment</h3><div class="visit-note">${textBlock(p.inhomesss)}</div></div>
@@ -1142,6 +1184,27 @@ function checkWarnings(p){
   if(warn.length){box.classList.remove('hidden');box.innerHTML='⚠️ ข้อมูลยังไม่สมบูรณ์ (บันทึกได้ตามปกติ): '+warn.join(' · ');}
   else box.classList.add('hidden');
 }
+function renderExistingLabFiles(files=[]){
+  const box=e('existing-lab-files');if(!box)return;
+  const deleted=new Set(window.__labFilesToDelete||[]);
+  const list=(Array.isArray(files)?files:[]).filter(f=>!deleted.has(typeof f==='string'?f:f.path));
+  window.__existingLabFiles=Array.isArray(files)?files:[];
+  box.innerHTML=list.length?`<div class="form-help" style="margin-bottom:6px">ไฟล์ Lab ที่บันทึกอยู่ในประวัติผู้ป่วย</div>`+
+    list.map((f,i)=>{const path=typeof f==='string'?f:f.path;const name=typeof f==='string'?`ไฟล์ ${i+1}`:(f.name||`ไฟล์ ${i+1}`);const url=typeof f==='object'?f.url:'';return `<div class="lab-file-link"><span>${safe(name)}</span><div style="display:flex;gap:8px">${url?`<a href="${safe(url)}" target="_blank" rel="noopener">เปิดไฟล์</a>`:''}<button type="button" class="btn-ghost" style="padding:5px 9px;color:#B73E4B" onclick="markLabFileForDeletion('${safe(path)}')">ลบไฟล์นี้</button></div></div>`;}).join('')
+    :'<div class="form-help">ยังไม่มีไฟล์ Lab ที่บันทึกไว้</div>';
+}
+function markLabFileForDeletion(path){
+  if(!path)return;
+  if(!confirm('ต้องการลบไฟล์ Lab นี้ออกจากประวัติผู้ป่วยหรือไม่? การลบจะเกิดขึ้นเมื่อกดบันทึกข้อมูล'))return;
+  window.__labFilesToDelete=window.__labFilesToDelete||[];
+  if(!window.__labFilesToDelete.includes(path))window.__labFilesToDelete.push(path);
+  renderExistingLabFiles(window.__existingLabFiles||[]);
+}
+function clearLabReadResult(){
+  if(!confirm('ต้องการล้างข้อความ Lab และสรุปผลวิเคราะห์ที่อ่านไว้หรือไม่?'))return;
+  e('f-lab').value='';
+  e('f-lab-analysis').value='';
+}
 function openPatientForm(p=null){
   e('patient-form').reset(); e('patient-id').value=p?.id||'';e('patient-form-title').textContent=p?'แก้ไข / เพิ่มเติมข้อมูลผู้ป่วย':'เพิ่มผู้ป่วยใหม่';
   e('save-patient-btn').textContent=p?'บันทึกข้อมูลเพิ่มเติม':'บันทึกข้อมูล';
@@ -1150,7 +1213,7 @@ function openPatientForm(p=null){
   populateStageSelect(p?.stage||'new');
   renderChoiceGroups();setChoiceValues('group',p?.group||'');setChoiceValues('reason',p?.reason||'');setBEDate('birth',p?.birth_date||p?.birthDate||'');updateBirthAgePreview();setBuddhistDate(p?.last_visit||'');setBEDate('start',p?.home_visit_start_date||p?.startVisitDate||'');setBEDate('discharge',p?.home_visit_discharge_date||p?.dischargeDate||'');setBEDate('nextvisit',p?.nextVisitDate||'');
   e('hv-type').value='';e('hv-result').value='';e('hv-note').value='';syncHomeVisit();
-  setInhomesss(p?.inhomesss||'');renderVisitTeam(p?.home_visit_team||[]);e('lab-ocr-status').textContent='';
+  setInhomesss(p?.inhomesss||'');renderVisitTeam(p?.home_visit_team||[]);window.__labFilesToDelete=[];renderExistingLabFiles(p?.labFiles||[]);e('lab-ocr-status').textContent='';
   checkWarnings(p);
   e('patient-form-modal').classList.remove('hidden');
 }
@@ -1225,16 +1288,25 @@ async function savePatient(ev){
     }
 
     const labFiles=[...e('f-lab-files').files];
+    const deleteLabPaths=[...(window.__labFilesToDelete||[])];
+    let labObjects=Array.isArray(row.lab_files)?[...row.lab_files]:[];
+    if(deleteLabPaths.length){
+      const rem=await supabaseClient.storage.from(LAB_BUCKET).remove(deleteLabPaths);
+      if(rem.error)attachmentErrors.push(`ลบไฟล์ Lab: ${rem.error.message}`);
+      else labObjects=labObjects.filter(f=>!deleteLabPaths.includes(typeof f==='string'?f:f.path));
+    }
     if(labFiles.length){
-      const labObjects=Array.isArray(row.lab_files)?[...row.lab_files]:[];
       for(const file of labFiles){
         try{
           const clean=file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
           const path=`${row.id}/${Date.now()}-${Math.random().toString(36).slice(2,7)}-${clean}`;
           const up=await supabaseClient.storage.from(LAB_BUCKET).upload(path,file,{upsert:false,contentType:file.type||undefined});
-          if(up.error)throw up.error;labObjects.push({path,name:file.name,type:file.type||''});
+          if(up.error)throw up.error;
+          labObjects.push({path,name:file.name,type:file.type||''});
         }catch(ex){attachmentErrors.push(`Lab ${file.name}: ${ex.message||ex}`);}
       }
+    }
+    if(deleteLabPaths.length||labFiles.length){
       const u=await supabaseClient.from(PATIENTS_TABLE).update({lab_files:labObjects}).eq('id',row.id);
       if(u.error)attachmentErrors.push(`บันทึกรายการไฟล์ Lab: ${u.error.message}`);
     }
