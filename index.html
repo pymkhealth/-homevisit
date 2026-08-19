@@ -399,7 +399,14 @@
   .inhomes-problem .form-help{margin-top:5px}
 
   /* ===== Today page ===== */
-  .today-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:30px;}
+  .today-summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:4px;}
+  @media (max-width:900px){.today-summary-grid{grid-template-columns:1fr;}}
+  .today-summary-card{border:1px solid var(--line);background:#fff;border-radius:14px;padding:17px 18px;cursor:pointer;box-shadow:0 5px 16px rgba(22,50,79,.06);transition:.15s;}
+  .today-summary-card:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(22,50,79,.09);}
+  .today-summary-card .n{font-family:'IBM Plex Mono',monospace;font-size:29px;font-weight:600;color:#173D55;line-height:1;}
+  .today-summary-card .l{font-size:13px;font-weight:600;color:#4E6878;margin-top:7px;}
+  .today-summary-card .hint{font-size:11px;color:#8A9BA5;margin-top:5px;}
+.today-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:30px;}
   @media (max-width:1100px){.today-grid{grid-template-columns:repeat(2,1fr);}}
   .today-stat{border-radius:14px;padding:16px 18px;cursor:pointer;border:1px solid transparent;color:#fff;box-shadow:0 8px 20px rgba(22,50,79,.10);}
   .today-stat .n{font-family:'IBM Plex Mono',monospace;font-size:30px;font-weight:600;line-height:1;}
@@ -483,6 +490,11 @@
           <div><h1>งานวันนี้</h1><div class="sub">สิ่งที่ต้องทำวันนี้ ไม่ต้องไล่ดูทั้งฐานข้อมูล</div></div>
           <div class="date-badge" id="today-badge-2">—</div>
         </div>
+        <div class="sec" style="margin-bottom:18px">
+          <div class="sec-head"><h2>ภาพรวมผู้ป่วยเยี่ยมบ้าน</h2><span class="count">กดที่ยอดเพื่อดูรายชื่อ</span></div>
+          <div class="today-summary-grid" id="today-summary-grid"></div>
+        </div>
+        <div class="sec-head" style="margin-bottom:10px"><h2>งานที่ต้องดำเนินการ</h2></div>
         <div class="today-grid" id="today-stat-grid"></div>
         <div class="sec">
           <div class="sec-head"><h2 id="today-list-title">ต้องเยี่ยมวันนี้</h2><span class="count" id="today-list-count"></span></div>
@@ -605,11 +617,12 @@
         <div class="field form-span-2"><label>ประวัติเดิม</label><textarea id="f-history" rows="3"></textarea></div>
         <div class="field form-span-2"><label>Lab / ผลตรวจจากภาพหรือ PDF</label><div class="lab-upload-box"><input id="f-lab-files" type="file" accept="image/*,application/pdf" multiple><div class="form-help">ระบบเน้นอ่านชื่อการตรวจ ตัวเลข หน่วย และช่วงอ้างอิง เพื่อลดปัญหาภาษาเพี้ยน</div><div class="lab-tools"><button type="button" class="btn-ghost" onclick="analyzeLabFiles()">อ่านและวิเคราะห์ผล Lab</button><span id="lab-ocr-status" class="lab-status"></span></div></div><textarea id="f-lab" rows="7" placeholder="ค่าที่อ่านจากผล Lab — กรุณาตรวจสอบกับต้นฉบับ"></textarea><label style="margin-top:12px">สรุปผล Lab / สิ่งที่ควรติดตาม</label><textarea id="f-lab-analysis" rows="7"></textarea><div class="form-help">ใช้ช่วยคัดกรองเท่านั้น ต้องยืนยันค่ากับเอกสารต้นฉบับ</div></div>
         <div class="field form-span-2"><label>Medication</label><textarea id="f-medication" rows="3" placeholder="1 รายการต่อ 1 บรรทัด"></textarea></div>
-        <div class="field form-span-2"><label>ทีมผู้เยี่ยมบ้าน <span class="form-help">กำหนด 2–5 คน และแสดงในเอกสารพิมพ์</span></label><div id="visit-team-box" class="structured-box"></div><div class="lab-tools"><button type="button" class="btn-ghost" onclick="addVisitTeamMember()">＋ เพิ่มผู้เยี่ยมบ้าน</button></div></div><div class="field form-span-2"><label>Home Visit — บันทึกครั้งนี้ <span class="form-help">จะถูกเพิ่มเป็นรายการใหม่ในไทม์ไลน์ ไม่ทับของเดิม</span></label><input id="f-homevisit" type="hidden"><div class="structured-box"><div class="structured-row"><label>ประเภทการเยี่ยม</label><select id="hv-type"><option value="">— เลือก —</option><option>เยี่ยมครั้งแรก</option><option>ติดตามต่อเนื่อง</option><option>หลังจำหน่ายจากโรงพยาบาล</option><option>เยี่ยมเร่งด่วน</option><option>เยี่ยมผู้ป่วยติดบ้าน/ติดเตียง</option><option>เยี่ยมประคับประคอง</option></select></div><div class="structured-row"><label>ผลการเยี่ยม</label><select id="hv-result"><option value="">— เลือก —</option><option>อาการคงที่</option><option>ดีขึ้น</option><option>ต้องติดตามต่อ</option><option>พบปัญหาใหม่</option><option>ส่งต่อ/นัดพบแพทย์</option></select></div><div class="structured-row"><label>บันทึกเพิ่มเติม</label><textarea id="hv-note" rows="3"></textarea></div></div></div>
+        <div class="field form-span-2"><label>Home Visit — บันทึกครั้งนี้ <span class="form-help">จะถูกเพิ่มเป็นรายการใหม่ในไทม์ไลน์ ไม่ทับของเดิม</span></label><input id="f-homevisit" type="hidden"><div class="structured-box"><div class="structured-row"><label>ประเภทการเยี่ยม</label><select id="hv-type"><option value="">— เลือก —</option><option>เยี่ยมครั้งแรก</option><option>ติดตามต่อเนื่อง</option><option>หลังจำหน่ายจากโรงพยาบาล</option><option>เยี่ยมเร่งด่วน</option><option>เยี่ยมผู้ป่วยติดบ้าน/ติดเตียง</option><option>เยี่ยมประคับประคอง</option></select></div><div class="structured-row"><label>ผลการเยี่ยม</label><select id="hv-result"><option value="">— เลือก —</option><option>อาการคงที่</option><option>ดีขึ้น</option><option>ต้องติดตามต่อ</option><option>พบปัญหาใหม่</option><option>ส่งต่อ/นัดพบแพทย์</option></select></div><div class="structured-row"><label>บันทึกเพิ่มเติม</label><textarea id="hv-note" rows="3"></textarea></div></div></div>
         <div class="field form-span-2"><label>INHOMESSS Assessment</label><input id="f-inhomesss" type="hidden"><div id="inhomesss-structured" class="structured-box"></div></div>
         <div class="field form-span-2"><label>Problems</label><textarea id="f-problems" rows="3"></textarea></div>
         <div class="field form-span-2"><label>Care Plan</label><textarea id="f-careplan" rows="4"></textarea></div>
         <div class="field form-span-2"><label>แนบภาพถ่าย</label><input id="f-photos" type="file" accept="image/*" multiple><div class="form-help">เลือกได้หลายภาพ ภาพจะถูกเก็บใน Supabase Storage</div></div>
+        <div class="field form-span-2"><label>ทีมผู้เยี่ยมบ้าน <span class="form-help">กรอกเป็นส่วนสุดท้ายของแบบบันทึก กำหนด 2–5 คน และจะแสดงท้ายเอกสาร A4 พร้อมช่องลงลายมือชื่อ</span></label><div id="visit-team-box" class="structured-box"></div><div class="lab-tools"><button type="button" class="btn-ghost" onclick="addVisitTeamMember()">＋ เพิ่มผู้เยี่ยมบ้าน</button></div></div>
       </div>
       <div class="form-actions"><button type="button" class="btn-ghost" onclick="closePatientForm()">ยกเลิก</button><button id="save-patient-btn" class="btn-primary" style="width:auto;margin:0" type="submit">บันทึกข้อมูล</button></div>
     </form>
@@ -865,7 +878,7 @@ async function loadPatients(){
 function renderAllScreens(){ renderToday(); renderDashboard(); renderList(); }
 
 function normalizePatient(p){
-  return {...p,id:p.id,hn:p.hn||'',name:p.name||'',birthDate:p.birth_date||'',age:calculateAge(p.birth_date),sex:p.sex||'',group:p.disease_group||'',lastVisit:thaiDate(p.last_visit),startVisitDate:p.home_visit_start_date||'',startVisit:thaiDate(p.home_visit_start_date),dischargeDate:p.home_visit_discharge_date||'',dischargeVisit:thaiDate(p.home_visit_discharge_date),status:p.status||'ok',overdueDays:p.overdue_days||0,reason:p.reason||'',address:p.address||'',phone:p.phone||'',photos:Array.isArray(p.photos)?p.photos:[],labFiles:Array.isArray(p.lab_files)?p.lab_files:[],stage:p.workflow_stage||'new',nextVisitDate:p.next_visit_date||''};
+  return {...p,id:p.id,hn:p.hn||'',name:p.name||'',birthDate:p.birth_date||'',age:calculateAge(p.birth_date),sex:p.sex||'',group:p.disease_group||'',lastVisit:thaiDate(p.last_visit),startVisitDate:p.home_visit_start_date||'',startVisit:thaiDate(p.home_visit_start_date),dischargeDate:p.home_visit_discharge_date||'',dischargeVisit:thaiDate(p.home_visit_discharge_date),status:p.status||'ok',overdueDays:p.overdue_days||0,reason:p.reason||'',address:p.address||'',phone:p.phone||'',photos:Array.isArray(p.photos)?p.photos:[],labFiles:Array.isArray(p.lab_files)?p.lab_files:[],home_visit_team:Array.isArray(p.home_visit_team)?p.home_visit_team:[],stage:p.workflow_stage||'new',nextVisitDate:p.next_visit_date||''};
 }
 async function hydratePhotoUrls(){
   for(const p of patients){
@@ -928,6 +941,22 @@ function renderToday(){
   const labWatch=patients.filter(p=>labFlagged(p) && p.stage!=='discharged');
   const incomplete=patients.filter(p=>patientCompleteness(p).pct<70 && p.stage!=='discharged');
 
+  // ภาพรวมผู้ป่วยเยี่ยมบ้าน
+  const allHomeVisit=[...patients];
+  const discharged=patients.filter(p=>p.stage==='discharged' || !!p.dischargeDate || !!p.home_visit_discharge_date);
+  const repeatVisits=patients.filter(p=>{
+    const blocks=String(p.homevisit||'').split('\n===VISIT===\n').map(x=>x.trim()).filter(Boolean);
+    return blocks.length>=2;
+  });
+  const overview=[
+    {key:'all-homevisit',n:allHomeVisit.length,l:'ผู้ป่วยเยี่ยมบ้านทั้งหมด',hint:'รวมผู้ป่วยที่ยังติดตามและจำหน่ายแล้ว',list:allHomeVisit},
+    {key:'discharged-homevisit',n:discharged.length,l:'ผู้ป่วยเยี่ยมบ้านจำหน่ายแล้ว',hint:'มีวันที่จำหน่ายหรือสถานะจำหน่าย',list:discharged},
+    {key:'repeat-homevisit',n:repeatVisits.length,l:'ผู้ป่วยเยี่ยมบ้านซ้ำ',hint:'มีบันทึก Home Visit ตั้งแต่ 2 ครั้งขึ้นไป',list:repeatVisits},
+  ];
+  const summaryGrid=e('today-summary-grid');
+  if(summaryGrid)summaryGrid.innerHTML=overview.map(x=>`<div class="today-summary-card" onclick="showTodayOverview('${x.key}')"><div class="n">${x.n}</div><div class="l">${x.l}</div><div class="hint">${x.hint}</div></div>`).join('');
+  window.__todayOverview=overview;
+
   e('today-badge-2').textContent=new Date().toLocaleDateString('th-TH',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
   const totalToday=dueToday.length+overdue.length;
   const badgeNav=e('today-nav-badge');
@@ -942,6 +971,15 @@ function renderToday(){
   e('today-stat-grid').innerHTML=stats.map(s=>`<div class="today-stat ${s.cls} ${window.__todayActive===s.key?'':''}" onclick="setTodayBucket('${s.key}')"><div class="n">${s.n}</div><div class="l">${s.l}</div></div>`).join('');
   window.__todayBuckets=stats;
   setTodayBucket(window.__todayActive||'today',true);
+}
+function showTodayOverview(key){
+  const bucket=(window.__todayOverview||[]).find(x=>x.key===key);
+  if(!bucket)return;
+  window.__todayActive='';
+  [...document.querySelectorAll('.today-stat')].forEach(el=>el.classList.add('dim'));
+  e('today-list-title').textContent=bucket.l;
+  e('today-list-count').textContent=`${bucket.list.length} ราย`;
+  e('today-list').innerHTML=bucket.list.length?bucket.list.map(p=>todayPatientRow(p,key)).join(''):'<div class="empty-state">ไม่มีผู้ป่วยในกลุ่มนี้</div>';
 }
 function setTodayBucket(key,silent){
   window.__todayActive=key;
