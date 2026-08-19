@@ -433,6 +433,14 @@
   .visit-subtabs{display:flex;flex-wrap:wrap;gap:0;border:1px solid #DCE5E9;background:#FAFCFD;margin:0 0 18px;}
   .visit-subtab{background:#fff;border:0;border-right:1px solid #DCE5E9;border-bottom:1px solid #DCE5E9;padding:9px 12px;color:#647B88;font-size:12px;cursor:pointer;}
   .visit-subtab.active{background:#EAF6F7;color:#137C8B;font-weight:600;}
+
+  .tab-btn.add-visit-tab{color:#137C8B;font-weight:700;background:#F1FAFA;border:1px dashed #8BCBD0;}
+  .tab-btn.add-visit-tab:hover{background:#E4F5F6;}
+
+  .visit-tab-wrap{display:inline-flex;align-items:stretch;margin:0 4px 0 0;border-bottom:3px solid transparent;}
+  .visit-tab-wrap .tab-btn{margin:0;border-bottom:0;}
+  .visit-tab-delete{border:0;border-left:1px solid #E3EAED;background:#fff;color:#9A6970;padding:0 8px;font-size:16px;cursor:pointer;}
+  .visit-tab-delete:hover{background:#FFF0F1;color:#B73343;}
 </style>
 </head>
 <body>
@@ -1729,8 +1737,9 @@ function openPatient(id){
   if(!document.getElementById('delete-patient-btn')){const btn3=document.createElement('button');btn3.id='delete-patient-btn';btn3.className='btn-ghost detail-edit-btn';btn3.style.color='#B73E4B';btn3.style.borderColor='#E8B8BE';btn3.textContent='ลบผู้ป่วย';btn3.onclick=()=>deletePatient(currentPatient);e('pd-actions').insertBefore(btn3,e('pd-actions').lastElementChild);}
   e('tab-strip').innerHTML=(()=>{
     const vh=patientVisitHistory(p);
-    const visitTabs=vh.map((v,i)=>`<button class="tab-btn" data-tab="visit-${i}" onclick="showVisitTab(${i})">ครั้งที่${i+1}</button>`).join('');
-    return `<button class="tab-btn active" data-tab="history" onclick="showTab('history')">ประวัติเดิม</button>${visitTabs}<button class="tab-btn" data-tab="compare" onclick="showTab('compare')">เปรียบเทียบผล</button>`;
+    const visitTabs=vh.map((v,i)=>`<div class="visit-tab-wrap"><button class="tab-btn visit-main-tab" data-tab="visit-${i}" onclick="showVisitTab(${i})">ครั้งที่ ${i+1}</button><button class="visit-tab-delete" title="ลบการเยี่ยมครั้งที่ ${i+1}" onclick="event.stopPropagation();deleteVisitRecord('${p.id}',${i})">×</button></div>`).join('');
+    const nextNo=vh.length+1;
+    return `<button class="tab-btn active" data-tab="history" onclick="showTab('history')">ประวัติเดิม</button>${visitTabs}<button class="tab-btn add-visit-tab" onclick="startNextVisit('${p.id}')">＋ เยี่ยมครั้งที่ ${nextNo}</button><button class="tab-btn" data-tab="compare" onclick="showTab('compare')">เปรียบเทียบผล</button>`;
   })();
   renderAllTabPanels(p);showScreen('detail');showTab('history');
 }
@@ -1804,6 +1813,83 @@ function visitSelectorHtml(p){
   <div id="visit-snapshot-content">${visitSnapshotHtml(p,h.length-1)}</div>`;
 }
 
+function startNextVisit(patientId){
+  const p=patients.find(x=>String(x.id)===String(patientId)); if(!p)return;
+  window.__addingNewVisit=true;
+  openPatientForm(p);
+  const title=e('patient-form-title');
+  if(title)title.textContent=`บันทึกเยี่ยมครั้งที่ ${visitCount(p)+1} · ${p.name}`;
+  const save=e('save-patient-btn');
+  if(save)save.textContent=`บันทึกเยี่ยมครั้งที่ ${visitCount(p)+1}`;
+}
+
+function rebuildLegacyHomevisitFromHistory(history){
+  return (history||[]).map(v=>{
+    const date=v.date?thaiDate(v.date):(v.dateText||thaiDate(todayISO()));
+    return `[${date}] ${String(v.note||'').trim()}`;
+  }).filter(Boolean).join('\n===VISIT===\n');
+}
+async function deleteVisitRecord(patientId,index){
+  const p=patients.find(x=>String(x.id)===String(patientId));
+  if(!p)return;
+  const history=patientVisitHistory(p);
+  const visit=history[index];
+  if(!visit)return;
+
+  const no=index+1;
+  const dateLabel=visit.date?thaiDate(visit.date):(visit.dateText||'ไม่ระบุวันที่');
+  const ok=confirm(
+    `ยืนยันลบการเยี่ยมครั้งที่ ${no} หรือไม่?\n\n`+
+    `วันที่: ${dateLabel}\n`+
+    `ผู้ป่วย: ${p.name}\n\n`+
+    `ข้อมูลการเยี่ยมครั้งนี้จะถูกลบ รวมถึงผล Lab ที่ผูกกับครั้งนี้ (ถ้ามี)\n`+
+    `ข้อมูลผู้ป่วยหลักจะไม่ถูกลบ`
+  );
+  if(!ok)return;
+
+  try{
+    const newHistory=history.filter((_,i)=>i!==index).map((v,i)=>({...v,number:i+1}));
+    const oldLabs=Array.isArray(p.lab_history)?p.lab_history:[];
+    const newLabs=oldLabs.filter((_,i)=>i!==index);
+
+    const latestVisit=newHistory.length?newHistory[newHistory.length-1]:null;
+    const latestLab=newLabs.length?newLabs[newLabs.length-1]:null;
+
+    const updates={
+      visit_history:newHistory,
+      homevisit:rebuildLegacyHomevisitFromHistory(newHistory),
+      lab_history:newLabs,
+      last_visit:latestVisit?.date||null,
+      problems:latestVisit?.problems||'',
+      care_plan:latestVisit?.care_plan||'',
+      inhomesss:latestVisit?.inhomesss||'',
+      lab:latestLab?.results?.length
+        ? latestLab.results.map(x=>`${x.label}: ${resultDisplay(x)}${x.refText?` | ค่าปกติ ${x.refText}`:''} | ${labStatusThai(x.status)}`).join('\n')
+        : '',
+      lab_analysis:latestLab?.results?.length
+        ? buildManualLabAnalysis(latestLab.results,newLabs.length>1?newLabs[newLabs.length-2]:null,latestLab.date||todayISO())
+        : '',
+      updated_at:new Date().toISOString()
+    };
+
+    const {error}=await supabaseClient.from(PATIENTS_TABLE).update(updates).eq('id',p.id);
+    if(error)throw error;
+
+    alert(`ลบการเยี่ยมครั้งที่ ${no} เรียบร้อยแล้ว`);
+    await loadPatients();
+
+    const refreshed=patients.find(x=>String(x.id)===String(patientId));
+    if(refreshed){
+      openPatient(patientId);
+      const remaining=visitCount(refreshed);
+      if(remaining>0)showVisitTab(Math.min(index,remaining-1));
+      else showTab('history');
+    }
+  }catch(err){
+    console.error(err);
+    alert(`ลบการเยี่ยมไม่สำเร็จ\n${err.message||err}${err.code?`\ncode: ${err.code}`:''}`);
+  }
+}
 function showVisitTab(index){
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===`visit-${index}`));
   document.querySelectorAll('.tab-panel').forEach(x=>x.classList.remove('active'));
@@ -2046,7 +2132,7 @@ function openPatientForm(p=null){
   checkWarnings(p);
   e('patient-form-modal').classList.remove('hidden');
 }
-function closePatientForm(){e('patient-form-modal').classList.add('hidden');}
+function closePatientForm(){window.__addingNewVisit=false;e('patient-form-modal').classList.add('hidden');}
 function appendHomeVisitEntry(existing,entryText){
   if(!entryText.trim()) return existing||'';
   const stamped=`[${thaiDate(todayISO())}] ${entryText.trim()}`;
