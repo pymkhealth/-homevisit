@@ -615,7 +615,8 @@
         <div class="field"><label>ICD-10</label><input id="f-icd10"></div>
         <div class="field"><label>ประวัติแพ้ยา</label><input id="f-allergy"></div>
         <div class="field form-span-2"><label>ประวัติเดิม</label><textarea id="f-history" rows="3"></textarea></div>
-        <div class="field form-span-2"><label>Lab / ผลตรวจจากภาพหรือ PDF</label><div class="lab-upload-box"><input id="f-lab-files" type="file" accept="image/*,application/pdf" multiple><div class="form-help">ระบบวิเคราะห์ภาพ Lab จากตารางโดยตรง และแสดงผลเป็นภาษาไทยที่อ่านง่าย พร้อมแยกค่าปกติ/ผิดปกติและเปรียบเทียบกับครั้งก่อน</div><div class="lab-tools"><button type="button" class="btn-ghost" onclick="analyzeLabFiles()">วิเคราะห์ผล Lab จากภาพ</button><span id="lab-ocr-status" class="lab-status"></span></div></div><textarea id="f-lab" rows="7" placeholder="ค่าที่อ่านจากผล Lab — กรุณาตรวจสอบกับต้นฉบับ"></textarea>
+        <div class="field form-span-2"><label>Lab / ผลตรวจจากภาพหรือ PDF</label><div class="lab-upload-box"><input id="f-lab-files" type="file" accept="image/*,application/pdf" multiple><div class="form-help">ระบบอ่านผล Lab ภายในเบราว์เซอร์โดยไม่ใช้ OpenAI API และไม่เสียค่า API
+จากนั้นแยกชื่อรายการ ผล หน่วย และช่วงอ้างอิงเพื่อสร้างสรุปภาษาไทย</div><div class="lab-tools"><button type="button" class="btn-ghost" onclick="analyzeLabFiles()">อ่านและวิเคราะห์ผล Lab</button><span id="lab-ocr-status" class="lab-status"></span></div></div><textarea id="f-lab" rows="7" placeholder="ค่าที่อ่านจากผล Lab — กรุณาตรวจสอบกับต้นฉบับ"></textarea>
 <div id="existing-lab-files" style="margin-top:10px"></div>
 <div class="lab-tools" style="margin-top:8px">
   <button type="button" class="btn-ghost" onclick="clearLabReadResult()">ล้างข้อความ/ผลวิเคราะห์ Lab</button>
@@ -1139,97 +1140,45 @@ function renderLabStructuredPreview(results,previous){
   const box=e('lab-structured-preview');if(!box)return;
   box.innerHTML=results?.length?`<div class="form-help" style="margin-bottom:6px"><b>ผลที่ระบบแยกได้</b> — ตรวจสอบตัวเลขกับใบ Lab ต้นฉบับก่อนบันทึก</div>${structuredLabTableHtml(results,previous)}`:'';
 }
-async function fileToDataUrl(file){
-  return await new Promise((resolve,reject)=>{
-    const r=new FileReader();
-    r.onload=()=>resolve(r.result);
-    r.onerror=()=>reject(r.error||new Error('อ่านไฟล์ไม่สำเร็จ'));
-    r.readAsDataURL(file);
-  });
-}
-function normalizeAiLabResult(x){
-  return {
-    key:String(x.key||x.test_name||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'_'),
-    label:String(x.label_th||x.test_name||'').trim(),
-    value:x.value_number!=null?Number(x.value_number):null,
-    valueText:x.value_text!=null?String(x.value_text):'',
-    comparator:String(x.comparator||''),
-    unit:String(x.unit||''),
-    refText:String(x.reference_range||''),
-    status:['normal','high','low','abnormal','unknown'].includes(x.status)?x.status:'unknown',
-    note:String(x.note_th||'')
-  };
-}
 async function analyzeLabFiles(){
-  const files=[...e('f-lab-files').files], status=e('lab-ocr-status');
-  if(!files.length){alert('กรุณาเลือกภาพหรือ PDF ผล Lab ก่อน');return;}
-  if(files.length>6){alert('กรุณาเลือกไม่เกิน 6 ไฟล์ต่อครั้ง');return;}
-
-  try{
-    status.textContent='กำลังส่งไฟล์ให้ระบบวิเคราะห์...';
-
-    const payloadFiles=[];
-    for(let i=0;i<files.length;i++){
-      const f=files[i];
-      if(f.size>8*1024*1024)throw new Error(`ไฟล์ ${f.name} มีขนาดเกิน 8 MB`);
-      payloadFiles.push({name:f.name,type:f.type||'',data_url:await fileToDataUrl(f)});
-    }
-
-    const {data:{session}}=await supabaseClient.auth.getSession();
-    if(!session?.access_token)throw new Error('เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่');
-
-    const res=await fetch(`${SUPABASE_URL}/functions/v1/analyze-lab`,{
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'Authorization':`Bearer ${session.access_token}`,
-        'apikey':SUPABASE_PUBLISHABLE_KEY
-      },
-      body:JSON.stringify({files:payloadFiles})
-    });
-
-    const body=await res.json().catch(()=>({}));
-    if(!res.ok)throw new Error(body?.error||`วิเคราะห์ Lab ไม่สำเร็จ (${res.status})`);
-
-    const results=(body.results||[]).map(normalizeAiLabResult).filter(x=>x.label);
-    const patientId=e('patient-id').value||null;
-    const existing=patientId?patients.find(x=>String(x.id)===String(patientId)):null;
-    const history=Array.isArray(existing?.lab_history)?existing.lab_history:[];
-    const previous=history.length?history[history.length-1]:null;
-
-    window.__pendingLabSnapshot={
-      id:`lab-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,
-      date:body.collection_date||todayISO(),
-      created_at:new Date().toISOString(),
-      results,
-      source_files:files.map(f=>f.name)
-    };
-
-    e('f-lab').value=results.map(x=>{
-      const val=x.value!=null?`${x.comparator||''}${x.value}`:(x.valueText||'—');
-      return `${x.label}: ${val}${x.unit?' '+x.unit:''}${x.refText?` | เกณฑ์ ${x.refText}`:''} | ${labStatusThai(x.status)}`;
-    }).join('\n');
-
-    let analysis=String(body.analysis_th||'').trim();
-    if(previous && results.length){
-      const pm=new Map((previous.results||[]).map(x=>[x.key,x]));
-      const comparable=results.filter(x=>pm.has(x.key));
-      if(comparable.length){
-        analysis += '\n\nเปรียบเทียบกับผลครั้งก่อน:\n' + comparable.map(x=>{
-          const p=pm.get(x.key);
-          return `- ${x.label}: เดิม ${resultDisplay(p)} → ครั้งนี้ ${resultDisplay(x)} (${compareLabValue(x,p)}) · ${labStatusThai(x.status)}`;
-        }).join('\n');
-      }
-    }
-    e('f-lab-analysis').value=analysis;
-    renderLabStructuredPreview(results,previous);
-
-    status.textContent=`วิเคราะห์สำเร็จ ${results.length} รายการ — กรุณาตรวจสอบกับใบ Lab ต้นฉบับก่อนบันทึก`;
-  }catch(err){
-    console.error(err);
-    status.textContent='วิเคราะห์ไฟล์ไม่สำเร็จ';
-    alert('วิเคราะห์ผล Lab ไม่สำเร็จ: '+(err.message||err));
+ const files=[...e('f-lab-files').files],status=e('lab-ocr-status');
+ if(!files.length){alert('กรุณาเลือกภาพหรือ PDF ผล Lab ก่อน');return;}
+ if(!window.Tesseract||!window.pdfjsLib){alert('ไม่สามารถโหลดโมดูลอ่านไฟล์ได้');return;}
+ let worker,chunks=[];
+ try{
+  worker=await Tesseract.createWorker('eng',1,{logger:m=>{if(m.status&&m.progress!=null)status.textContent=`กำลังอ่านผล Lab ${Math.round(m.progress*100)}%`;}});
+  for(let i=0;i<files.length;i++){
+    const f=files[i];
+    status.textContent=`กำลังอ่าน ${f.name} (${i+1}/${files.length})...`;
+    let text=(f.type==='application/pdf'||f.name.toLowerCase().endsWith('.pdf'))
+      ? await extractPdfTextOrOcr(f,worker,status)
+      : await ocrImageSource(f,worker);
+    chunks.push(cleanLabText(text));
   }
+  const raw=chunks.join('\n');
+  const results=extractStructuredLabs(raw);
+  const patientId=e('patient-id').value||null;
+  const existing=patientId?patients.find(x=>String(x.id)===String(patientId)):null;
+  const history=Array.isArray(existing?.lab_history)?existing.lab_history:[];
+  const previous=history.length?history[history.length-1]:null;
+
+  window.__pendingLabSnapshot=makeLabSnapshot(results,raw);
+
+  e('f-lab').value=results.length
+    ? results.map(x=>`${x.label}: ${resultDisplay(x)}${x.refText?` | เกณฑ์ ${x.refText}`:''} | ${labStatusThai(x.status)}`).join('\n')
+    : '';
+
+  e('f-lab-analysis').value=results.length
+    ? buildLabAnalysis(results,previous)
+    : 'ระบบยังอ่านรายการ Lab จากภาพนี้ไม่ได้อย่างมั่นใจ จึงไม่แสดงข้อความ OCR ที่อาจผิดเพี้ยน กรุณาตรวจสอบภาพให้ตรง ชัด และเห็นตารางผลตรวจเต็มหน้า';
+  renderLabStructuredPreview(results,previous);
+  status.textContent=results.length?`อ่านสำเร็จ ${results.length} รายการ — กรุณาตรวจสอบตัวเลขกับต้นฉบับ`:'ยังแยกรายการไม่ได้ กรุณาตรวจสอบไฟล์';
+ }catch(err){
+  console.error(err);status.textContent='อ่านไฟล์ไม่สำเร็จ';
+  alert('อ่านผล Lab ไม่สำเร็จ: '+(err.message||err));
+ }finally{
+  if(worker)await worker.terminate();
+ }
 }
 function renderVisitTeam(team=[],forceEdit=false){
   const box=e('visit-team-box');if(!box)return;
