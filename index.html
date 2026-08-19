@@ -1793,15 +1793,59 @@ function splitProblemItems(text){
 function normProblem(x){
   return String(x||'').toLowerCase().replace(/[()\[\]{}:：]/g,' ').replace(/\s+/g,' ').trim();
 }
+function matchLabsToVisits(p){
+  const visits=patientVisitHistory(p);
+  const labs=Array.isArray(p?.lab_history)?p.lab_history:[];
+  // ใช้ลำดับเป็นหลัก: Lab ครั้งที่ 1 คู่กับเยี่ยมครั้งที่ 1, etc.
+  // ถ้าจำนวนไม่เท่ากัน ให้จับวันที่ใกล้ที่สุดเมื่อมี date.
+  return visits.map((v,i)=>{
+    if(labs[i])return labs[i];
+    if(!v.date||!labs.length)return null;
+    const vd=new Date(v.date+'T00:00:00').getTime();
+    let best=null,bestDiff=Infinity;
+    for(const l of labs){
+      const ld=l.date||l.created_at?.slice(0,10); if(!ld)continue;
+      const diff=Math.abs(new Date(ld+'T00:00:00').getTime()-vd);
+      if(diff<bestDiff){best=l;bestDiff=diff;}
+    }
+    return bestDiff<=7*86400000?best:null;
+  });
+}
+function labProgressComparison(prev,cur){
+  if(!prev||!cur)return {persistent:[],normalized:[],newAbnormal:[],changed:[],summary:'ไม่มี Lab ที่จับคู่เปรียบเทียบได้'};
+  const pm=new Map((prev.results||[]).map(x=>[x.key,x])), cm=new Map((cur.results||[]).map(x=>[x.key,x]));
+  const persistent=[],normalized=[],newAbnormal=[],changed=[];
+  for(const [key,c] of cm){
+    const p=pm.get(key);
+    if(!p)continue;
+    const pAb=['high','low','abnormal'].includes(p.status),cAb=['high','low','abnormal'].includes(c.status);
+    const trend=compareLabValue(c,p);
+    if(pAb&&cAb)persistent.push(`${c.label}: ${resultDisplay(p)} → ${resultDisplay(c)} (${trend})`);
+    if(pAb&&!cAb&&c.status==='normal')normalized.push(`${c.label}: ${resultDisplay(p)} → ${resultDisplay(c)} เข้าสู่เกณฑ์ปกติ`);
+    if(!pAb&&cAb)newAbnormal.push(`${c.label}: ${resultDisplay(p)} → ${resultDisplay(c)} (${labStatusThai(c.status)})`);
+    if(!pAb&&!cAb&&trend!=='เท่าเดิม')changed.push(`${c.label}: ${resultDisplay(p)} → ${resultDisplay(c)} (${trend})`);
+  }
+  for(const [key,c] of cm){
+    if(pm.has(key))continue;
+    if(['high','low','abnormal'].includes(c.status))newAbnormal.push(`${c.label}: ${resultDisplay(c)} (${labStatusThai(c.status)}) — เป็นค่าผิดปกติที่เพิ่มเข้ามาในครั้งนี้`);
+  }
+  return {persistent,normalized,newAbnormal,changed};
+}
 function visitAnalysisHtml(p){
   const h=patientVisitHistory(p);
   if(!h.length)return '<div class="empty-state">ยังไม่มีข้อมูลการเยี่ยมสำหรับวิเคราะห์</div>';
+  const labsByVisit=matchLabsToVisits(p);
+
   const cards=h.map((v,i)=>{
     const probs=splitProblemItems(v.problems||'');
+    const lab=labsByVisit[i];
+    const abnormalLabs=(lab?.results||[]).filter(x=>['high','low','abnormal'].includes(x.status));
     return `<div style="border:1px solid #dfe9ed;border-radius:10px;padding:12px;margin:8px 0;background:#fff">
       <div style="font-weight:700;color:#173d55">เยี่ยมครั้งที่ ${i+1}${v.date?` · ${safe(thaiDate(v.date))}`:v.dateText?` · ${safe(v.dateText)}`:''}</div>
       <div style="margin-top:6px"><b>ปัญหาที่บันทึก:</b> ${probs.length?safe(probs.join(' · ')):'ยังไม่ได้ระบุปัญหาแยกในครั้งนี้'}</div>
       ${v.note?`<div style="margin-top:5px"><b>ผลการเยี่ยม:</b> ${textBlock(v.note)}</div>`:''}
+      ${lab?`<div style="margin-top:7px"><b>Lab ครั้งนี้:</b> ${(lab.results||[]).length} รายการ · <span style="color:${abnormalLabs.length?'#b33d49':'#26856f'}">${abnormalLabs.length?`${abnormalLabs.length} ค่าผิดปกติ`:'ไม่พบค่าผิดปกติจากรายการที่ประเมินได้'}</span></div>
+      ${abnormalLabs.length?`<div style="font-size:12px;margin-top:4px;color:#6a4a4f">${safe(abnormalLabs.map(x=>`${x.label} ${resultDisplay(x)} (${labStatusThai(x.status)})`).join(' · '))}</div>`:''}`:'<div style="margin-top:7px;color:#81909a;font-size:12px">ยังไม่มีผล Lab ที่จับคู่กับการเยี่ยมครั้งนี้</div>'}
       ${v.care_plan?`<div style="margin-top:5px"><b>แผนดูแล:</b> ${textBlock(v.care_plan)}</div>`:''}
     </div>`;
   }).join('');
@@ -1813,19 +1857,38 @@ function visitAnalysisHtml(p){
     const persistent=[...cm.keys()].filter(k=>pm.has(k)).map(k=>cm.get(k));
     const added=[...cm.keys()].filter(k=>!pm.has(k)).map(k=>cm.get(k));
     const resolved=[...pm.keys()].filter(k=>!cm.has(k)).map(k=>pm.get(k));
-    comparisons+=`<div style="margin:10px 0;padding:12px;border-radius:10px;background:#f5f9fa">
-      <div style="font-weight:700;color:#173d55">ครั้งที่ ${i} → ครั้งที่ ${i+1}</div>
+    const lc=labProgressComparison(labsByVisit[i-1],labsByVisit[i]);
+
+    comparisons+=`<div style="margin:10px 0;padding:13px;border-radius:10px;background:#f5f9fa;border:1px solid #e1eaed">
+      <div style="font-weight:700;color:#173d55;font-size:14px">ครั้งที่ ${i} → ครั้งที่ ${i+1}</div>
+
+      <div style="margin-top:10px;font-weight:700;color:#36596b">การเปลี่ยนแปลงของปัญหาผู้ป่วย</div>
       <div style="margin-top:6px">🟠 <b>ปัญหาที่ยังคงอยู่:</b> ${persistent.length?safe(persistent.join(' · ')):'ไม่พบจากรายการปัญหาที่คีย์ไว้'}</div>
       <div style="margin-top:5px">🔴 <b>ปัญหาใหม่:</b> ${added.length?safe(added.join(' · ')):'ไม่พบ'}</div>
       <div style="margin-top:5px">🟢 <b>ปัญหาที่ไม่พบในครั้งล่าสุด:</b> ${resolved.length?safe(resolved.join(' · ')):'ไม่พบ'}</div>
+
+      <div style="margin-top:13px;padding-top:10px;border-top:1px solid #dce7ea;font-weight:700;color:#36596b">การเปลี่ยนแปลงของผล Lab</div>
+      ${labsByVisit[i-1]&&labsByVisit[i]?`
+        <div style="margin-top:6px">🟠 <b>Lab ที่ยังผิดปกติ:</b> ${lc.persistent.length?'<br>'+lc.persistent.map(x=>'• '+safe(x)).join('<br>'):'ไม่พบ'}</div>
+        <div style="margin-top:6px">🟢 <b>Lab ที่กลับเข้าสู่เกณฑ์ปกติ:</b> ${lc.normalized.length?'<br>'+lc.normalized.map(x=>'• '+safe(x)).join('<br>'):'ไม่พบ'}</div>
+        <div style="margin-top:6px">🔴 <b>Lab ผิดปกติใหม่:</b> ${lc.newAbnormal.length?'<br>'+lc.newAbnormal.map(x=>'• '+safe(x)).join('<br>'):'ไม่พบ'}</div>
+        <div style="margin-top:6px">📈 <b>ค่า Lab ที่เปลี่ยนแปลงแต่ยังอยู่ในเกณฑ์:</b> ${lc.changed.length?'<br>'+lc.changed.map(x=>'• '+safe(x)).join('<br>'):'ไม่พบ/ไม่มีรายการที่เปรียบเทียบได้'}</div>
+      `:'<div style="margin-top:6px;color:#81909a">ไม่มี Lab ครบทั้งสองครั้ง จึงยังเปรียบเทียบผล Lab ระหว่างครั้งนี้ไม่ได้</div>'}
     </div>`;
   }
-  const latest=h[h.length-1], first=h[0];
+
+  const latest=h[h.length-1],first=h[0];
   const latestP=splitProblemItems(latest.problems),firstP=splitProblemItems(first.problems);
+  const latestLab=labsByVisit[h.length-1];
+  const abnormalLatest=(latestLab?.results||[]).filter(x=>['high','low','abnormal'].includes(x.status)).length;
   const summary=h.length===1
-    ?'มีข้อมูลการเยี่ยม 1 ครั้ง จึงยังไม่สามารถประเมินการเปลี่ยนแปลงระหว่างครั้งได้'
-    :`มีข้อมูล ${h.length} ครั้ง ปัจจุบันบันทึกปัญหา ${latestP.length} รายการ เทียบกับครั้งแรก ${firstP.length} รายการ ระบบแยกปัญหาใหม่/คงอยู่/ไม่พบในครั้งล่าสุดไว้ด้านล่าง`;
-  return `<div class="warning-banner" style="background:#eef7f8;color:#24485c;border-color:#c9e1e5"><b>สรุปพัฒนาการ</b><br>${safe(summary)}</div>${cards}${h.length>1?`<h3 style="margin-top:18px">เปรียบเทียบระหว่างครั้ง</h3>${comparisons}`:''}<div class="form-help" style="margin-top:10px">การเปรียบเทียบอาศัยข้อความ “Problems” ที่บันทึกในแต่ละครั้ง หากใช้คำต่างกันสำหรับปัญหาเดียวกันควรแก้ให้ใช้คำเดียวกันเพื่อให้ระบบจับคู่ได้แม่นยำ</div>`;
+    ?`มีข้อมูลการเยี่ยม 1 ครั้ง${latestLab?` และ Lab ${latestLab.results?.length||0} รายการ พบผิดปกติ ${abnormalLatest} รายการ`:''} จึงยังไม่สามารถประเมินแนวโน้มระหว่างครั้งได้`
+    :`มีข้อมูล ${h.length} ครั้ง ปัจจุบันมีปัญหาที่บันทึก ${latestP.length} รายการ เทียบกับครั้งแรก ${firstP.length} รายการ${latestLab?` และ Lab ครั้งล่าสุดพบค่าผิดปกติ ${abnormalLatest} รายการ`:''} ระบบเปรียบเทียบทั้งปัญหาและผล Lab ระหว่างครั้งไว้ด้านล่าง`;
+
+  return `<div class="warning-banner" style="background:#eef7f8;color:#24485c;border-color:#c9e1e5"><b>สรุปพัฒนาการโดยรวม</b><br>${safe(summary)}</div>
+    ${cards}
+    ${h.length>1?`<h3 style="margin-top:18px">เปรียบเทียบพัฒนาการระหว่างครั้ง</h3>${comparisons}`:''}
+    <div class="form-help" style="margin-top:10px">ระบบเปรียบเทียบ Problems และ Lab ที่มีชื่อรายการเดียวกันในแต่ละครั้ง การแปลผล Lab ใช้สถานะปกติ/สูง/ต่ำที่บันทึกใน lab_history และควรประเมินร่วมกับอาการ โรคประจำตัว และแผนการรักษา</div>`;
 }
 function homeVisitTimelineHtml(p){
   const visits=patientVisitHistory(p);
