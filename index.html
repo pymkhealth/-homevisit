@@ -356,12 +356,23 @@
   .photo-real img{width:100%;height:100%;object-fit:cover;display:block;}
   .photo-caption{position:absolute;left:0;right:0;bottom:0;background:rgba(18,44,59,.72);color:#fff;font-size:11px;padding:5px 7px;}
   .detail-edit-btn{white-space:nowrap;}
+  .visitor-signatures{margin-top:28px;padding-top:16px;border-top:1px solid #D8E1E7;page-break-inside:avoid;}
+  .visitor-signatures h4{text-align:left!important;margin:0 0 22px!important;font-size:14px!important;}
+  .visitor-signature-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:30px 36px;}
+  .visitor-signature-item{text-align:center;min-height:92px;page-break-inside:avoid;}
+  .visitor-sign-line{border-bottom:1px solid #314C5C;height:34px;margin:0 10px 7px;}
+  .visitor-sign-label{font-size:12px;color:#425E6D;}
+  .visitor-sign-name{font-size:12.5px;font-weight:600;margin-top:3px;}
+  .visitor-sign-role{font-size:11.5px;color:#6F808A;margin-top:2px;}
   @media print{
     body *{visibility:hidden!important;}
     #print-area,#print-area *{visibility:visible!important;}
     #print-area{position:absolute;left:0;top:0;width:100%;padding:0;margin:0;box-shadow:none;border:0;}
     #print-area .print-photo-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:16px;}
     #print-area .print-photo-grid img{width:100%;max-height:320px;object-fit:contain;border:1px solid #ddd;}
+    #print-area .visitor-signatures{margin-top:24px;padding-top:14px;border-top:1px solid #999;}
+    #print-area .visitor-signature-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:28px 34px;}
+    #print-area .visitor-sign-line{height:34px;border-bottom:1px solid #222;}
     @page{size:A4;margin:12mm;}
   }
 
@@ -1025,7 +1036,7 @@ function renderAllTabPanels(p){
   <div class="tab-panel" id="panel-problems"><h3>Problem List</h3><div class="visit-note">${textBlock(p.problems)}</div></div>
   <div class="tab-panel" id="panel-careplan"><h3>Care Plan</h3><div class="visit-note">${textBlock(p.care_plan)}</div></div>
   <div class="tab-panel" id="panel-photos"><h3>รูปภาพที่แนบ</h3><div class="photo-grid">${photoHtml||'<div class="empty-state" style="grid-column:1/-1">ยังไม่มีภาพแนบ</div>'}</div></div>
-  <div class="tab-panel" id="panel-print"><h3>พิมพ์ข้อมูลผู้ป่วย</h3><div id="print-area" class="a4-preview" style="max-width:760px"><h4>ข้อมูลผู้ป่วยเยี่ยมบ้าน</h4><div class="a4-sub">${safe(p.name)} · ${safe(p.hn)}</div>${printRows(p)}${p.photos?.length?`<h4 style="text-align:left;margin-top:20px">ภาพถ่ายที่แนบ</h4><div class="print-photo-grid">${p.photos.map(x=>`<img src="${safe(x.url||x)}">`).join('')}</div>`:''}</div><button class="btn-primary print-btn" style="max-width:220px;margin:0 auto" onclick="window.print()">🖨 พิมพ์ข้อมูลผู้ป่วย</button></div>`;
+  <div class="tab-panel" id="panel-print"><h3>พิมพ์ข้อมูลผู้ป่วย</h3><div id="print-area" class="a4-preview" style="max-width:760px"><h4>ข้อมูลผู้ป่วยเยี่ยมบ้าน</h4><div class="a4-sub">${safe(p.name)} · ${safe(p.hn)}</div>${printRows(p)}${p.photos?.length?`<h4 style="text-align:left;margin-top:20px">ภาพถ่ายที่แนบ</h4><div class="print-photo-grid">${p.photos.map(x=>`<img src="${safe(x.url||x)}">`).join('')}</div>`:''}${visitorSignatureHtml(p)}</div><button class="btn-primary print-btn" style="max-width:220px;margin:0 auto" onclick="window.print()">🖨 พิมพ์ข้อมูลผู้ป่วย</button></div>`;
 }
 function homeVisitTimelineHtml(p){
   // v9: homevisit is stored as dated blocks separated by a marker so multiple visits don't overwrite each other.
@@ -1036,6 +1047,21 @@ function homeVisitTimelineHtml(p){
     const rest=dateMatch?b.slice(dateMatch[0].length).trim():b;
     return `<div class="visit-item"><div class="visit-dot"></div><div><div class="visit-date">${safe(date)}</div><div class="visit-note">${textBlock(rest)}</div></div></div>`;
   }).join('');
+}
+function visitorSignatureHtml(p){
+  const team=Array.isArray(p.home_visit_team)?p.home_visit_team.filter(x=>x&&(x.name||x.role)):[];
+  if(!team.length)return '';
+  return `<div class="visitor-signatures">
+    <h4>ผู้เยี่ยมบ้าน / ลงลายมือชื่อ</h4>
+    <div class="visitor-signature-grid">
+      ${team.slice(0,5).map((x,i)=>`<div class="visitor-signature-item">
+        <div class="visitor-sign-line"></div>
+        <div class="visitor-sign-label">ลายมือชื่อผู้เยี่ยมบ้าน คนที่ ${i+1}</div>
+        <div class="visitor-sign-name">${safe(x.name||'')}</div>
+        ${x.role?`<div class="visitor-sign-role">${safe(x.role)}</div>`:''}
+      </div>`).join('')}
+    </div>
+  </div>`;
 }
 function printRows(p){const rows=[['วันเดือนปีเกิด',p.birthDate?thaiDate(p.birthDate):''],['อายุ / เพศ',`${p.age==null?'—':p.age+' ปี'} / ${p.sex||'—'}`],['วันที่เริ่มส่งเยี่ยมบ้าน',p.startVisit],['วันที่จำหน่ายจากผู้ป่วยเยี่ยมบ้าน',p.dischargeVisit],['กลุ่มโรค',p.group],['Diagnosis',p.diagnosis],['ICD-10',p.icd10],['ประวัติแพ้ยา',p.allergy],['ที่อยู่',p.address],['โทรศัพท์',p.phone],['เยี่ยมล่าสุด',p.lastVisit],['นัดครั้งถัดไป',p.nextVisitDate?thaiDate(p.nextVisitDate):''],['สถานะ Workflow',stageInfo(p.stage).label],['สถานะ',p.status==='urgent'?'เร่งด่วน':p.status==='overdue'?`เกินกำหนด ${p.overdueDays||0} วัน`:'ปกติ'],['เหตุผล/ข้อควรติดตาม',p.reason],['ประวัติเดิม',p.history],['Lab / ผลตรวจ',p.lab],['Medication',p.medication],['Home Visit',p.homevisit],['INHOMESSS',p.inhomesss],['Problems',p.problems],['Care Plan',p.care_plan]];return rows.filter(r=>r[1]&&r[1]!=='—').map(r=>`<div class="a4-line"><span>${safe(r[0])}</span><span style="max-width:65%;text-align:right;white-space:pre-wrap">${safe(r[1])}</span></div>`).join('');}
 
