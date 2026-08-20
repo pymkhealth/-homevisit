@@ -581,7 +581,7 @@
   .visit-tab-delete{border:0;border-left:1px solid #E3EAED;background:#fff;color:#9A6970;padding:0 8px;font-size:16px;cursor:pointer;}
   .visit-tab-delete:hover{background:#FFF0F1;color:#B73343;}
 
-/* ===== v14.7 Bright Medical Theme ===== */
+/* ===== v14.8 Bright Medical Theme ===== */
 :root{
   --navy:#123B5D;
   --teal:#12A6B5;
@@ -705,7 +705,7 @@ body{
   box-shadow:0 0 0 3px rgba(66,191,199,.12);
 }
 
-/* ===== v14.7 Formal Teal Pastel Theme (matched to selected reference) ===== */
+/* ===== v14.8 Formal Teal Pastel Theme (matched to selected reference) ===== */
 :root{
   --navy:#123F59;
   --teal:#0786A0;
@@ -1018,6 +1018,14 @@ body{
   .disease-lab-chip-btn:hover{background:#CFE8ED}
   .lab-row-flash{animation:labFlash 1.2s ease}
   @keyframes labFlash{0%,100%{background:transparent}35%{background:#FFF3C9}70%{background:#E8F6EA}}
+
+  .visit-team-row{align-items:start}
+  .visit-team-remove-btn{color:#A84D5A}
+  .visit-team-remove-btn:hover{background:#FBEAEC;color:#B72B3E}
+  @media(max-width:700px){
+    .visit-team-row>div{grid-template-columns:1fr!important}
+    .visit-team-remove-btn{justify-self:start}
+  }
 </style>
 </head>
 <body>
@@ -1309,7 +1317,7 @@ body{
 <div class="field form-span-2"><label>Problems</label><textarea id="f-problems" rows="3"></textarea></div>
         <div class="field form-span-2"><label>Care Plan</label><textarea id="f-careplan" rows="4"></textarea></div>
         <div class="field form-span-2"><label>แนบภาพถ่าย</label><input id="f-photos" type="file" accept="image/*" multiple><div class="form-help">เลือกได้หลายภาพ ภาพจะถูกเก็บใน Supabase Storage</div></div>
-        <div class="field form-span-2"><label>ทีมผู้เยี่ยมบ้าน <span class="form-help">กรอกเป็นส่วนสุดท้ายของแบบบันทึก กำหนด 2–5 คน และจะแสดงท้ายเอกสาร A4 พร้อมช่องลงลายมือชื่อ</span></label><div id="visit-team-box" class="structured-box"></div><div class="lab-tools"><button type="button" class="btn-ghost" onclick="addVisitTeamMember()">＋ เพิ่มผู้เยี่ยมบ้าน</button></div></div>
+        <div class="field form-span-2"><label>ทีมผู้เยี่ยมบ้าน <span class="form-help">กรอกเป็นส่วนสุดท้ายของแบบบันทึก สามารถเพิ่ม แก้ไข หรือลบรายชื่อได้ และจะแสดงท้ายรายงานพร้อมช่องลงลายมือชื่อ</span></label><div id="visit-team-box" class="structured-box"></div><div class="lab-tools"><button type="button" class="btn-ghost" onclick="addVisitTeamMember()">＋ เพิ่มผู้เยี่ยมบ้าน</button></div></div>
       </div>
       <div class="form-actions"><button type="button" class="btn-ghost" onclick="closePatientForm()">ยกเลิก</button><button id="save-patient-btn" class="btn-primary" style="width:auto;margin:0" type="submit">บันทึกข้อมูล</button></div>
     </form>
@@ -2422,40 +2430,122 @@ function assessmentComparisonHtml(prev,cur){
   }
   return rows.length?`<div class="assessment-compare">${rows.join('')}</div>`:'';
 }
-function renderVisitTeam(team=[],forceEdit=false){
+const MAX_VISIT_TEAM=10;
+
+function normalizeVisitTeamRows(team=[],keepEmpty=false){
+  const src=Array.isArray(team)?team:[];
+  return src
+    .map(x=>({name:String(x?.name||''),role:String(x?.role||'')}))
+    .filter(x=>keepEmpty || x.name.trim() || x.role.trim());
+}
+
+function renderVisitTeam(team=[],forceEdit=false,preserveSaved=false){
   const box=e('visit-team-box');if(!box)return;
-  let a=Array.isArray(team)?team.filter(x=>x&&(x.name||x.role)):[];
-  window.__visitTeamSaved=a.map(x=>({name:x.name||'',role:x.role||''}));
-  window.__visitTeamEditing=forceEdit || a.length===0;
+
+  let a=normalizeVisitTeamRows(team,forceEdit);
+
+  // เก็บชุดเดิมไว้สำหรับ "ยกเลิกการแก้ไข" เฉพาะตอนเปิดครั้งแรก
+  if(!preserveSaved){
+    window.__visitTeamSaved=normalizeVisitTeamRows(team,false);
+  }
+
+  window.__visitTeamEditing=!!forceEdit || a.length===0;
+
   if(!window.__visitTeamEditing){
+    const saved=normalizeVisitTeamRows(window.__visitTeamSaved||a,false);
     box.innerHTML=`<div style="display:grid;gap:8px">
-      ${a.map((m,i)=>`<div class="lab-file-link"><span><b>${i+1}. ${safe(m.name||'')}</b>${m.role?` · ${safe(m.role)}`:''}</span></div>`).join('')}
-      <div class="lab-tools"><button type="button" class="btn-ghost" onclick="editVisitTeam()">แก้ไข / เพิ่ม / ลบรายชื่อผู้เยี่ยมบ้าน</button></div>
+      ${saved.length?saved.map((m,i)=>`<div class="lab-file-link">
+        <span><b>${i+1}. ${safe(m.name||'')}</b>${m.role?` · ${safe(m.role)}`:''}</span>
+      </div>`).join(''):'<div class="form-help">ยังไม่มีรายชื่อผู้เยี่ยมบ้าน</div>'}
+      <div class="lab-tools">
+        <button type="button" class="btn-ghost" onclick="editVisitTeam()">แก้ไข / เพิ่ม / ลบรายชื่อผู้เยี่ยมบ้าน</button>
+      </div>
     </div>`;
     return;
   }
-  while(a.length<2)a.push({name:'',role:''});
-  a=a.slice(0,5);
-  box.innerHTML=a.map((m,i)=>`<div class="structured-row visit-team-row">
+
+  // ตอนเริ่มกรอกใหม่ แสดง 2 แถวให้ก่อน แต่ไม่ได้ล็อกว่าต้องมีเพียง 2 คน
+  if(!a.length){
+    a=[{name:'',role:''},{name:'',role:''}];
+  }
+
+  if(a.length>MAX_VISIT_TEAM)a=a.slice(0,MAX_VISIT_TEAM);
+
+  box.innerHTML=a.map((m,i)=>`<div class="structured-row visit-team-row" data-team-index="${i}">
     <label>ผู้เยี่ยมคนที่ ${i+1}</label>
     <div style="display:grid;grid-template-columns:1.4fr 1fr auto;gap:8px">
-      <input class="visit-team-name" placeholder="ชื่อ-สกุล" value="${safe(m?.name||'')}">
-      <input class="visit-team-role" placeholder="ตำแหน่ง/วิชาชีพ" value="${safe(m?.role||'')}">
-      ${i>=2?`<button type="button" class="btn-ghost" onclick="removeVisitTeamMember(${i})">ลบ</button>`:''}
+      <input class="visit-team-name" placeholder="ชื่อ-สกุล" value="${safe(m.name||'')}">
+      <input class="visit-team-role" placeholder="ตำแหน่ง/วิชาชีพ" value="${safe(m.role||'')}">
+      <button type="button" class="btn-ghost visit-team-remove-btn" onclick="removeVisitTeamMember(${i})">ลบ</button>
     </div>
-  </div>`).join('')+`<div class="lab-tools"><button type="button" class="btn-ghost" onclick="addVisitTeamMember()">＋ เพิ่มผู้เยี่ยมบ้าน</button>${window.__visitTeamSaved?.length?'<button type="button" class="btn-ghost" onclick="cancelVisitTeamEdit()">ยกเลิกการแก้ไข</button>':''}</div>`;
+  </div>`).join('')+`
+    <div class="lab-tools">
+      <button type="button" class="btn-ghost" onclick="addVisitTeamMember()">＋ เพิ่มผู้เยี่ยมบ้าน</button>
+      <span class="form-help">เพิ่มได้สูงสุด ${MAX_VISIT_TEAM} คน</span>
+      ${window.__visitTeamSaved?.length?'<button type="button" class="btn-ghost" onclick="cancelVisitTeamEdit()">ยกเลิกการแก้ไข</button>':''}
+    </div>`;
 }
-function getVisitTeam(){
-  if(!window.__visitTeamEditing)return Array.isArray(window.__visitTeamSaved)?window.__visitTeamSaved:[];
+
+function getVisitTeamRows(){
   return [...document.querySelectorAll('.visit-team-row')].map(r=>({
-    name:r.querySelector('.visit-team-name').value.trim(),
-    role:r.querySelector('.visit-team-role').value.trim()
-  })).filter(x=>x.name||x.role);
+    name:r.querySelector('.visit-team-name')?.value?.trim()||'',
+    role:r.querySelector('.visit-team-role')?.value?.trim()||''
+  }));
 }
-function editVisitTeam(){renderVisitTeam(window.__visitTeamSaved||[],true);}
-function cancelVisitTeamEdit(){renderVisitTeam(window.__visitTeamSaved||[],false);}
-function addVisitTeamMember(){const a=getVisitTeam();if(a.length>=5){alert('กำหนดผู้เยี่ยมบ้านได้สูงสุด 5 คน');return;}a.push({name:'',role:''});window.__visitTeamEditing=true;renderVisitTeam(a,true);}
-function removeVisitTeamMember(i){const a=getVisitTeam();a.splice(i,1);window.__visitTeamEditing=true;renderVisitTeam(a,true);}
+
+function getVisitTeam(){
+  if(!window.__visitTeamEditing){
+    return normalizeVisitTeamRows(window.__visitTeamSaved||[],false);
+  }
+  return getVisitTeamRows().filter(x=>x.name||x.role);
+}
+
+function editVisitTeam(){
+  const a=normalizeVisitTeamRows(window.__visitTeamSaved||[],true);
+  renderVisitTeam(a,true,true);
+}
+
+function cancelVisitTeamEdit(){
+  renderVisitTeam(window.__visitTeamSaved||[],false,true);
+}
+
+function addVisitTeamMember(){
+  let a=getVisitTeamRows();
+  if(!a.length)a=normalizeVisitTeamRows(window.__visitTeamSaved||[],true);
+
+  if(a.length>=MAX_VISIT_TEAM){
+    alert(`เพิ่มผู้เยี่ยมบ้านได้สูงสุด ${MAX_VISIT_TEAM} คน`);
+    return;
+  }
+
+  // สำคัญ: เก็บแถวว่างไว้ ไม่กรองทิ้ง เพื่อให้แถวใหม่แสดงจริง
+  a.push({name:'',role:''});
+  window.__visitTeamEditing=true;
+  renderVisitTeam(a,true,true);
+
+  // โฟกัสช่องชื่อของแถวใหม่
+  setTimeout(()=>{
+    const rows=document.querySelectorAll('.visit-team-row');
+    rows[rows.length-1]?.querySelector('.visit-team-name')?.focus();
+  },0);
+}
+
+function removeVisitTeamMember(i){
+  let a=getVisitTeamRows();
+  if(!a.length)return;
+
+  const row=a[i];
+  const label=row?.name||`ผู้เยี่ยมคนที่ ${i+1}`;
+  if((row?.name||row?.role) && !confirm(`ยืนยันลบรายชื่อ "${label}" หรือไม่?`))return;
+
+  a.splice(i,1);
+
+  // อนุญาตให้ลบทุกคนได้ แต่คงช่องว่าง 1 แถวไว้เพื่อกรอกใหม่ได้สะดวก
+  if(!a.length)a=[{name:'',role:''}];
+
+  window.__visitTeamEditing=true;
+  renderVisitTeam(a,true,true);
+}
 const thaiDate = iso => {
   if(!iso) return '—';
   const d = new Date(iso+'T00:00:00');
