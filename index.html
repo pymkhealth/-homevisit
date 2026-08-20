@@ -581,7 +581,7 @@
   .visit-tab-delete{border:0;border-left:1px solid #E3EAED;background:#fff;color:#9A6970;padding:0 8px;font-size:16px;cursor:pointer;}
   .visit-tab-delete:hover{background:#FFF0F1;color:#B73343;}
 
-/* ===== v14.6 Bright Medical Theme ===== */
+/* ===== v14.7 Bright Medical Theme ===== */
 :root{
   --navy:#123B5D;
   --teal:#12A6B5;
@@ -705,7 +705,7 @@ body{
   box-shadow:0 0 0 3px rgba(66,191,199,.12);
 }
 
-/* ===== v14.6 Formal Teal Pastel Theme (matched to selected reference) ===== */
+/* ===== v14.7 Formal Teal Pastel Theme (matched to selected reference) ===== */
 :root{
   --navy:#123F59;
   --teal:#0786A0;
@@ -1014,6 +1014,10 @@ body{
   .assessment-result-card{padding:8px 10px;margin:6px 0;border:1px solid #DCE7EB;border-radius:8px;background:#fff;font-size:12px}
   .assessment-compare{margin-top:6px;padding:8px 10px;border-radius:8px;background:#fff;border:1px solid #DFE8EC}
   @media(max-width:700px){.assessment-grid,.assessment-grid.two-col,.assessment-grid.four-col{grid-template-columns:1fr}.assessment-score-row{grid-template-columns:1fr}}
+  .disease-lab-chip-btn{border:0;cursor:pointer;font-family:inherit}
+  .disease-lab-chip-btn:hover{background:#CFE8ED}
+  .lab-row-flash{animation:labFlash 1.2s ease}
+  @keyframes labFlash{0%,100%{background:transparent}35%{background:#FFF3C9}70%{background:#E8F6EA}}
 </style>
 </head>
 <body>
@@ -1865,31 +1869,49 @@ const LAB_REFERENCE={
   ferritin:{label:'Ferritin',unit:'ng/mL'},
   tsh:{label:'TSH',unit:'µIU/mL'},
   ft4:{label:'FT4',unit:'ng/dL'},
-  pt_inr:{label:'PT/INR',unit:''}
+  pt_inr:{label:'PT/INR',unit:''},
+  rdw:{label:'RDW',unit:'%',range:[11.5,14.5]},
+  urine_protein:{label:'Urine Protein',unit:'',qualitative:true},
+  bnp:{label:'BNP',unit:'pg/mL'},
+  ntprobnp:{label:'NT-proBNP',unit:'pg/mL'},
+  serum_iron:{label:'Serum Iron',unit:'µg/dL'},
+  tibc:{label:'TIBC',unit:'µg/dL'},
+  transferrin_sat:{label:'Transferrin Saturation',unit:'%'},
+  pt:{label:'PT',unit:'sec'},
+  inr:{label:'INR',unit:''},
+  ft3:{label:'FT3',unit:'pg/mL'}
 };
 
 const LAB_FORM_GROUPS=[
-  {id:'cbc',title:'CBC',keys:['hb','hct','rbc','mcv','mch','mchc','platelet','wbc','neutrophil','lymphocyte','monocyte','eosinophil','basophil']},
-  {id:'renal',title:'BUN / Creatinine / eGFR',keys:['bun','creatinine','egfr']},
-  {id:'electrolyte',title:'Electrolyte',keys:['na','k','cl','co2']},
+  {id:'cbc',title:'CBC',keys:['hb','hct','rbc','mcv','mch','mchc','rdw','platelet','wbc','neutrophil','lymphocyte','monocyte','eosinophil','basophil']},
+  {id:'renal',title:'Renal Function',keys:['bun','creatinine','egfr']},
+  {id:'electrolyte',title:'Electrolyte',keys:['na','k','cl','co2','calcium','phosphorus','magnesium']},
+  {id:'diabetes',title:'Diabetes / Glycemic Control',keys:['fbs','hba1c']},
+  {id:'urine',title:'Urine Protein / Kidney Damage',keys:['urine_protein','urine_acr']},
   {id:'lft',title:'Liver Function Test (LFT)',keys:['total_protein','albumin','globulin','total_bilirubin','direct_bilirubin','ast','alt','alp']},
+  {id:'coag',title:'Coagulation',keys:['pt','inr']},
   {id:'uric',title:'Uric acid',keys:['uric_acid']},
-  {id:'lipid',title:'Lipid profile',keys:['cholesterol','triglyceride','hdl','ldl']}
+  {id:'lipid',title:'Lipid profile',keys:['cholesterol','triglyceride','hdl','ldl']},
+  {id:'cardiac',title:'Heart Failure Markers',keys:['bnp','ntprobnp']},
+  {id:'iron',title:'Iron Study',keys:['ferritin','serum_iron','tibc','transferrin_sat']},
+  {id:'thyroid',title:'Thyroid Function',keys:['tsh','ft4','ft3']}
 ];
 
 const DISEASE_LAB_MAP=[
-  {id:'dm',match:/เบาหวาน|diabetes|\bdm\b/i,label:'เบาหวาน (DM)',keys:['fbs','hba1c','creatinine','egfr','urine_acr','cholesterol','triglyceride','hdl','ldl']},
-  {id:'ht',match:/ความดัน|hypertension|\bht\b/i,label:'ความดันโลหิตสูง (HT)',keys:['creatinine','egfr','na','k','urine_acr','fbs','hba1c','cholesterol','triglyceride','hdl','ldl']},
-  {id:'lipid',match:/ไขมัน|dyslip|hyperlip|cholesterol/i,label:'ไขมันในเลือดสูง',keys:['cholesterol','triglyceride','hdl','ldl','ast','alt']},
-  {id:'ckd',match:/ไตเรื้อรัง|chronic kidney|\bckd\b|renal/i,label:'โรคไตเรื้อรัง (CKD)',keys:['bun','creatinine','egfr','na','k','co2','hb','hct','urine_acr','calcium','phosphorus']},
-  {id:'hf',match:/heart failure|หัวใจล้มเหลว|\bhf\b/i,label:'Heart failure',keys:['bun','creatinine','egfr','na','k']},
-  {id:'cad',match:/cad|coronary|ischemic heart|หลอดเลือดหัวใจ/i,label:'โรคหลอดเลือดหัวใจ',keys:['cholesterol','triglyceride','hdl','ldl','fbs','hba1c','creatinine','egfr']},
-  {id:'stroke',match:/stroke|cva|หลอดเลือดสมอง/i,label:'โรคหลอดเลือดสมอง',keys:['cholesterol','triglyceride','hdl','ldl','fbs','hba1c','creatinine','egfr','hb','hct']},
-  {id:'anemia',match:/anemia|โลหิตจาง|ซีด/i,label:'ภาวะโลหิตจาง',keys:['hb','hct','rbc','mcv','mch','mchc','ferritin']},
-  {id:'gout',match:/gout|เกาต์|uric/i,label:'เกาต์ / Uric acid สูง',keys:['uric_acid','creatinine','egfr']},
-  {id:'liver',match:/liver|ตับ|cirrhosis|hepat/i,label:'โรคตับ',keys:['ast','alt','alp','total_bilirubin','direct_bilirubin','albumin','total_protein']},
-  {id:'thyroid',match:/thyroid|ไทรอยด์/i,label:'โรคไทรอยด์',keys:['tsh','ft4']},
-  {id:'warfarin',match:/warfarin|วาร์ฟาริน/i,label:'ใช้ Warfarin',keys:['pt_inr','hb','hct']}
+  {id:'dm',match:/เบาหวาน|diabetes|\bdm\b/i,label:'เบาหวาน (DM)',keys:['fbs','hba1c','creatinine','egfr','urine_protein','urine_acr','cholesterol','triglyceride','hdl','ldl']},
+  {id:'ht',match:/ความดัน|hypertension|\bht\b/i,label:'ความดันโลหิตสูง (HT)',keys:['creatinine','egfr','na','k','urine_protein','urine_acr','fbs','hba1c','cholesterol','triglyceride','hdl','ldl']},
+  {id:'lipid',match:/ไขมัน|dyslip|hyperlip|cholesterol/i,label:'ไขมันในเลือดสูง (Dyslipidemia)',keys:['cholesterol','triglyceride','hdl','ldl']},
+  {id:'ckd',match:/ไตเรื้อรัง|chronic kidney|\bckd\b|renal/i,label:'CKD',keys:['creatinine','egfr','bun','k','na','co2','hb','hct','urine_protein','urine_acr']},
+  {id:'hf',match:/heart failure|หัวใจล้มเหลว|\bhf\b/i,label:'Heart failure',keys:['na','k','creatinine','egfr','bun','bnp','ntprobnp']},
+  {id:'cad',match:/cad|coronary|ischemic heart|หลอดเลือดหัวใจ/i,label:'CAD',keys:['ldl','hdl','triglyceride','hba1c','fbs','creatinine','egfr']},
+  {id:'stroke',match:/stroke|cva|หลอดเลือดสมอง/i,label:'Stroke',keys:['ldl','hba1c','fbs','creatinine','egfr','hb','hct','rbc','wbc','platelet']},
+  {id:'anemia',match:/anemia|โลหิตจาง|ซีด/i,label:'โลหิตจาง',keys:['hb','hct','mcv','mch','mchc','rdw','ferritin','serum_iron','tibc','transferrin_sat']},
+  {id:'gout',match:/gout|เกาต์|hyperuric|uric/i,label:'เกาต์ / Hyperuricemia',keys:['uric_acid','creatinine','egfr']},
+  {id:'liver',match:/liver|ตับ|cirrhosis|hepat/i,label:'โรคตับ',keys:['ast','alt','alp','total_bilirubin','direct_bilirubin','albumin','pt','inr']},
+  {id:'thyroid',match:/thyroid|ไทรอยด์/i,label:'ไทรอยด์',keys:['tsh','ft4','ft3']},
+  {id:'nutrition',match:/ทุพโภชนาการ|malnutrition|โภชนาการ/i,label:'ทุพโภชนาการ/ผู้สูงอายุเสี่ยงโภชนาการ',keys:['hb','hct','rbc','wbc','platelet','albumin','na','k','cl','co2','calcium','magnesium']},
+  {id:'warfarin',match:/warfarin|วาร์ฟาริน/i,label:'ผู้ป่วยใช้ Warfarin',keys:['pt','inr','hb','hct','platelet']},
+  {id:'renalmed',match:/ยาที่มีผลต่อไต|ยาที่มีผลต่อเกลือแร่|nephrotoxic/i,label:'ติดตามยาที่มีผลต่อไต/เกลือแร่',keys:['creatinine','egfr','k','na']}
 ];
 
 function currentDiseaseText(){
@@ -1900,6 +1922,14 @@ function diseaseLabRecommendations(){
   const matched=DISEASE_LAB_MAP.filter(d=>d.match.test(text));
   const keys=[...new Set(matched.flatMap(d=>d.keys))];
   return {matched,keys};
+}
+function focusLabField(key){
+  const tr=document.querySelector(`#lab-entry-groups tr[data-lab-key="${CSS.escape(key)}"]`);
+  if(!tr)return;
+  tr.scrollIntoView({behavior:'smooth',block:'center'});
+  tr.classList.add('lab-row-flash');
+  setTimeout(()=>tr.classList.remove('lab-row-flash'),1200);
+  tr.querySelector('.lab-value')?.focus();
 }
 function renderDiseaseLabRecommendation(){
   const box=e('disease-lab-recommendation');if(!box)return;
@@ -1912,9 +1942,9 @@ function renderDiseaseLabRecommendation(){
   box.innerHTML=`<div class="disease-lab-title">Lab แนะนำตามโรค: ${matched.map(x=>safe(x.label)).join(' + ')}</div>
     <div class="disease-lab-chips">${keys.map(k=>{
       const d=LAB_REFERENCE[k]||{label:k};
-      return `<span class="disease-lab-chip">${safe(d.label||k)}</span>`;
+      return `<button type="button" class="disease-lab-chip disease-lab-chip-btn" onclick="focusLabField('${k}')">${safe(d.label||k)}</button>`;
     }).join('')}</div>
-    <div class="form-help" style="margin-top:7px">รายการนี้เป็นตัวช่วยเตือนการติดตาม ไม่แทนคำสั่งแพทย์หรือแนวทางเฉพาะราย</div>`;
+    <div class="form-help" style="margin-top:7px">ทุกรายการที่แนะนำมีช่องกรอกด้านล่างแล้ว กดชื่อ Lab เพื่อเลื่อนไปยังช่องกรอกได้ทันที</div>`;
 }
 
 
@@ -1991,26 +2021,14 @@ function getLabISODate(){
   return existing?.last_visit||todayISO();
 }
 function labInputCell(key){
-  const r=referenceFor(key), d=LAB_REFERENCE[key];
+  const r=referenceFor(key), d=LAB_REFERENCE[key], isQual=!!d.qualitative;
   return `<tr data-lab-key="${safe(key)}">
-    <td style="padding:7px 5px;font-weight:600;white-space:nowrap">
-      ${safe(d.label)}
-      <div class="lab-ref-mini">ค่าปกติ ${safe(r.refText||'ขึ้นกับห้องปฏิบัติการ')}</div>
-    </td>
-    <td style="padding:5px"><input class="lab-value" inputmode="decimal" placeholder="ผล" oninput="updateLabRowFeedback(this)" style="width:95px"></td>
+    <td style="padding:7px 5px;font-weight:600;white-space:nowrap">${safe(d.label)}<div class="lab-ref-mini">ค่าปกติ ${isQual?'Negative / ไม่พบ':safe(r.refText||'ขึ้นกับห้องปฏิบัติการ')}</div></td>
+    <td style="padding:5px">${isQual?`<select class="lab-value lab-qual-value" onchange="updateLabRowFeedback(this)" style="width:120px"><option value="">— เลือก —</option><option>Negative</option><option>Trace</option><option>1+</option><option>2+</option><option>3+</option><option>4+</option></select>`:`<input class="lab-value" inputmode="decimal" placeholder="ผล" oninput="updateLabRowFeedback(this)" style="width:95px">`}</td>
     <td style="padding:5px">${safe(d.unit||'')}</td>
   </tr>
-  <tr class="lab-target-row" data-lab-target-for="${safe(key)}">
-    <td colspan="3" style="padding:0 5px 7px">
-      <input class="lab-target-note" placeholder="หมายเหตุ / เป้าหมายการรักษาตามแผนแพทย์ (ไม่บังคับ)" oninput="updateLabTargetFeedback(this)">
-      <div class="lab-target-feedback"></div>
-    </td>
-  </tr>
-  <tr class="lab-advice-row" data-lab-advice-for="${safe(key)}" style="display:none">
-    <td colspan="3" style="padding:0 5px 9px">
-      <div class="lab-inline-advice" style="background:#fff7e8;border-left:4px solid #e6a23c;padding:8px 10px;border-radius:7px;font-size:12px;color:#5d4b20"></div>
-    </td>
-  </tr>`;
+  <tr class="lab-target-row" data-lab-target-for="${safe(key)}"><td colspan="3" style="padding:0 5px 7px"><input class="lab-target-note" placeholder="หมายเหตุ / เป้าหมายการรักษาตามแผนแพทย์ (ไม่บังคับ)" oninput="updateLabTargetFeedback(this)"><div class="lab-target-feedback"></div></td></tr>
+  <tr class="lab-advice-row" data-lab-advice-for="${safe(key)}" style="display:none"><td colspan="3" style="padding:0 5px 9px"><div class="lab-inline-advice" style="background:#fff7e8;border-left:4px solid #e6a23c;padding:8px 10px;border-radius:7px;font-size:12px;color:#5d4b20"></div></td></tr>`;
 }
 function renderLabEntryGroups(){
   const box=e('lab-entry-groups'); if(!box)return;
@@ -2071,22 +2089,19 @@ function updateLabTargetFeedback(input){
 }
 function updateLabRowFeedback(input){
   const tr=input.closest('tr[data-lab-key]');if(!tr)return;
-  const key=tr.dataset.labKey,raw=input.value.trim(),value=Number(raw.replace(',','.'));
-  const adviceRow=tr.nextElementSibling?.nextElementSibling;
-  if(!raw||!Number.isFinite(value)){if(adviceRow)adviceRow.style.display='none';input.style.borderColor='';return;}
-  const r=evaluateBuiltInLab(key,value);
-  input.style.borderColor=r.status==='normal'?'#64b6a7':r.status==='high'||r.status==='low'?'#e35d6a':'';
-  const targetRow=tr.nextElementSibling;
-  const targetInput=targetRow?.querySelector?.('.lab-target-note');
-  if(targetInput)updateLabTargetFeedback(targetInput);
+  const key=tr.dataset.labKey,d=LAB_REFERENCE[key]||{},raw=String(input.value||'').trim(),adviceRow=tr.nextElementSibling?.nextElementSibling;
+  if(!raw){if(adviceRow)adviceRow.style.display='none';input.style.borderColor='';return;}
+  let status='unknown',value=null,r=referenceFor(key);
+  if(d.qualitative){status=/^negative$/i.test(raw)?'normal':'abnormal';}
+  else{value=Number(raw.replace(',','.'));if(!Number.isFinite(value))return;const ev=evaluateBuiltInLab(key,value);status=ev.status;r=ev;}
+  input.style.borderColor=status==='normal'?'#64b6a7':['high','low','abnormal'].includes(status)?'#e35d6a':'';
+  const targetInput=tr.nextElementSibling?.querySelector?.('.lab-target-note');if(targetInput)updateLabTargetFeedback(targetInput);
   if(!adviceRow)return;
-  if(r.status==='high'||r.status==='low'){
+  if(['high','low','abnormal'].includes(status)){
     adviceRow.style.display='';
     const box=adviceRow.querySelector('.lab-inline-advice');
-    box.innerHTML=`<b>${r.status==='high'?'🔴 สูงกว่าปกติ':'🔴 ต่ำกว่าปกติ'}</b> · ${safe(LAB_REFERENCE[key].label)} ${safe(value)} ${safe(LAB_REFERENCE[key].unit)} (ค่าปกติ ${safe(r.refText)})<br><span style="display:block;margin-top:4px">${safe(inlineLabAdvice(key,r.status,value))}</span>`;
-  }else{
-    adviceRow.style.display='none';
-  }
+    box.innerHTML=d.qualitative?`<b>🔴 ผิดปกติ</b> · ${safe(d.label)} ${safe(raw)}<br><span style="display:block;margin-top:4px">ควรประเมินร่วมกับอาการและผลตรวจอื่น และติดตามตามแผนแพทย์</span>`:`<b>${status==='high'?'🔴 สูงกว่าปกติ':'🔴 ต่ำกว่าปกติ'}</b> · ${safe(d.label)} ${safe(value)} ${safe(d.unit||'')} (ค่าปกติ ${safe(r.refText||'—')})<br><span style="display:block;margin-top:4px">${safe(inlineLabAdvice(key,status,value))}</span>`;
+  }else adviceRow.style.display='none';
 }
 function addExtraLabRow(data={}){
   const box=e('lab-extra-rows');if(!box)return;
@@ -2123,28 +2138,21 @@ function parseReferenceText(refText,value){
 function collectManualLabResults(){
   const out=[];
   document.querySelectorAll('#lab-entry-groups tr[data-lab-key]').forEach(tr=>{
-    const valRaw=tr.querySelector('.lab-value').value.trim();
-    if(valRaw==='')return;
-    const key=tr.dataset.labKey,d=LAB_REFERENCE[key],value=Number(valRaw.replace(',','.'));
-    const ev=evaluateBuiltInLab(key,value);
-    const targetRow=tr.nextElementSibling;
+    const valRaw=String(tr.querySelector('.lab-value')?.value||'').trim();
+    if(!valRaw)return;
+    const key=tr.dataset.labKey,d=LAB_REFERENCE[key]||{},targetRow=tr.nextElementSibling;
     const targetNote=targetRow?.querySelector('.lab-target-note')?.value?.trim()||'';
-    const targetEval=parseTreatmentTarget(targetNote,Number.isFinite(value)?value:null);
-    out.push({
-      key,label:d.label,value:Number.isFinite(value)?value:null,valueText:Number.isFinite(value)?'':valRaw,
-      unit:d.unit,refText:ev.refText,low:ev.low,high:ev.high,status:ev.status,
-      treatmentTargetNote:targetNote,treatmentTargetStatus:targetEval.status
-    });
+    if(d.qualitative){
+      out.push({key,label:d.label,value:null,valueText:valRaw,unit:d.unit||'',refText:'Negative',low:null,high:null,status:/^negative$/i.test(valRaw)?'normal':'abnormal',treatmentTargetNote:targetNote,treatmentTargetStatus:'note_only'});
+      return;
+    }
+    const value=Number(valRaw.replace(',','.')),ev=evaluateBuiltInLab(key,value),targetEval=parseTreatmentTarget(targetNote,Number.isFinite(value)?value:null);
+    out.push({key,label:d.label,value:Number.isFinite(value)?value:null,valueText:Number.isFinite(value)?'':valRaw,unit:d.unit,refText:ev.refText,low:ev.low,high:ev.high,status:ev.status,treatmentTargetNote:targetNote,treatmentTargetStatus:targetEval.status});
   });
-  document.querySelectorAll('.extra-lab-row').forEach((row,i)=>{
-    const label=row.querySelector('.extra-name').value.trim();
-    const valRaw=row.querySelector('.extra-value').value.trim();
-    if(!label||valRaw==='')return;
-    const refText=row.querySelector('.extra-ref').value.trim();
-    const unit=row.querySelector('.extra-unit').value.trim();
-    const value=Number(valRaw.replace(',','.'));
-    const parsed=parseReferenceText(refText,value);
-    const key='extra_'+label.toLowerCase().replace(/[^a-z0-9ก-๙]+/g,'_');
+  document.querySelectorAll('.extra-lab-row').forEach(row=>{
+    const label=row.querySelector('.extra-name').value.trim(),valRaw=row.querySelector('.extra-value').value.trim();
+    if(!label||!valRaw)return;
+    const refText=row.querySelector('.extra-ref').value.trim(),unit=row.querySelector('.extra-unit').value.trim(),value=Number(valRaw.replace(',','.')),parsed=parseReferenceText(refText,value),key='extra_'+label.toLowerCase().replace(/[^a-z0-9ก-๙]+/g,'_');
     out.push({key,label,value:Number.isFinite(value)?value:null,valueText:Number.isFinite(value)?'':valRaw,unit,refText,...parsed,treatmentTargetNote:'',treatmentTargetStatus:'none'});
   });
   return out;
