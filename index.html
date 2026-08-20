@@ -581,7 +581,7 @@
   .visit-tab-delete{border:0;border-left:1px solid #E3EAED;background:#fff;color:#9A6970;padding:0 8px;font-size:16px;cursor:pointer;}
   .visit-tab-delete:hover{background:#FFF0F1;color:#B73343;}
 
-/* ===== v14.8 Bright Medical Theme ===== */
+/* ===== v14.9 Bright Medical Theme ===== */
 :root{
   --navy:#123B5D;
   --teal:#12A6B5;
@@ -705,7 +705,7 @@ body{
   box-shadow:0 0 0 3px rgba(66,191,199,.12);
 }
 
-/* ===== v14.8 Formal Teal Pastel Theme (matched to selected reference) ===== */
+/* ===== v14.9 Formal Teal Pastel Theme (matched to selected reference) ===== */
 :root{
   --navy:#123F59;
   --teal:#0786A0;
@@ -1887,39 +1887,72 @@ const LAB_REFERENCE={
   transferrin_sat:{label:'Transferrin Saturation',unit:'%'},
   pt:{label:'PT',unit:'sec'},
   inr:{label:'INR',unit:''},
-  ft3:{label:'FT3',unit:'pg/mL'}
+  ft3:{label:'FT3',unit:'pg/mL'},
+  ckd_stage:{label:'CKD Stage',unit:'',categorical:true},
+  albuminuria_stage:{label:'Albuminuria Stage',unit:'',categorical:true},
+  ua_color:{label:'Urine Color',unit:'',categorical:true},
+  ua_appearance:{label:'Urine Appearance',unit:'',categorical:true},
+  ua_spgr:{label:'Urine Specific Gravity',unit:'',range:[1.005,1.030]},
+  ua_ph:{label:'Urine pH',unit:'',range:[5.0,8.0]},
+  ua_glucose:{label:'Urine Glucose',unit:'',qualitative:true},
+  ua_ketone:{label:'Urine Ketone',unit:'',qualitative:true},
+  ua_blood:{label:'Urine Blood',unit:'',qualitative:true},
+  ua_nitrite:{label:'Urine Nitrite',unit:'',qualitative:true},
+  ua_leukocyte:{label:'Urine Leukocyte Esterase',unit:'',qualitative:true},
+  ua_rbc:{label:'Urine RBC',unit:'cells/HPF'},
+  ua_wbc:{label:'Urine WBC',unit:'cells/HPF'},
+  ua_bacteria:{label:'Urine Bacteria',unit:'',categorical:true},
+  microalbumin:{label:'Urine Microalbumin',unit:'mg/L'},
+  pcr:{label:'Urine Protein/Creatinine Ratio (PCR)',unit:'mg/g'},
+  protein24h:{label:'Urine Protein 24 hr',unit:'mg/day'},
+  cystatin_c:{label:'Cystatin C',unit:'mg/L'},
+  pth:{label:'PTH',unit:'pg/mL'},
+  vitamin_d:{label:'25-OH Vitamin D',unit:'ng/mL'},
+  bicarbonate:{label:'HCO3 / Bicarbonate',unit:'mmol/L',range:[22,29]},
+  fructosamine:{label:'Fructosamine',unit:'µmol/L'},
+  random_glucose:{label:'Random Plasma Glucose',unit:'mg/dL'},
+  ogtt_2h:{label:'2-hr OGTT Glucose',unit:'mg/dL'},
+  reticulocyte:{label:'Reticulocyte',unit:'%'},
+  b12:{label:'Vitamin B12',unit:'pg/mL'},
+  folate:{label:'Folate',unit:'ng/mL'},
+  ggt:{label:'GGT',unit:'U/L'},
+  aptt:{label:'aPTT',unit:'sec'},
+  crp:{label:'CRP',unit:'mg/L'},
+  esr:{label:'ESR',unit:'mm/hr'}
 };
 
 const LAB_FORM_GROUPS=[
-  {id:'cbc',title:'CBC',keys:['hb','hct','rbc','mcv','mch','mchc','rdw','platelet','wbc','neutrophil','lymphocyte','monocyte','eosinophil','basophil']},
-  {id:'renal',title:'Renal Function',keys:['bun','creatinine','egfr']},
-  {id:'electrolyte',title:'Electrolyte',keys:['na','k','cl','co2','calcium','phosphorus','magnesium']},
-  {id:'diabetes',title:'Diabetes / Glycemic Control',keys:['fbs','hba1c']},
-  {id:'urine',title:'Urine Protein / Kidney Damage',keys:['urine_protein','urine_acr']},
-  {id:'lft',title:'Liver Function Test (LFT)',keys:['total_protein','albumin','globulin','total_bilirubin','direct_bilirubin','ast','alt','alp']},
-  {id:'coag',title:'Coagulation',keys:['pt','inr']},
+  {id:'cbc',title:'CBC / Hematology',keys:['hb','hct','rbc','mcv','mch','mchc','rdw','reticulocyte','platelet','wbc','neutrophil','lymphocyte','monocyte','eosinophil','basophil']},
+  {id:'renal',title:'Renal Function / CKD',keys:['bun','creatinine','egfr','cystatin_c','ckd_stage','albuminuria_stage']},
+  {id:'electrolyte',title:'Electrolyte / Acid-Base',keys:['na','k','cl','co2','bicarbonate','calcium','phosphorus','magnesium']},
+  {id:'diabetes',title:'Diabetes / Glycemic Control',keys:['fbs','random_glucose','hba1c','fructosamine','ogtt_2h']},
+  {id:'urinekidney',title:'Urine Protein / Kidney Damage',keys:['urine_protein','urine_acr','microalbumin','pcr','protein24h']},
+  {id:'ua',title:'Urinalysis',keys:['ua_color','ua_appearance','ua_spgr','ua_ph','ua_glucose','ua_ketone','ua_blood','ua_nitrite','ua_leukocyte','ua_rbc','ua_wbc','ua_bacteria']},
+  {id:'lft',title:'Liver Function Test',keys:['total_protein','albumin','globulin','total_bilirubin','direct_bilirubin','ast','alt','alp','ggt']},
+  {id:'coag',title:'Coagulation',keys:['pt','inr','aptt']},
   {id:'uric',title:'Uric acid',keys:['uric_acid']},
   {id:'lipid',title:'Lipid profile',keys:['cholesterol','triglyceride','hdl','ldl']},
   {id:'cardiac',title:'Heart Failure Markers',keys:['bnp','ntprobnp']},
-  {id:'iron',title:'Iron Study',keys:['ferritin','serum_iron','tibc','transferrin_sat']},
-  {id:'thyroid',title:'Thyroid Function',keys:['tsh','ft4','ft3']}
+  {id:'iron',title:'Iron Study / Anemia',keys:['ferritin','serum_iron','tibc','transferrin_sat','b12','folate']},
+  {id:'ckdcomp',title:'CKD Complication Monitoring',keys:['pth','vitamin_d','calcium','phosphorus','hb','ferritin','transferrin_sat']},
+  {id:'thyroid',title:'Thyroid Function',keys:['tsh','ft4','ft3']},
+  {id:'inflammation',title:'Inflammation / General',keys:['crp','esr']}
 ];
 
 const DISEASE_LAB_MAP=[
-  {id:'dm',match:/เบาหวาน|diabetes|\bdm\b/i,label:'เบาหวาน (DM)',keys:['fbs','hba1c','creatinine','egfr','urine_protein','urine_acr','cholesterol','triglyceride','hdl','ldl']},
-  {id:'ht',match:/ความดัน|hypertension|\bht\b/i,label:'ความดันโลหิตสูง (HT)',keys:['creatinine','egfr','na','k','urine_protein','urine_acr','fbs','hba1c','cholesterol','triglyceride','hdl','ldl']},
-  {id:'lipid',match:/ไขมัน|dyslip|hyperlip|cholesterol/i,label:'ไขมันในเลือดสูง (Dyslipidemia)',keys:['cholesterol','triglyceride','hdl','ldl']},
-  {id:'ckd',match:/ไตเรื้อรัง|chronic kidney|\bckd\b|renal/i,label:'CKD',keys:['creatinine','egfr','bun','k','na','co2','hb','hct','urine_protein','urine_acr']},
-  {id:'hf',match:/heart failure|หัวใจล้มเหลว|\bhf\b/i,label:'Heart failure',keys:['na','k','creatinine','egfr','bun','bnp','ntprobnp']},
-  {id:'cad',match:/cad|coronary|ischemic heart|หลอดเลือดหัวใจ/i,label:'CAD',keys:['ldl','hdl','triglyceride','hba1c','fbs','creatinine','egfr']},
-  {id:'stroke',match:/stroke|cva|หลอดเลือดสมอง/i,label:'Stroke',keys:['ldl','hba1c','fbs','creatinine','egfr','hb','hct','rbc','wbc','platelet']},
-  {id:'anemia',match:/anemia|โลหิตจาง|ซีด/i,label:'โลหิตจาง',keys:['hb','hct','mcv','mch','mchc','rdw','ferritin','serum_iron','tibc','transferrin_sat']},
-  {id:'gout',match:/gout|เกาต์|hyperuric|uric/i,label:'เกาต์ / Hyperuricemia',keys:['uric_acid','creatinine','egfr']},
-  {id:'liver',match:/liver|ตับ|cirrhosis|hepat/i,label:'โรคตับ',keys:['ast','alt','alp','total_bilirubin','direct_bilirubin','albumin','pt','inr']},
-  {id:'thyroid',match:/thyroid|ไทรอยด์/i,label:'ไทรอยด์',keys:['tsh','ft4','ft3']},
-  {id:'nutrition',match:/ทุพโภชนาการ|malnutrition|โภชนาการ/i,label:'ทุพโภชนาการ/ผู้สูงอายุเสี่ยงโภชนาการ',keys:['hb','hct','rbc','wbc','platelet','albumin','na','k','cl','co2','calcium','magnesium']},
-  {id:'warfarin',match:/warfarin|วาร์ฟาริน/i,label:'ผู้ป่วยใช้ Warfarin',keys:['pt','inr','hb','hct','platelet']},
-  {id:'renalmed',match:/ยาที่มีผลต่อไต|ยาที่มีผลต่อเกลือแร่|nephrotoxic/i,label:'ติดตามยาที่มีผลต่อไต/เกลือแร่',keys:['creatinine','egfr','k','na']}
+  {id:'dm',match:/เบาหวาน|diabetes|\bdm\b/i,label:'DM',keys:['fbs','hba1c','creatinine','egfr','urine_acr','urine_protein','cholesterol','triglyceride','hdl','ldl']},
+  {id:'ht',match:/ความดัน|hypertension|\bht\b/i,label:'HT',keys:['creatinine','egfr','na','k','urine_acr','urine_protein','fbs','hba1c','cholesterol','triglyceride','hdl','ldl']},
+  {id:'lipid',match:/ไขมัน|dyslip|hyperlip/i,label:'Dyslipidemia',keys:['cholesterol','triglyceride','hdl','ldl']},
+  {id:'ckd',match:/ไตเรื้อรัง|chronic kidney|\bckd\b/i,label:'CKD',keys:['creatinine','egfr','ckd_stage','albuminuria_stage','bun','k','na','co2','bicarbonate','hb','hct','urine_acr','urine_protein','pcr','calcium','phosphorus','pth','vitamin_d','ferritin','transferrin_sat']},
+  {id:'hf',match:/heart failure|หัวใจล้มเหลว/i,label:'Heart failure',keys:['na','k','creatinine','egfr','bun','bnp','ntprobnp']},
+  {id:'cad',match:/cad|coronary|หลอดเลือดหัวใจ/i,label:'CAD',keys:['ldl','hdl','triglyceride','hba1c','fbs','creatinine','egfr']},
+  {id:'stroke',match:/stroke|cva|หลอดเลือดสมอง/i,label:'Stroke',keys:['ldl','hba1c','fbs','creatinine','egfr','hb','hct','platelet']},
+  {id:'anemia',match:/anemia|โลหิตจาง|ซีด/i,label:'Anemia',keys:['hb','hct','mcv','mch','mchc','rdw','reticulocyte','ferritin','serum_iron','tibc','transferrin_sat','b12','folate']},
+  {id:'gout',match:/gout|เกาต์|uric/i,label:'Gout',keys:['uric_acid','creatinine','egfr']},
+  {id:'liver',match:/liver|ตับ|cirrhosis|hepat/i,label:'Liver disease',keys:['ast','alt','alp','ggt','total_bilirubin','direct_bilirubin','albumin','pt','inr']},
+  {id:'thyroid',match:/thyroid|ไทรอยด์/i,label:'Thyroid',keys:['tsh','ft4','ft3']},
+  {id:'nutrition',match:/ทุพโภชนาการ|malnutrition|โภชนาการ/i,label:'Nutrition risk',keys:['hb','hct','albumin','na','k','cl','co2','calcium','magnesium','b12','folate','vitamin_d']},
+  {id:'warfarin',match:/warfarin|วาร์ฟาริน/i,label:'Warfarin',keys:['pt','inr','hb','hct','platelet']}
 ];
 
 function currentDiseaseText(){
@@ -2029,14 +2062,19 @@ function getLabISODate(){
   return existing?.last_visit||todayISO();
 }
 function labInputCell(key){
-  const r=referenceFor(key), d=LAB_REFERENCE[key], isQual=!!d.qualitative;
-  return `<tr data-lab-key="${safe(key)}">
-    <td style="padding:7px 5px;font-weight:600;white-space:nowrap">${safe(d.label)}<div class="lab-ref-mini">ค่าปกติ ${isQual?'Negative / ไม่พบ':safe(r.refText||'ขึ้นกับห้องปฏิบัติการ')}</div></td>
-    <td style="padding:5px">${isQual?`<select class="lab-value lab-qual-value" onchange="updateLabRowFeedback(this)" style="width:120px"><option value="">— เลือก —</option><option>Negative</option><option>Trace</option><option>1+</option><option>2+</option><option>3+</option><option>4+</option></select>`:`<input class="lab-value" inputmode="decimal" placeholder="ผล" oninput="updateLabRowFeedback(this)" style="width:95px">`}</td>
-    <td style="padding:5px">${safe(d.unit||'')}</td>
-  </tr>
-  <tr class="lab-target-row" data-lab-target-for="${safe(key)}"><td colspan="3" style="padding:0 5px 7px"><input class="lab-target-note" placeholder="หมายเหตุ / เป้าหมายการรักษาตามแผนแพทย์ (ไม่บังคับ)" oninput="updateLabTargetFeedback(this)"><div class="lab-target-feedback"></div></td></tr>
-  <tr class="lab-advice-row" data-lab-advice-for="${safe(key)}" style="display:none"><td colspan="3" style="padding:0 5px 9px"><div class="lab-inline-advice" style="background:#fff7e8;border-left:4px solid #e6a23c;padding:8px 10px;border-radius:7px;font-size:12px;color:#5d4b20"></div></td></tr>`;
+  const r=referenceFor(key),d=LAB_REFERENCE[key],isQual=!!d.qualitative,isCat=!!d.categorical;
+  let input='';
+  if(key==='ckd_stage') input=`<select class="lab-value" onchange="updateLabRowFeedback(this)"><option value="">— เลือก —</option><option>G1</option><option>G2</option><option>G3a</option><option>G3b</option><option>G4</option><option>G5</option></select>`;
+  else if(key==='albuminuria_stage') input=`<select class="lab-value" onchange="updateLabRowFeedback(this)"><option value="">— เลือก —</option><option>A1</option><option>A2</option><option>A3</option></select>`;
+  else if(key==='ua_color') input=`<select class="lab-value"><option value="">— เลือก —</option><option>Yellow</option><option>Amber</option><option>Colorless</option><option>Red</option><option>Brown</option></select>`;
+  else if(key==='ua_appearance') input=`<select class="lab-value"><option value="">— เลือก —</option><option>Clear</option><option>Slightly cloudy</option><option>Cloudy</option><option>Turbid</option></select>`;
+  else if(key==='ua_bacteria') input=`<select class="lab-value"><option value="">— เลือก —</option><option>None</option><option>Few</option><option>Moderate</option><option>Many</option></select>`;
+  else if(isQual) input=`<select class="lab-value" onchange="updateLabRowFeedback(this)"><option value="">— เลือก —</option><option>Negative</option><option>Trace</option><option>1+</option><option>2+</option><option>3+</option><option>4+</option></select>`;
+  else input=`<input class="lab-value" inputmode="decimal" placeholder="ผล" oninput="updateLabRowFeedback(this)" style="width:95px">`;
+  const ref=isQual?'Negative / ไม่พบ':isCat?'ตามประเภท':safe(r.refText||'ขึ้นกับห้องปฏิบัติการ');
+  return `<tr data-lab-key="${safe(key)}"><td style="padding:7px 5px;font-weight:600">${safe(d.label)}<div class="lab-ref-mini">ค่าปกติ ${ref}</div></td><td style="padding:5px">${input}</td><td style="padding:5px">${safe(d.unit||'')}</td></tr>
+  <tr class="lab-target-row" data-lab-target-for="${safe(key)}"><td colspan="3"><input class="lab-target-note" placeholder="หมายเหตุ / เป้าหมายการรักษา (ไม่บังคับ)"></td></tr>
+  <tr class="lab-advice-row" style="display:none"><td colspan="3"><div class="lab-inline-advice"></div></td></tr>`;
 }
 function renderLabEntryGroups(){
   const box=e('lab-entry-groups'); if(!box)return;
@@ -2097,7 +2135,7 @@ function updateLabTargetFeedback(input){
 }
 function updateLabRowFeedback(input){
   const tr=input.closest('tr[data-lab-key]');if(!tr)return;
-  const key=tr.dataset.labKey,d=LAB_REFERENCE[key]||{},raw=String(input.value||'').trim(),adviceRow=tr.nextElementSibling?.nextElementSibling;
+  const key=tr.dataset.labKey,d=LAB_REFERENCE[key]||{},raw=String(input.value||'').trim(),adviceRow=tr.nextElementSibling?.nextElementSibling;if(key==='egfr'||key==='urine_acr')setTimeout(syncCKDStages,0);
   if(!raw){if(adviceRow)adviceRow.style.display='none';input.style.borderColor='';return;}
   let status='unknown',value=null,r=referenceFor(key);
   if(d.qualitative){status=/^negative$/i.test(raw)?'normal':'abnormal';}
@@ -2143,25 +2181,25 @@ function parseReferenceText(refText,value){
   }
   return {low,high,status};
 }
+function autoCKDStageFromEgfr(v){v=Number(v);if(!Number.isFinite(v))return '';if(v>=90)return'G1';if(v>=60)return'G2';if(v>=45)return'G3a';if(v>=30)return'G3b';if(v>=15)return'G4';return'G5';}
+function autoAlbuminuriaStageFromACR(v){v=Number(v);if(!Number.isFinite(v))return '';if(v<30)return'A1';if(v<=300)return'A2';return'A3';}
+function syncCKDStages(){
+  const egfr=document.querySelector('tr[data-lab-key="egfr"] .lab-value')?.value;
+  const acr=document.querySelector('tr[data-lab-key="urine_acr"] .lab-value')?.value;
+  const ckd=document.querySelector('tr[data-lab-key="ckd_stage"] .lab-value');
+  const alb=document.querySelector('tr[data-lab-key="albuminuria_stage"] .lab-value');
+  if(ckd&&!ckd.value&&egfr!=='')ckd.value=autoCKDStageFromEgfr(egfr);
+  if(alb&&!alb.value&&acr!=='')alb.value=autoAlbuminuriaStageFromACR(acr);
+}
 function collectManualLabResults(){
-  const out=[];
+  syncCKDStages(); const out=[];
   document.querySelectorAll('#lab-entry-groups tr[data-lab-key]').forEach(tr=>{
-    const valRaw=String(tr.querySelector('.lab-value')?.value||'').trim();
-    if(!valRaw)return;
-    const key=tr.dataset.labKey,d=LAB_REFERENCE[key]||{},targetRow=tr.nextElementSibling;
-    const targetNote=targetRow?.querySelector('.lab-target-note')?.value?.trim()||'';
-    if(d.qualitative){
-      out.push({key,label:d.label,value:null,valueText:valRaw,unit:d.unit||'',refText:'Negative',low:null,high:null,status:/^negative$/i.test(valRaw)?'normal':'abnormal',treatmentTargetNote:targetNote,treatmentTargetStatus:'note_only'});
-      return;
-    }
-    const value=Number(valRaw.replace(',','.')),ev=evaluateBuiltInLab(key,value),targetEval=parseTreatmentTarget(targetNote,Number.isFinite(value)?value:null);
-    out.push({key,label:d.label,value:Number.isFinite(value)?value:null,valueText:Number.isFinite(value)?'':valRaw,unit:d.unit,refText:ev.refText,low:ev.low,high:ev.high,status:ev.status,treatmentTargetNote:targetNote,treatmentTargetStatus:targetEval.status});
-  });
-  document.querySelectorAll('.extra-lab-row').forEach(row=>{
-    const label=row.querySelector('.extra-name').value.trim(),valRaw=row.querySelector('.extra-value').value.trim();
-    if(!label||!valRaw)return;
-    const refText=row.querySelector('.extra-ref').value.trim(),unit=row.querySelector('.extra-unit').value.trim(),value=Number(valRaw.replace(',','.')),parsed=parseReferenceText(refText,value),key='extra_'+label.toLowerCase().replace(/[^a-z0-9ก-๙]+/g,'_');
-    out.push({key,label,value:Number.isFinite(value)?value:null,valueText:Number.isFinite(value)?'':valRaw,unit,refText,...parsed,treatmentTargetNote:'',treatmentTargetStatus:'none'});
+    const raw=String(tr.querySelector('.lab-value')?.value||'').trim(); if(!raw)return;
+    const key=tr.dataset.labKey,d=LAB_REFERENCE[key]||{},target=tr.nextElementSibling?.querySelector('.lab-target-note')?.value?.trim()||'';
+    if(d.qualitative){out.push({key,label:d.label,value:null,valueText:raw,unit:d.unit||'',refText:'Negative',status:/^negative$/i.test(raw)?'normal':'abnormal',treatmentTargetNote:target,treatmentTargetStatus:'note_only'});return;}
+    if(d.categorical){out.push({key,label:d.label,value:null,valueText:raw,unit:d.unit||'',refText:'',status:'unknown',treatmentTargetNote:target,treatmentTargetStatus:'note_only'});return;}
+    const value=Number(raw.replace(',','.')),ev=evaluateBuiltInLab(key,value),te=parseTreatmentTarget(target,Number.isFinite(value)?value:null);
+    out.push({key,label:d.label,value:Number.isFinite(value)?value:null,valueText:Number.isFinite(value)?'':raw,unit:d.unit,refText:ev.refText,low:ev.low,high:ev.high,status:ev.status,treatmentTargetNote:target,treatmentTargetStatus:te.status});
   });
   return out;
 }
