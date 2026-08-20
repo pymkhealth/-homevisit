@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>งานเยี่ยมบ้าน · แผนกส่งเสริมสุขภาพ รพ.ค่ายพระยอดเมืองขวาง</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -581,7 +581,7 @@
   .visit-tab-delete{border:0;border-left:1px solid #E3EAED;background:#fff;color:#9A6970;padding:0 8px;font-size:16px;cursor:pointer;}
   .visit-tab-delete:hover{background:#FFF0F1;color:#B73343;}
 
-/* ===== v14.9 Bright Medical Theme ===== */
+/* ===== v15.0 Bright Medical Theme ===== */
 :root{
   --navy:#123B5D;
   --teal:#12A6B5;
@@ -705,7 +705,7 @@ body{
   box-shadow:0 0 0 3px rgba(66,191,199,.12);
 }
 
-/* ===== v14.9 Formal Teal Pastel Theme (matched to selected reference) ===== */
+/* ===== v15.0 Formal Teal Pastel Theme (matched to selected reference) ===== */
 :root{
   --navy:#123F59;
   --teal:#0786A0;
@@ -1026,6 +1026,24 @@ body{
     .visit-team-row>div{grid-template-columns:1fr!important}
     .visit-team-remove-btn{justify-self:start}
   }
+
+/* v15.0 mobile responsive */
+html,body{max-width:100%;overflow-x:hidden}*,*::before,*::after{box-sizing:border-box}img,canvas,svg,video{max-width:100%;height:auto}input,select,textarea,button{max-width:100%;font-family:inherit}button,.btn,.btn-ghost{min-height:44px;touch-action:manipulation}
+@media(max-width:768px){
+ input,select,textarea{font-size:16px!important}
+ .container,.page,.app-shell,.main,.content,.modal-card,.panel,.card{width:100%!important;max-width:100%!important;min-width:0!important}
+ .form-grid,.assessment-grid,.assessment-grid.two-col,.assessment-grid.four-col{grid-template-columns:1fr!important}.form-span-2,.form-span-3,.form-span-4{grid-column:1/-1!important}
+ .visit-subtabs,.tabs,.tabbar,.toolbar,.action-bar,.lab-tools,.assessment-trigger-row{max-width:100%!important;overflow-x:auto!important;overflow-y:hidden;-webkit-overflow-scrolling:touch;flex-wrap:nowrap!important}
+ .visit-subtab,.tabs button,.tabbar button,.toolbar button,.action-bar button{flex:0 0 auto!important;white-space:nowrap}
+ #lab-entry-groups>div>div[style*="overflow:auto"],.table-wrap,.table-responsive{width:100%!important;max-width:100%!important;overflow-x:auto!important;-webkit-overflow-scrolling:touch}
+ #lab-entry-groups table{min-width:560px}#lab-entry-groups td,#lab-entry-groups th{white-space:normal!important}#lab-entry-groups .lab-value,#lab-entry-groups .lab-target-note{width:100%!important;min-width:0!important}
+ .visit-team-row>div{display:grid!important;grid-template-columns:1fr!important;gap:7px!important}.visit-team-name,.visit-team-role,.visit-team-remove-btn{width:100%!important}
+ .visit-photo-grid,.photo-grid,.photos-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}.visit-photo-grid img,.photo-grid img,.photos-grid img{width:100%!important;height:auto!important;object-fit:cover}
+ .modal,.dialog,.overlay{padding:8px!important;align-items:flex-start!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch}.modal-card,.dialog-card{margin:8px auto!important;max-height:none!important}
+ .card,.panel,.section{padding-left:10px!important;padding-right:10px!important}
+}
+@media(max-width:480px){#lab-entry-groups table{min-width:520px}.visit-photo-grid,.photo-grid,.photos-grid{grid-template-columns:1fr!important}h1{font-size:24px!important}h2{font-size:20px!important}}
+@media print{html,body{overflow:visible!important;max-width:none!important}#lab-entry-groups table{min-width:0!important}input,select,textarea{font-size:inherit!important}}
 </style>
 </head>
 <body>
