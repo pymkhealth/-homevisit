@@ -2826,7 +2826,7 @@ function openPatient(id){
   const b=e('pd-badge');b.className='badge '+(p.status==='urgent'?'urgent':p.status==='overdue'?'overdue':'ok');b.textContent=p.status==='urgent'?'เร่งด่วน':p.status==='overdue'?`เกินกำหนด ${p.overdueDays||0} วัน`:'ปกติ';
   const stg=stageInfo(p.stage); const stageEl=e('pd-stage'); stageEl.style.background=stg.bg; stageEl.style.color=stg.color; stageEl.innerHTML=`<span class="stage-dot"></span>${safe(stg.label)}`;
   renderCompletenessBadge(p,e('pd-completeness'));
-  if(!document.getElementById('edit-patient-btn')){const btn=document.createElement('button');btn.id='edit-patient-btn';btn.className='btn-ghost detail-edit-btn';btn.textContent='แก้ไขข้อมูล';btn.onclick=()=>openPatientForm(currentPatient);e('pd-actions').insertBefore(btn,e('pd-actions').lastElementChild);}
+  if(!document.getElementById('edit-patient-btn')){const btn=document.createElement('button');btn.id='edit-patient-btn';btn.className='btn-ghost detail-edit-btn';btn.textContent='แก้ไขข้อมูล';btn.onclick=()=>openPatientForm(currentPatient,'edit');e('pd-actions').insertBefore(btn,e('pd-actions').lastElementChild);}
   if(!document.getElementById('quick-visit-btn')){const btn2=document.createElement('button');btn2.id='quick-visit-btn';btn2.className='btn-ghost detail-edit-btn';btn2.textContent='＋ บันทึกเยี่ยมด่วน';btn2.onclick=()=>openQuickUpdate(currentPatient.id);e('pd-actions').insertBefore(btn2,e('pd-actions').lastElementChild);}
   if(!document.getElementById('delete-patient-btn')){const btn3=document.createElement('button');btn3.id='delete-patient-btn';btn3.className='btn-ghost detail-edit-btn';btn3.style.color='#B73E4B';btn3.style.borderColor='#E8B8BE';btn3.textContent='ลบผู้ป่วย';btn3.onclick=()=>deletePatient(currentPatient);e('pd-actions').insertBefore(btn3,e('pd-actions').lastElementChild);}
   e('tab-strip').innerHTML=(()=>{
@@ -2909,8 +2909,7 @@ function visitSelectorHtml(p){
 
 function startNextVisit(patientId){
   const p=patients.find(x=>String(x.id)===String(patientId)); if(!p)return;
-  window.__addingNewVisit=true;
-  openPatientForm(p);
+  openPatientForm(p,'new-visit');
   const title=e('patient-form-title');
   if(title)title.textContent=`บันทึกเยี่ยมครั้งที่ ${visitCount(p)+1} · ${p.name}`;
   const save=e('save-patient-btn');
@@ -3307,7 +3306,8 @@ function clearLabReadResult(){
   e('f-lab').value='';
   e('f-lab-analysis').value='';window.__pendingLabSnapshot=null;renderLabStructuredPreview([],null);
 }
-function openPatientForm(p=null){
+function openPatientForm(p=null,mode='edit'){
+  window.__formMode=mode;
   e('patient-form').reset(); e('patient-id').value=p?.id||'';e('patient-form-title').textContent=p?'แก้ไข / เพิ่มเติมข้อมูลผู้ป่วย':'เพิ่มผู้ป่วยใหม่';
   e('save-patient-btn').textContent=p?'บันทึกข้อมูลเพิ่มเติม':'บันทึกข้อมูล';
   const vals={ 'f-hn':p?.hn,'f-name':p?.name,'f-sex':p?.sex,'f-status':p?.status||'ok','f-overdue-days':p?.overdueDays,'f-address':p?.address,'f-phone':p?.phone,'f-diagnosis':p?.diagnosis,'f-icd10':p?.icd10,'f-allergy':p?.allergy,'f-history':p?.history,'f-lab':p?.lab,'f-lab-analysis':p?.lab_analysis,'f-medication':p?.medication,'f-problems':p?.problems,'f-careplan':p?.care_plan};
@@ -3348,27 +3348,35 @@ async function savePatient(ev){
     const nextVisitDate=getISOFromBEDate('nextvisit','วันที่ควรเยี่ยมครั้งถัดไป');
 
     const existingPatient=id?patients.find(x=>String(x.id)===String(id)):null;
+    const formMode=id?(window.__formMode||'edit'):'new-visit';
     const newVisitEntry=e('f-homevisit').value.trim();
     const homevisitFinal=appendHomeVisitEntry(existingPatient?.homevisit,newVisitEntry);
     const priorVisitHistory=Array.isArray(existingPatient?.visit_history)?[...existingPatient.visit_history]:[];
     const visitHistoryFinal=[...priorVisitHistory];
-    if(newVisitEntry){
-      visitHistoryFinal.push({
-        number:priorVisitHistory.length+1,
-        date:getISOFromBuddhistDate()||todayISO(),
-        note:newVisitEntry,
-        diagnosis:e('f-diagnosis').value.trim(),
-        icd10:e('f-icd10').value.trim(),
-        medication:e('f-medication').value.trim(),
-        problems:e('f-problems').value.trim(),
-        care_plan:e('f-careplan').value.trim(),
-        inhomesss:e('f-inhomesss')?.value?.trim?.()||'',
-        assessments:collectVisitAssessments(),
-        home_visit_team:team.map(x=>({...x})),
-        photos:[]
-      });
+    const visitSnapshot={
+      date:getISOFromBuddhistDate()||todayISO(),
+      diagnosis:e('f-diagnosis').value.trim(),
+      icd10:e('f-icd10').value.trim(),
+      medication:e('f-medication').value.trim(),
+      problems:e('f-problems').value.trim(),
+      care_plan:e('f-careplan').value.trim(),
+      inhomesss:e('f-inhomesss')?.value?.trim?.()||'',
+      assessments:collectVisitAssessments(),
+      home_visit_team:team.map(x=>({...x}))
+    };
+    if(formMode==='new-visit'){
+      visitHistoryFinal.push({number:priorVisitHistory.length+1,...visitSnapshot,note:newVisitEntry||'บันทึกการเยี่ยม',photos:[]});
+    }else if(priorVisitHistory.length){
+      const lastIndex=visitHistoryFinal.length-1;
+      visitHistoryFinal[lastIndex]={
+        ...visitHistoryFinal[lastIndex],...visitSnapshot,
+        note:newVisitEntry||visitHistoryFinal[lastIndex].note||'',
+        number:visitHistoryFinal[lastIndex].number||lastIndex+1,
+        photos:Array.isArray(visitHistoryFinal[lastIndex].photos)?visitHistoryFinal[lastIndex].photos:[]
+      };
+    }else if(newVisitEntry){
+      visitHistoryFinal.push({number:1,...visitSnapshot,note:newVisitEntry,photos:[]});
     }
-
     const payload={
       hn:hnValue,name:nameValue,
       age:calculateAge(birthDate),birth_date:birthDate,sex:e('f-sex').value,
@@ -3410,7 +3418,7 @@ async function savePatient(ev){
 
       // ผูกรูปกับ "การเยี่ยมครั้งที่กำลังบันทึก" โดยตรง
       let visitHistoryWithPhotos=Array.isArray(row.visit_history)?row.visit_history.map(v=>({...v})):[...visitHistoryFinal];
-      if(uploadedThisVisit.length && newVisitEntry && visitHistoryWithPhotos.length){
+     if(uploadedThisVisit.length && visitHistoryWithPhotos.length){
         const lastIndex=visitHistoryWithPhotos.length-1;
         const oldVisitPhotos=Array.isArray(visitHistoryWithPhotos[lastIndex]?.photos)?visitHistoryWithPhotos[lastIndex].photos:[];
         visitHistoryWithPhotos[lastIndex]={
@@ -3420,7 +3428,7 @@ async function savePatient(ev){
       }
 
       const updatePayload={photos:photoObjects};
-      if(uploadedThisVisit.length && newVisitEntry)updatePayload.visit_history=visitHistoryWithPhotos;
+      if(uploadedThisVisit.length)updatePayload.visit_history=visitHistoryWithPhotos;
 
       const u=await supabaseClient.from(PATIENTS_TABLE).update(updatePayload).eq('id',row.id);
       if(u.error)attachmentErrors.push(`บันทึกรายการภาพ: ${u.error.message}`);
